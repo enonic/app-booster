@@ -1,0 +1,28 @@
+plugins {
+	id 'java'
+	id 'maven-publish'
+	id 'com.enonic.defaults' version '2.1.5'
+	id 'com.enonic.xp.app' version '3.4.0'
+}
+
+
+repositories {
+	xp.enonicRepo()
+	mavenCentral()
+}
+
+
+app {
+	name = project.appName
+	group = 'com.enonic.app'
+	displayName = 'Booster'
+	vendorName = 'Enonic AS'
+	vendorUrl = 'https://enonic.com'
+	systemVersion = "${xpVersion}"
+}
+
+
+dependencies {
+	implementation "com.enonic.xp:core-api:${xpVersion}"
+	implementation "com.enonic.xp:portal-api:${xpVersion}"
+}
