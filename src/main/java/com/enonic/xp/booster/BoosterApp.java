@@ -95,11 +95,11 @@ public class BoosterApp
 
         final ByteArrayOutputStream gzipData;
 
-        final Map<String, String> headers;
+        final Map<String, Object> headers;
 
         final int contentLength;
 
-        CacheItem( final String url, final String contentType, final Map<String, String> headers, final ByteArrayOutputStream data )
+        CacheItem( final String url, final String contentType, final Map<String, Object> headers, final ByteArrayOutputStream data )
         {
             this.url = url;
             this.contentType = contentType;
@@ -116,7 +116,7 @@ public class BoosterApp
             }
         }
 
-        public CacheItem( final String url, final String contentType, final Map<String, String> headers, final int contentLength,
+        public CacheItem( final String url, final String contentType, final Map<String, Object> headers, final int contentLength,
                           final ByteArrayOutputStream gzipData)
         {
             this.url = url;
@@ -146,10 +146,10 @@ public class BoosterApp
         final String fullUrl = getFullURL( req );
 
         final String sha256 = sha256( fullUrl );
-        final CacheItem cached = cache.get( sha256 );
+        //final CacheItem cached = cache.get( sha256 );
 
         final NodeId nodeId = NodeId.from( sha256 );
-        final CacheItem cacheItem = runWithAdminRole( () -> {
+        final CacheItem cached = runWithAdminRole( () -> {
 
             try
             {
@@ -163,13 +163,13 @@ public class BoosterApp
                 final int contentLength = node.data().getLong( "contentLength" ).intValue();
                 final String url = node.data().getString( "url" );
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                final ByteSource body = nodeService.getBinary( nodeId, BinaryReference.from( "gzipData" ) );
+                final ByteSource body = nodeService.getBinary( nodeId, BinaryReference.from( "data.gzip" ) );
                 if ( body == null )
                 {
                     return null;
                 }
                 body.copyTo( outputStream );
-                return new CacheItem( url, contentType, (Map<String, String>) (Map<String, ?>) headers, contentLength, outputStream );
+                return new CacheItem( url, contentType,  headers, contentLength, outputStream );
             }
             catch ( NodeNotFoundException e )
             {
@@ -267,13 +267,14 @@ public class BoosterApp
             return;
         }
 
-        final CacheItem cachedItem =
-            new CacheItem( sha256, servletResponse.getContentType(), servletResponse.headers, servletResponse.baos );
+        /*final CacheItem cachedItem =
+            new CacheItem( sha256, servletResponse.getContentType(), servletResponse.headers, servletResponse.baos );*/
         runWithAdminRole( () -> {
             final PropertyTree data = new PropertyTree();
             data.setString( "url", fullUrl );
             data.setString( "contentType", servletResponse.getContentType() );
             data.setLong( "contentLength", (long) servletResponse.baos.size() );
+            data.setBinaryReference( "gzipData", BinaryReference.from( "data.gzip" ) );
 
             final PropertySet headersPropertyTree = data.newSet();
 
@@ -283,23 +284,47 @@ public class BoosterApp
             if (nodeService.nodeExists( nodeId)) {
                 return null;
             } else {
-            nodeService.create( CreateNodeParams.create()
-                                                      .parent( NodePath.ROOT )
-                                                      .setNodeId( nodeId )
-                                                      .data( data )
-                                                      .attachBinary( BinaryReference.from( "gzipData" ),
-                                                                     ByteSource.wrap( servletResponse.baos.toByteArray() ) )
-                                                      .name( sha256 )
-                                                      .build() );
-                              return null;
+                ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
+                try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream( gzipData ))
+                {
+                    servletResponse.baos.writeTo( gzipOutputStream );
+                }
+                final Node node = nodeService.create( CreateNodeParams.create()
+                                                              .parent( NodePath.ROOT )
+                                                              .setNodeId( nodeId )
+                                                              .data( data )
+                                                              .attachBinary( BinaryReference.from( "data.gzip" ),
+                                                                             ByteSource.wrap( gzipData.toByteArray() ) )
+                                                              .name( sha256 )
+                                                              .build() );
+                return null;
                           }
         } );
-        cache.put( fullUrl, cachedItem );
+        //cache.put( sha256, cachedItem );
     }
 
     private static void copyHeaders( final HttpServletResponse res, final CacheItem cached )
     {
-        cached.headers.forEach( res::setHeader );
+        for ( var o : cached.headers.entrySet() )
+        {
+            if (o.getValue() instanceof String) {
+                res.setHeader( o.getKey(), (String) o.getValue() );
+            } else if (o.getValue() instanceof Collection) {
+                int i = 0;
+                for ( String s : (Collection<String>) o.getValue() )
+                {
+                    if ( i == 0 )
+                    {
+                        res.setHeader( o.getKey(), s );
+                    }
+                    else
+                    {
+                        res.addHeader( o.getKey(), s );
+                    }
+                    i++;
+                }
+            }
+        }
     }
 
     private static boolean supportsGzip( final HttpServletRequest req )
@@ -444,6 +469,8 @@ public class BoosterApp
             build();
         return ContextBuilder.from( context ).
             authInfo( authenticationInfo ).
+            repositoryId( RepositoryId.from( "booster" ) ).
+            branch( Branch.from( "master" ) ).
             build().
             callWith( callable );
     }
