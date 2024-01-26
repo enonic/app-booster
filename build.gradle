@@ -26,3 +26,9 @@ dependencies {
 	implementation "com.enonic.xp:core-api:${xpVersion}"
 	implementation "com.enonic.xp:portal-api:${xpVersion}"
 }
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
