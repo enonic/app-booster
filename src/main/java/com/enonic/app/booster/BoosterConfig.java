@@ -1,4 +1,4 @@
-package com.enonic.xp.booster;
+package com.enonic.app.booster;
 
 public @interface BoosterConfig
 {
