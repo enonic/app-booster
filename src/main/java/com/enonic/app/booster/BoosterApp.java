@@ -220,6 +220,11 @@ public class BoosterApp
             cached = null;
         }
 
+        if ( ("\""+ sha256 + "-gzip" + "\"").equals( req.getHeader( "If-None-Match" ) )) {
+            LOG.debug( "Returning 304 Not Modified" );
+            res.setStatus( 304 );
+            return;
+        }
         // Report cache HIT or MISS. Header is not present if cache is not used
         res.setHeader( "X-Booster-Cache", cached != null ? "HIT" : "MISS" );
 
@@ -231,12 +236,14 @@ public class BoosterApp
 
             copyHeaders( res, cached );
 
+            res.addHeader( "Vary", "Accept-Encoding" );
+
             if ( supportsGzip( req ) )
             {
                 LOG.debug( "Request accepts gzip. Writing gzipped response body from cache" );
                 // Headers will tell Jetty to not apply compression, as it is done already
                 res.setHeader( "Content-Encoding", "gzip" );
-                res.addHeader( "Vary", "Accept-Encoding" );
+                res.setHeader( "etag", "\"" + sha256 + "-gzip" + "\"" );
                 res.setContentLength( cached.gzipData.size() );
                 cached.gzipData.writeTo( res.getOutputStream() );
             }
@@ -245,6 +252,7 @@ public class BoosterApp
                 // we don't store decompressed data in cache as it is mostly waste of space
                 // we can recreate uncompressed response from compressed data
                 LOG.debug( "Request does not accept gzip. Writing plain response body from cache" );
+                res.setHeader( "etag", "\"" + sha256 + "\"" );
                 res.setContentLength( cached.contentLength );
                 new GZIPInputStream( new ByteArrayInputStream( cached.gzipData.toByteArray() ) ).transferTo( res.getOutputStream() );
             }
