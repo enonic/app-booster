@@ -6,7 +6,7 @@ exports.get = function (req) {
 
     let checkboxesHtml = '<ul>';
     for (let i = 0; i < projects.length; i++) {
-        checkboxesHtml += '<li><label><input type="checkbox" name="repos" value="' + 'com.enonic.cms'+ projects[i].id + '">' + projects[i].displayName + '</label></li>';
+        checkboxesHtml += '<li><label><input type="checkbox" name="repos" value="' + 'com.enonic.cms.'+ projects[i].id + '">' + projects[i].displayName + '</label></li>';
     }
     checkboxesHtml += '</ul>'
 

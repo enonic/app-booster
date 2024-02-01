@@ -278,6 +278,12 @@ public class BoosterApp
             return;
         }
 
+        // We may cache responses with Vary header, but it is quite a bit of work to parse and check it
+        if ( servletResponse.headers.containsKey( "vary" )) {
+            LOG.debug( "Not cacheable because of Vary header in response" );
+            return;
+        }
+
         // only cache html responses. This is for the initial implementation
         final String responseContentType = servletResponse.getContentType();
         if ( !responseContentType.contains( "text/html" ) && !responseContentType.contains( "text/xhtml" ) )
