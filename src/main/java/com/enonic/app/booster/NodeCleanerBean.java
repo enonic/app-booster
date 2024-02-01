@@ -1,5 +1,6 @@
 package com.enonic.app.booster;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -11,6 +12,7 @@ import com.enonic.xp.branch.Branch;
 import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
+import com.enonic.xp.data.ValueFactory;
 import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.FindNodesByQueryResult;
 import com.enonic.xp.node.NodeHit;
@@ -20,6 +22,7 @@ import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.query.expr.FieldOrderExpr;
 import com.enonic.xp.query.expr.OrderExpr;
+import com.enonic.xp.query.filter.RangeFilter;
 import com.enonic.xp.query.filter.ValueFilter;
 import com.enonic.xp.repository.RepositoryId;
 import com.enonic.xp.script.bean.BeanContext;
@@ -27,7 +30,8 @@ import com.enonic.xp.script.bean.ScriptBean;
 import com.enonic.xp.security.RoleKeys;
 import com.enonic.xp.security.auth.AuthenticationInfo;
 
-public class NodeCleanerBean implements ScriptBean
+public class NodeCleanerBean
+    implements ScriptBean
 {
     private static final Logger LOG = LoggerFactory.getLogger( NodeCleanerBean.class );
 
@@ -39,10 +43,13 @@ public class NodeCleanerBean implements ScriptBean
         this.nodeService = beanContext.getService( NodeService.class ).get();
     }
 
-    public void cleanUpRepos( List<String> repos) {
+    public void cleanUpRepos( List<String> repos )
+    {
+        Instant cutOffTime = Instant.now();
+
         runWithAdminRole( () -> {
             LOG.debug( "Invalidating cache for repositories {}", repos );
-            final NodeQuery query = createQuery( repos );
+            final NodeQuery query = createQuery( repos, cutOffTime );
 
             nodeService.refresh( RefreshMode.SEARCH );
             FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
@@ -69,10 +76,48 @@ public class NodeCleanerBean implements ScriptBean
         } );
     }
 
-    private NodeQuery createQuery( Collection<String> repos )
+    public void invalidateAll()
     {
-        final NodeQuery.Builder builder =
-            NodeQuery.create().addQueryFilter( ValueFilter.create().fieldName( "repo" ).addValues( repos ).build() );
+        Instant cutOffTime = Instant.now();
+        runWithAdminRole( () -> {
+            LOG.debug( "Invalidating all" );
+            final NodeQuery query = createQuery( List.of(), cutOffTime );
+
+            nodeService.refresh( RefreshMode.SEARCH );
+            FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
+
+            long hits = nodesToDelete.getHits();
+            LOG.debug( "Found {} nodes total to be deleted", nodesToDelete.getTotalHits() );
+
+            while ( hits > 0 )
+            {
+                final NodeHits nodeHits = nodesToDelete.getNodeHits();
+                for ( NodeHit nodeHit : nodeHits )
+                {
+                    nodeService.delete( DeleteNodeParams.create().nodeId( nodeHit.getNodeId() ).build() );
+                }
+                LOG.debug( "Deleted {} nodes", nodeHits.getSize() );
+
+                nodeService.refresh( RefreshMode.SEARCH );
+                nodesToDelete = nodeService.findByQuery( query );
+
+                hits = nodesToDelete.getHits();
+            }
+            LOG.debug( "Done invalidating all" );
+            return null;
+        } );
+
+    }
+
+    private NodeQuery createQuery( Collection<String> repos, Instant cutOffTime )
+    {
+        final NodeQuery.Builder builder = NodeQuery.create();
+        if ( !repos.isEmpty() )
+        {
+            builder.addQueryFilter( ValueFilter.create().fieldName( "repo" ).addValues( repos ).build() );
+        }
+
+        builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() );
 
         builder.addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) ).size( 10_000 );
 

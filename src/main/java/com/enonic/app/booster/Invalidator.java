@@ -1,5 +1,6 @@
 package com.enonic.app.booster;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -8,10 +9,12 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +32,7 @@ import com.enonic.xp.task.SubmitTaskParams;
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskService;
 
-@Component(immediate = true)
+@Component(immediate = true, configurationPid = "com.enonic.app.booster")
 public class Invalidator
     implements EventListener
 {
@@ -42,6 +45,8 @@ public class Invalidator
     private final TaskService taskService;
 
     volatile Set<String> repos = new HashSet<>();
+
+    private volatile List<String> appList = List.of();
 
     synchronized void addRepos( Collection<String> repo )
     {
@@ -88,6 +93,11 @@ public class Invalidator
         executorService.shutdownNow();
     }
 
+    @Activate
+    @Modified
+    public void activate(final BoosterConfig config) {
+        appList = Arrays.stream( config.appsInvalidateCacheOnStart().split( "," ) ).map( String::trim ).collect( Collectors.toList() );
+    }
     @Override
     public void onEvent( final Event event )
     {
@@ -107,6 +117,10 @@ public class Invalidator
                 LOG.debug( "Adding repo {} to cleanup list due to event {}", repo, event.getType() );
                 repos.add( repo );
             }
+        }
+
+        if (type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) && appList.contains( event.getData().get( "applicationKey" ) ) ) {
+            doInvalidateAll();
         }
 
         if ( type.equals( "node.pushed" ) || type.equals( "node.deleted" ) )
@@ -153,6 +167,21 @@ public class Invalidator
         {
             LOG.error( "Task could not be submitted ", e );
         }
+    }
 
+    private void doInvalidateAll() {
+        try
+        {
+            final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
+                                                              .descriptorKey(
+                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-invalidate-all" ) )
+                                                              .data( new PropertyTree() )
+                                                              .build() );
+            LOG.debug( "Invalidate all task submitted {}", taskId );
+        }
+        catch ( Exception e )
+        {
+            LOG.error( "Task could not be submitted ", e );
+        }
     }
 }

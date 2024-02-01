@@ -6,18 +6,21 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -33,6 +36,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,13 +50,13 @@ import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
-import com.enonic.xp.home.HomeDir;
 import com.enonic.xp.node.CreateNodeParams;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeNotFoundException;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeService;
+import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.repository.CreateRepositoryParams;
@@ -63,7 +67,7 @@ import com.enonic.xp.security.auth.AuthenticationInfo;
 import com.enonic.xp.util.BinaryReference;
 import com.enonic.xp.web.filter.OncePerRequestFilter;
 
-@Component(immediate = true, service = Filter.class, property = {"connector=xp"})
+@Component(immediate = true, service = Filter.class, property = {"connector=xp"}, configurationPid = "com.enonic.app.booster")
 @Order(-4000)
 @WebFilter("/site/*")
 public class BoosterApp
@@ -71,15 +75,14 @@ public class BoosterApp
 {
     private static final Logger LOG = LoggerFactory.getLogger( BoosterApp.class );
 
-    private final Map<String, CacheItem> cache = new ConcurrentHashMap<>();
-
-    private final Path cacheFolder = HomeDir.get().toPath().resolve( "work" ).resolve( "cache" ).resolve( "booster" );
-
     private final NodeService nodeService;
 
+    private volatile long cacheTtlSeconds = Long.MAX_VALUE;
+
+    private volatile List<String> excludeQueryParams = List.of();
+
     @Activate
-    public BoosterApp( @Reference final RepositoryService repositoryService, @Reference final NodeService nodeService,
-                       final BoosterConfig config )
+    public BoosterApp( @Reference final RepositoryService repositoryService, @Reference final NodeService nodeService )
     {
         this.nodeService = nodeService;
         try
@@ -93,6 +96,15 @@ public class BoosterApp
         }
     }
 
+    @Activate
+    @Modified
+    public void activate( final BoosterConfig config )
+    {
+        cacheTtlSeconds =
+            ( config.cacheTtl() == null || config.cacheTtl().isBlank() ) ? Long.MAX_VALUE : Duration.parse( config.cacheTtl() ).toSeconds();
+        excludeQueryParams = Arrays.stream( config.excludeQueryParams().split( "," ) ).map( String::trim ).collect( Collectors.toList() );
+    }
+
     private static class CacheItem
     {
         final String url;
@@ -103,14 +115,18 @@ public class BoosterApp
 
         final Map<String, Object> headers;
 
+        final Instant cachedTime;
+
         final int contentLength;
 
-        CacheItem( final String url, final String contentType, final Map<String, Object> headers, final ByteArrayOutputStream data )
+        CacheItem( final String url, final String contentType, final Map<String, Object> headers, final Instant cachedTime,
+                   final ByteArrayOutputStream data )
         {
             this.url = url;
             this.contentType = contentType;
             this.contentLength = data.size();
             this.headers = headers;
+            this.cachedTime = cachedTime;
             this.gzipData = new ByteArrayOutputStream();
             try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream( gzipData ))
             {
@@ -122,12 +138,13 @@ public class BoosterApp
             }
         }
 
-        public CacheItem( final String url, final String contentType, final Map<String, Object> headers, final int contentLength,
-                          final ByteArrayOutputStream gzipData )
+        public CacheItem( final String url, final String contentType, final Map<String, Object> headers, final Instant cachedTime,
+                          final int contentLength, final ByteArrayOutputStream gzipData )
         {
             this.url = url;
             this.contentType = contentType;
             this.headers = headers;
+            this.cachedTime = cachedTime;
             this.contentLength = contentLength;
             this.gzipData = gzipData;
         }
@@ -143,12 +160,11 @@ public class BoosterApp
         final String method = req.getMethod();
         final String requestURI = req.getRequestURI();
         final boolean hasAuthorization = req.getHeader( "Authorization" ) != null;
-        final boolean authenticated = ContextAccessor.current().getAuthInfo().isAuthenticated();
         final boolean validSession = req.isRequestedSessionIdValid();
-        if ( !"GET".equals( method ) || requestURI.contains( "/_/" ) || hasAuthorization || authenticated || validSession )
+        if ( !"GET".equals( method ) || requestURI.contains( "/_/" ) || hasAuthorization || validSession )
         {
-            LOG.debug( "Bypassing request. method {}, uri {}, has Authorization {}, authenticated {}, validSession {}", method, requestURI,
-                       hasAuthorization, authenticated, validSession );
+            LOG.debug( "Bypassing request. method {}, uri {}, has Authorization {}, validSession {}", method, requestURI,
+                       hasAuthorization, validSession );
 
             chain.doFilter( req, res );
             return;
@@ -158,11 +174,12 @@ public class BoosterApp
         // Query String is also included with all parameters (by default)
         final String fullUrl = getFullURL( req );
 
+        LOG.debug( "Normalized URL of reqest {}", fullUrl );
         final String sha256 = sha256( fullUrl );
         //final CacheItem cached = cache.get( sha256 );
 
         final NodeId nodeId = NodeId.from( sha256 );
-        final CacheItem cached = runWithAdminRole( () -> {
+        CacheItem cached = runWithAdminRole( () -> {
             LOG.debug( "Accessing cached response {}", nodeId );
 
             final Node node;
@@ -180,6 +197,7 @@ public class BoosterApp
             final String contentType = node.data().getString( "contentType" );
             final int contentLength = node.data().getLong( "contentLength" ).intValue();
             final String url = node.data().getString( "url" );
+            final Instant cachedTime = node.data().getInstant( "cachedTime" );
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             final ByteSource body;
             try
@@ -193,8 +211,14 @@ public class BoosterApp
             }
 
             body.copyTo( outputStream );
-            return new CacheItem( url, contentType, headers, contentLength, outputStream );
+            return new CacheItem( url, contentType, headers, cachedTime, contentLength, outputStream );
         } );
+
+        if ( cached != null && cached.cachedTime.plus( cacheTtlSeconds, ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
+        {
+            LOG.debug( "Cached response is found but stale" );
+            cached = null;
+        }
 
         // Report cache HIT or MISS. Header is not present if cache is not used
         res.setHeader( "X-Booster-Cache", cached != null ? "HIT" : "MISS" );
@@ -330,7 +354,23 @@ public class BoosterApp
             data.setSet( "headers", headersPropertyTree );
             if ( nodeService.nodeExists( nodeId ) )
             {
-                LOG.debug( "Cache Node already exists {}", nodeId );
+                LOG.debug( "Updating existing cache node {}", nodeId );
+                ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
+                try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream( gzipData ))
+                {
+                    servletResponse.baos.writeTo( gzipOutputStream );
+                }
+
+                nodeService.update( UpdateNodeParams.create()
+                                        .attachBinary( BinaryReference.from( "data.gzip" ),
+                                                       ByteSource.wrap( servletResponse.baos.toByteArray() ) )
+                                        .id( nodeId )
+                                        .editor( editor -> {
+                                            editor.data = data;
+
+                                        } )
+                                        .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
+                                        .build() );
                 return null;
             }
             else
@@ -496,9 +536,16 @@ public class BoosterApp
         final StringBuffer urlBuilder = request.getRequestURL();
 
         final String queryString = request.getQueryString();
+
         if ( queryString != null )
         {
-            urlBuilder.append( '?' ).append( queryString );
+            final String[] params = queryString.split( "&" );
+            final List<String> filteredParams =
+                Arrays.stream( params ).filter( p -> !excludeQueryParams.contains( p.split( "=" )[0] ) ).collect( Collectors.toList() );
+            if ( !filteredParams.isEmpty() )
+            {
+                urlBuilder.append( '?' ).append( String.join( "&", filteredParams ) );
+            }
         }
 
         return urlBuilder.toString();
