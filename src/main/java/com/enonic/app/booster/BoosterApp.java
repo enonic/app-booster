@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -73,7 +72,7 @@ import com.enonic.xp.util.BinaryReference;
 import com.enonic.xp.web.filter.OncePerRequestFilter;
 
 @Component(immediate = true, service = Filter.class, property = {"connector=xp"}, configurationPid = "com.enonic.app.booster")
-@Order(-199)
+@Order(-190)
 @WebFilter("/site/*")
 public class BoosterApp
     extends OncePerRequestFilter
@@ -120,31 +119,14 @@ public class BoosterApp
 
         final Map<String, Object> headers;
 
+        final String etag;
+
         final Instant cachedTime;
 
         final int contentLength;
 
-        CacheItem( final String url, final String contentType, final Map<String, Object> headers, final Instant cachedTime,
-                   final ByteArrayOutputStream data )
-        {
-            this.url = url;
-            this.contentType = contentType;
-            this.contentLength = data.size();
-            this.headers = headers;
-            this.cachedTime = cachedTime;
-            this.gzipData = new ByteArrayOutputStream();
-            try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream( gzipData ))
-            {
-                data.writeTo( gzipOutputStream );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        }
-
         public CacheItem( final String url, final String contentType, final Map<String, Object> headers, final Instant cachedTime,
-                          final int contentLength, final ByteArrayOutputStream gzipData )
+                          final int contentLength, final String etag, final ByteArrayOutputStream gzipData )
         {
             this.url = url;
             this.contentType = contentType;
@@ -152,6 +134,7 @@ public class BoosterApp
             this.cachedTime = cachedTime;
             this.contentLength = contentLength;
             this.gzipData = gzipData;
+            this.etag = etag;
         }
     }
 
@@ -162,14 +145,17 @@ public class BoosterApp
         // Browsers use GET then they visit pages. We don't want to cache anything else
         // If path contains /_/ it is a controller request. We don't cache them here at least for now.
         // Authorization header indicates, that request is personalized. Don't cache even if later response has cache-control 'public' to information leak do to misconfiguration
+        final String scheme = req.getScheme();
         final String method = req.getMethod();
+
         final String requestURI = req.getRequestURI();
         final boolean hasAuthorization = req.getHeader( "Authorization" ) != null;
         final boolean validSession = req.isRequestedSessionIdValid();
-        if ( !"GET".equals( method ) || requestURI.contains( "/_/" ) || hasAuthorization || validSession )
+        if ( !( scheme.equals( "http" ) || scheme.equals( "https" ) ) || !"GET".equals( method ) || requestURI.contains( "/_/" ) ||
+            hasAuthorization || validSession )
         {
-            LOG.debug( "Bypassing request. method {}, uri {}, has Authorization {}, validSession {}", method, requestURI, hasAuthorization,
-                       validSession );
+            LOG.debug( "Bypassing request. scheme {} method {}, uri {}, has Authorization {}, validSession {}", scheme, method, requestURI,
+                       hasAuthorization, validSession );
 
             chain.doFilter( req, res );
             return;
@@ -180,10 +166,10 @@ public class BoosterApp
         final String fullUrl = getFullURL( req );
 
         LOG.debug( "Normalized URL of reqest {}", fullUrl );
-        final String checksum = checksum( fullUrl );
+        final String key = checksum( fullUrl.getBytes( StandardCharsets.ISO_8859_1 ) );
         //final CacheItem cached = cache.get( sha256 );
 
-        final NodeId nodeId = NodeId.from( checksum );
+        final NodeId nodeId = NodeId.from( key );
         CacheItem cached = callInContext( () -> {
             LOG.debug( "Accessing cached response {}", nodeId );
 
@@ -201,6 +187,7 @@ public class BoosterApp
             final var headers = node.data().getSet( "headers" ).toMap();
             final String contentType = node.data().getString( "contentType" );
             final int contentLength = node.data().getLong( "contentLength" ).intValue();
+            final String etag = node.data().getString( "etag" );
             final String url = node.data().getString( "url" );
             final Instant cachedTime = node.data().getInstant( "cachedTime" );
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -216,7 +203,7 @@ public class BoosterApp
             }
 
             body.copyTo( outputStream );
-            return new CacheItem( url, contentType, headers, cachedTime, contentLength, outputStream );
+            return new CacheItem( url, contentType, headers, cachedTime, contentLength, etag, outputStream );
         } );
 
         if ( cached != null && cached.cachedTime.plus( cacheTtlSeconds, ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
@@ -225,33 +212,33 @@ public class BoosterApp
             cached = null;
         }
 
-        final boolean supportsGzip = supportsGzip( req );
-
-        if ( ( "\"" + checksum + ( supportsGzip ? "-gzip" : "" ) + "\"" ).equals( req.getHeader( "If-None-Match" ) ) )
-        {
-            LOG.debug( "Returning 304 Not Modified" );
-            res.setStatus( 304 );
-            return;
-        }
         // Report cache HIT or MISS. Header is not present if cache is not used
-        res.setHeader( "X-Booster-Cache", cached != null ? "HIT" : "MISS" );
+        res.setHeader( "x-booster-cache", cached != null ? "HIT" : "MISS" );
 
         if ( cached != null )
         {
             LOG.debug( "Found in cache" );
+            final boolean supportsGzip = supportsGzip( req );
 
             res.setContentType( cached.contentType );
 
             copyHeaders( res, cached );
 
-            res.addHeader( "Vary", "Accept-Encoding" );
+            res.addHeader( "vary", "Accept-Encoding" );
+            res.setHeader( "etag", "\"" + cached.etag + ( supportsGzip ? "-gzip" : "" ) + "\"" );
+
+            if ( ( "\"" + cached.etag + ( supportsGzip ? "-gzip" : "" ) + "\"" ).equals( req.getHeader( "If-None-Match" ) ) )
+            {
+                LOG.debug( "Returning 304 Not Modified" );
+                res.setStatus( 304 );
+                return;
+            }
 
             if ( supportsGzip )
             {
                 LOG.debug( "Request accepts gzip. Writing gzipped response body from cache" );
                 // Headers will tell Jetty to not apply compression, as it is done already
                 res.setHeader( "Content-Encoding", "gzip" );
-                res.setHeader( "etag", "\"" + checksum + "-gzip" + "\"" );
                 res.setContentLength( cached.gzipData.size() );
                 cached.gzipData.writeTo( res.getOutputStream() );
             }
@@ -260,7 +247,6 @@ public class BoosterApp
                 // we don't store decompressed data in cache as it is mostly waste of space
                 // we can recreate uncompressed response from compressed data
                 LOG.debug( "Request does not accept gzip. Writing plain response body from cache" );
-                res.setHeader( "etag", "\"" + checksum + "\"" );
                 res.setContentLength( cached.contentLength );
                 new GZIPInputStream( new ByteArrayInputStream( cached.gzipData.toByteArray() ) ).transferTo( res.getOutputStream() );
             }
@@ -349,13 +335,14 @@ public class BoosterApp
         }
         // site must have booster application
         final Site site = portalRequest.getSite();
-        if ( site == null) {
+        if ( site == null )
+        {
             LOG.debug( "Not cacheable because site is not set in portal request" );
             return;
         }
 
         final SiteConfig boosterConfig = site.getSiteConfigs().get( ApplicationKey.from( "com.enonic.app.booster" ) );
-        if ( boosterConfig  == null)
+        if ( boosterConfig == null )
         {
             LOG.debug( "Not cacheable because site does not have booster application" );
             return;
@@ -396,10 +383,13 @@ public class BoosterApp
         /*final CacheItem cachedItem =
             new CacheItem( sha256, servletResponse.getContentType(), servletResponse.headers, servletResponse.baos );*/
         runInContext( () -> {
+            final byte[] bytes = servletResponse.baos.toByteArray();
+
             final PropertyTree data = new PropertyTree();
             data.setString( "url", fullUrl );
             data.setString( "contentType", servletResponse.getContentType() );
             data.setLong( "contentLength", (long) servletResponse.baos.size() );
+            data.setString( "etag", checksum( bytes ) );
             data.setBinaryReference( "gzipData", BinaryReference.from( "data.gzip" ) );
             data.setString( "repo", portalRequest.getRepositoryId().toString() );
             data.setInstant( "cachedTime", Instant.now() );
@@ -418,8 +408,7 @@ public class BoosterApp
                 }
 
                 nodeService.update( UpdateNodeParams.create()
-                                        .attachBinary( BinaryReference.from( "data.gzip" ),
-                                                       ByteSource.wrap( servletResponse.baos.toByteArray() ) )
+                                        .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( bytes ) )
                                         .id( nodeId )
                                         .editor( editor -> {
                                             editor.data = data;
@@ -442,7 +431,7 @@ public class BoosterApp
                                                           .data( data )
                                                           .attachBinary( BinaryReference.from( "data.gzip" ),
                                                                          ByteSource.wrap( gzipData.toByteArray() ) )
-                                                          .name( checksum )
+                                                          .name( key )
                                                           .build() );
             }
         } );
@@ -587,29 +576,43 @@ public class BoosterApp
 
     public String getFullURL( final HttpServletRequest request )
     {
-        final StringBuffer urlBuilder = request.getRequestURL();
+        // rebuild the URL from the request
+        final String scheme = request.getScheme();             // http
+        final String serverName = ( request.getServerName().endsWith( "." )
+            ? request.getServerName().substring( 0, request.getServerName().length() - 1 )
+            : request.getServerName() ).toLowerCase( Locale.ROOT ); // hostname.com
+        final int serverPort = request.getServerPort();        // 80
+        final String path = request.getRequestURI().toLowerCase(Locale.ROOT);
 
-        final String queryString = request.getQueryString();
+        final var params = request.getParameterMap();// we only support GET requests, no POST data can sneak in.
 
-        if ( queryString != null )
+        final String queryString = params.isEmpty() ? "" :params.entrySet()
+            .stream()
+            .filter( entry -> !excludeQueryParams.contains( entry.getKey() ) )
+            .sorted( Map.Entry.comparingByKey() )
+            .flatMap( entry -> Arrays.stream( entry.getValue() ).map( value -> urlEscape( entry.getKey() ) + "=" + urlEscape( value ) ) )
+            .collect( Collectors.joining( "&" ) );
+
+        final StringBuilder urlBuilder = new StringBuilder();
+        urlBuilder.append( scheme ).append( "://" ).append( serverName );
+        if ( !( ( "http".equals( scheme ) && serverPort == 80 ) || ( "https".equals( scheme ) && serverPort == 443 ) ) )
         {
-            final String[] params = queryString.split( "&" );
-            final List<String> filteredParams =
-                Arrays.stream( params ).filter( p -> !excludeQueryParams.contains( p.split( "=" )[0] ) ).collect( Collectors.toList() );
-            if ( !filteredParams.isEmpty() )
-            {
-                urlBuilder.append( '?' ).append( String.join( "&", filteredParams ) );
-            }
+            urlBuilder.append( ":" ).append( serverPort );
+        }
+        urlBuilder.append( path );
+        if ( !queryString.isEmpty() )
+        {
+            urlBuilder.append( "?" ).append( queryString );
         }
 
         return urlBuilder.toString();
     }
 
-    public static String checksum( String value )
+    public static String checksum( byte[] value )
     {
         try
         {
-            final byte[] digest = MessageDigest.getInstance( "SHA-256" ).digest( value.getBytes( StandardCharsets.UTF_8 ) );
+            final byte[] digest = MessageDigest.getInstance( "SHA-256" ).digest( value );
             // Shorten the hash to sufficient 128 bits
             final byte[] truncated = Arrays.copyOf( digest, 16 );
             return HexFormat.of().formatHex( truncated );
@@ -647,10 +650,7 @@ public class BoosterApp
             throws IOException;
     }
 
-
-
-    private boolean matchesUrlPattern( final String pattern, boolean invert, final String relativePath,
-                                       final Map<String, String[]> params )
+    private boolean matchesUrlPattern( final String pattern, boolean invert, final String relativePath, final Map<String, String[]> params )
     {
         final boolean patternHasQueryParameters = pattern.contains( "\\?" );
         final boolean patternMatches = Pattern.compile( pattern )
@@ -659,7 +659,7 @@ public class BoosterApp
         return invert != patternMatches;
     }
 
-    private static String normalizedQueryParams( final Map<String, String[]> params )
+    private String normalizedQueryParams( final Map<String, String[]> params )
     {
         if ( params.isEmpty() )
         {
@@ -668,10 +668,12 @@ public class BoosterApp
 
         return params.entrySet()
             .stream()
+            .filter( entry -> !excludeQueryParams.contains( entry.getKey() ) )
             .sorted( Map.Entry.comparingByKey() )
             .flatMap( entry -> Arrays.stream( entry.getValue() ).map( value -> urlEscape( entry.getKey() ) + "=" + urlEscape( value ) ) )
             .collect( Collectors.joining( "&", "?", "" ) );
     }
+
     private static String urlEscape( final String value )
     {
         return UrlEscapers.urlFormParameterEscaper().escape( value );
