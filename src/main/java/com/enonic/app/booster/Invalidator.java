@@ -38,15 +38,15 @@ public class Invalidator
 {
     private static final Logger LOG = LoggerFactory.getLogger( Invalidator.class );
 
-    private final NodeService nodeService;
-
-    ScheduledExecutorService executorService = Executors.newScheduledThreadPool( 1 );
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool( 1 );
 
     private final TaskService taskService;
 
     volatile Set<String> repos = new HashSet<>();
 
     private volatile List<String> appList = List.of();
+
+    private volatile int cacheSize = 10_000;
 
     synchronized void addRepos( Collection<String> repo )
     {
@@ -61,13 +61,11 @@ public class Invalidator
     }
 
     @Activate
-    public Invalidator( @Reference final NodeService nodeService, @Reference final SchedulerService schedulerService, @Reference final CalendarService calendarService, @Reference
-                        IndexService indexService, @Reference TaskService taskService )
+    public Invalidator( @Reference TaskService taskService )
     {
-        this.nodeService = nodeService;
         this.taskService = taskService;
-        this.executorService = executorService;
         executorService.scheduleWithFixedDelay( () -> doCleanUp( exchange() ), 10, 10, TimeUnit.SECONDS );
+        executorService.scheduleWithFixedDelay( this::doCapped, 10, 10, TimeUnit.SECONDS );
 
 
 /*
@@ -97,6 +95,7 @@ public class Invalidator
     @Modified
     public void activate(final BoosterConfig config) {
         appList = Arrays.stream( config.appsInvalidateCacheOnStart().split( "," ) ).map( String::trim ).collect( Collectors.toList() );
+        cacheSize = config.cacheSize();
     }
     @Override
     public void onEvent( final Event event )
@@ -162,6 +161,25 @@ public class Invalidator
                                                               .data( config )
                                                               .build() );
             LOG.debug( "Cleanup task submitted {}", taskId );
+        }
+        catch ( Exception e )
+        {
+            LOG.error( "Task could not be submitted ", e );
+        }
+    }
+
+    private void doCapped( )
+    {
+        try
+        {
+            final PropertyTree config = new PropertyTree();
+            config.setLong( "cacheSize", (long) cacheSize );
+            final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
+                                                              .descriptorKey(
+                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-capped" ) )
+                                                              .data( config )
+                                                              .build() );
+            LOG.debug( "Capped task submitted {}", taskId );
         }
         catch ( Exception e )
         {

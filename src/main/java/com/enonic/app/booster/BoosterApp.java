@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -78,6 +79,8 @@ public class BoosterApp
     extends OncePerRequestFilter
 {
     private static final Logger LOG = LoggerFactory.getLogger( BoosterApp.class );
+
+    private static final Set<String> NOT_MODIFIED_HEADERS = Set.of( "cache-control", "content-location", "expires", "vary"); // Date, ETag are not in the list, because they are not controlled by Content controllers
 
     private final NodeService nodeService;
 
@@ -222,12 +225,15 @@ public class BoosterApp
 
             res.setContentType( cached.contentType );
 
-            copyHeaders( res, cached );
+            final boolean notModified =
+                ( "\"" + cached.etag + ( supportsGzip ? "-gzip" : "" ) + "\"" ).equals( req.getHeader( "If-None-Match" ) );
+
+            copyHeaders( res, cached, notModified );
 
             res.addHeader( "vary", "Accept-Encoding" );
             res.setHeader( "etag", "\"" + cached.etag + ( supportsGzip ? "-gzip" : "" ) + "\"" );
 
-            if ( ( "\"" + cached.etag + ( supportsGzip ? "-gzip" : "" ) + "\"" ).equals( req.getHeader( "If-None-Match" ) ) )
+            if ( notModified )
             {
                 LOG.debug( "Returning 304 Not Modified" );
                 res.setStatus( 304 );
@@ -438,10 +444,15 @@ public class BoosterApp
         //cache.put( sha256, cachedItem );
     }
 
-    private static void copyHeaders( final HttpServletResponse res, final CacheItem cached )
+    private static void copyHeaders( final HttpServletResponse res, final CacheItem cached, final boolean notModified )
     {
         for ( var o : cached.headers.entrySet() )
         {
+            if ( notModified && !NOT_MODIFIED_HEADERS.contains( o.getKey() ) )
+            {
+                continue;
+            }
+
             if ( o.getValue() instanceof String )
             {
                 res.setHeader( o.getKey(), (String) o.getValue() );

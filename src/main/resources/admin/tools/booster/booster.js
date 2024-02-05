@@ -2,22 +2,9 @@ var taskLib = require('/lib/xp/task');
 const projectLib = require('/lib/xp/project');
 
 exports.get = function (req) {
-    const projects = projectLib.list();
-
-    let checkboxesHtml = '<ul>';
-    for (let i = 0; i < projects.length; i++) {
-        checkboxesHtml += '<li><label><input type="checkbox" name="repos" value="' + 'com.enonic.cms.'+ projects[i].id + '">' + projects[i].displayName + '</label></li>';
-    }
-    checkboxesHtml += '</ul>'
 
     return {
-        body: '<form action="" method="post">' +
-              '<fieldset>' +
-              '<legend>repos</legend>' +
-              checkboxesHtml +
-              '</fieldset>' +
-              '<input type="submit" value="Submit">' +
-              '</form>',
+        body: drawForm(),
         contentType: 'text/html;charset=utf-8'
     }
 }
@@ -33,7 +20,25 @@ exports.post = function (req) {
         });
     }
     return {
-        body : taskId ? `<p>Task submitted ${taskId}</p>` : '<p>No task submitted</p>',
+        body : (taskId ? `<p>Task submitted ${taskId}</p>` : '<p>No task submitted</p>') + drawForm(),
         contentType: 'text/html;charset=utf-8'
     }
+}
+
+function drawForm() {
+    const projects = projectLib.list();
+
+    let checkboxesHtml = '<ul>';
+    for (let i = 0; i < projects.length; i++) {
+        checkboxesHtml += '<li><label><input type="checkbox" name="repos" value="' + 'com.enonic.cms.'+ projects[i].id + '">' + projects[i].displayName + '</label></li>';
+    }
+    checkboxesHtml += '</ul>'
+
+    return '<form action="" method="post">' +
+           '<fieldset>' +
+           '<legend>repos</legend>' +
+           checkboxesHtml +
+           '</fieldset>' +
+           '<input type="submit" value="Purge Cache">' +
+           '</form>';
 }

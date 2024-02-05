@@ -17,6 +17,7 @@ import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.FindNodesByQueryResult;
 import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeHits;
+import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
@@ -109,9 +110,41 @@ public class NodeCleanerBean
 
     }
 
+    public void deleteExcessNodes(int cacheSize)
+    {
+        runWithAdminRole( () -> {
+            LOG.debug( "Delete old nodes" );
+            final NodeQuery query = queryOldNodes( );
+            FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
+
+            final long diff = nodesToDelete.getTotalHits() - cacheSize;
+            if (diff <= 0) {
+                LOG.debug( "Fewer nodes than maximum allowed" );
+                return null;
+            }
+
+            final NodeHits nodeHits = nodesToDelete.getNodeHits();
+            for ( int i = 0; i < diff; i++ )
+            {
+                nodeService.delete( DeleteNodeParams.create().nodeId( nodeHits.get( i ).getNodeId() ).build() );
+            }
+           return null;
+        });
+    }
+
+    private NodeQuery queryOldNodes(  )
+    {
+        final NodeQuery.Builder builder = NodeQuery.create();
+
+        builder.parent( NodePath.ROOT ).addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) ).size( 10_000 );
+
+        return builder.build();
+    }
+
     private NodeQuery createQuery( Collection<String> repos, Instant cutOffTime )
     {
         final NodeQuery.Builder builder = NodeQuery.create();
+        builder.parent( NodePath.ROOT );
         if ( !repos.isEmpty() )
         {
             builder.addQueryFilter( ValueFilter.create().fieldName( "repo" ).addValues( repos ).build() );
