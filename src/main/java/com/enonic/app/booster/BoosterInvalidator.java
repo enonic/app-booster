@@ -22,21 +22,17 @@ import org.slf4j.LoggerFactory;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
-import com.enonic.xp.index.IndexService;
-import com.enonic.xp.node.NodeService;
 import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.project.ProjectConstants;
-import com.enonic.xp.scheduler.CalendarService;
-import com.enonic.xp.scheduler.SchedulerService;
 import com.enonic.xp.task.SubmitTaskParams;
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskService;
 
 @Component(immediate = true, configurationPid = "com.enonic.app.booster")
-public class Invalidator
+public class BoosterInvalidator
     implements EventListener
 {
-    private static final Logger LOG = LoggerFactory.getLogger( Invalidator.class );
+    private static final Logger LOG = LoggerFactory.getLogger( BoosterInvalidator.class );
 
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool( 1 );
 
@@ -61,29 +57,11 @@ public class Invalidator
     }
 
     @Activate
-    public Invalidator( @Reference TaskService taskService )
+    public BoosterInvalidator( @Reference TaskService taskService )
     {
         this.taskService = taskService;
         executorService.scheduleWithFixedDelay( () -> doCleanUp( exchange() ), 10, 10, TimeUnit.SECONDS );
         executorService.scheduleWithFixedDelay( this::doCapped, 10, 10, TimeUnit.SECONDS );
-
-
-/*
-        if (indexService.isMaster())
-        {
-            if (schedulerService.get( ScheduledJobName.from( "booster-node-cleaner" ) ) != null) {
-
-
-                schedulerService.create( CreateScheduledJobParams.create()
-                                             .name( ScheduledJobName.from( "booster-node-cleaner" ) )
-                                             .description( "Clean up project nodes" )
-                                             .calendar( calendarService.cron( "0 0/10 * * * ?", TimeZone.getTimeZone( ZoneOffset.UTC ) ) )
-                                             .descriptor(  )
-                                             .config( config )
-                                             .build() );
-            }
-        }
-*/
     }
 
     @Deactivate

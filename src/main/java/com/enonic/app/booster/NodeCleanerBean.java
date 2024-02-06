@@ -3,15 +3,10 @@ package com.enonic.app.booster;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.enonic.xp.branch.Branch;
-import com.enonic.xp.context.Context;
-import com.enonic.xp.context.ContextAccessor;
-import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.ValueFactory;
 import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.FindNodesByQueryResult;
@@ -25,11 +20,8 @@ import com.enonic.xp.query.expr.FieldOrderExpr;
 import com.enonic.xp.query.expr.OrderExpr;
 import com.enonic.xp.query.filter.RangeFilter;
 import com.enonic.xp.query.filter.ValueFilter;
-import com.enonic.xp.repository.RepositoryId;
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
-import com.enonic.xp.security.RoleKeys;
-import com.enonic.xp.security.auth.AuthenticationInfo;
 
 public class NodeCleanerBean
     implements ScriptBean
@@ -48,7 +40,7 @@ public class NodeCleanerBean
     {
         Instant cutOffTime = Instant.now();
 
-        runWithAdminRole( () -> {
+        BoosterContext.runInContext( () -> {
             LOG.debug( "Invalidating cache for repositories {}", repos );
             final NodeQuery query = createQuery( repos, cutOffTime );
 
@@ -73,14 +65,13 @@ public class NodeCleanerBean
                 hits = nodesToDelete.getHits();
             }
             LOG.debug( "Done invalidating cache for repositories {}", repos );
-            return null;
         } );
     }
 
     public void invalidateAll()
     {
         Instant cutOffTime = Instant.now();
-        runWithAdminRole( () -> {
+        BoosterContext.runInContext( () -> {
             LOG.debug( "Invalidating all" );
             final NodeQuery query = createQuery( List.of(), cutOffTime );
 
@@ -105,14 +96,13 @@ public class NodeCleanerBean
                 hits = nodesToDelete.getHits();
             }
             LOG.debug( "Done invalidating all" );
-            return null;
         } );
 
     }
 
     public void deleteExcessNodes(int cacheSize)
     {
-        runWithAdminRole( () -> {
+        BoosterContext.runInContext( () -> {
             LOG.debug( "Delete old nodes" );
             final NodeQuery query = queryOldNodes( );
             FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
@@ -120,7 +110,7 @@ public class NodeCleanerBean
             final long diff = nodesToDelete.getTotalHits() - cacheSize;
             if (diff <= 0) {
                 LOG.debug( "Fewer nodes than maximum allowed" );
-                return null;
+                return;
             }
 
             final NodeHits nodeHits = nodesToDelete.getNodeHits();
@@ -128,7 +118,6 @@ public class NodeCleanerBean
             {
                 nodeService.delete( DeleteNodeParams.create().nodeId( nodeHits.get( i ).getNodeId() ).build() );
             }
-           return null;
         });
     }
 
@@ -157,16 +146,5 @@ public class NodeCleanerBean
         return builder.build();
     }
 
-    private <T> T runWithAdminRole( final Callable<T> callable )
-    {
-        final Context context = ContextAccessor.current();
-        final AuthenticationInfo authenticationInfo =
-            AuthenticationInfo.copyOf( context.getAuthInfo() ).principals( RoleKeys.ADMIN ).build();
-        return ContextBuilder.from( context )
-            .authInfo( authenticationInfo )
-            .repositoryId( RepositoryId.from( "booster" ) )
-            .branch( Branch.from( "master" ) )
-            .build()
-            .callWith( callable );
-    }
+
 }
