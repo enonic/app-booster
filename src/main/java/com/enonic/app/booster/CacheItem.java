@@ -1,8 +1,9 @@
 package com.enonic.app.booster;
 
-import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.util.Map;
+
+import com.enonic.app.booster.io.BytesWriter;
 
 public class CacheItem
 {
@@ -10,7 +11,7 @@ public class CacheItem
 
     final String contentType;
 
-    final ByteArrayOutputStream gzipData;
+    final BytesWriter gzipData;
 
     final Map<String, String[]> headers;
 
@@ -21,14 +22,14 @@ public class CacheItem
     final int contentLength;
 
     public CacheItem( final String url, final String contentType, final Map<String, String[]> headers, final Instant cachedTime,
-                      final int contentLength, final String etag, final ByteArrayOutputStream gzipData )
+                      final int contentLength, final String etag, final BytesWriter gzipData )
     {
         this.url = url;
         this.contentType = contentType;
         this.headers = headers;
         this.cachedTime = cachedTime;
         this.contentLength = contentLength;
-        this.gzipData = gzipData;
         this.etag = etag;
+        this.gzipData = gzipData;
     }
 }

@@ -1,6 +1,5 @@
 package com.enonic.app.booster;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Set;
@@ -56,7 +55,8 @@ public class ResponseWriter
             // we can recreate uncompressed response from compressed data
             LOG.debug( "Request does not accept gzip. Writing plain response body from cache" );
             response.setContentLength( cached.contentLength );
-            new GZIPInputStream( new ByteArrayInputStream( cached.gzipData.toByteArray() ) ).transferTo( response.getOutputStream() );
+
+            new GZIPInputStream( cached.gzipData.openStream() ).transferTo( response.getOutputStream() );
         }
     }
 

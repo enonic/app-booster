@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.escape.Escaper;
 import com.google.common.net.UrlEscapers;
 
+import com.enonic.app.booster.io.BytesWriter;
+import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.branch.Branch;
@@ -251,7 +253,7 @@ public class BoosterRequestFilter
             return;
         }
         cacheStore.put( cacheKey, fullUrl, cachingResponse.getContentType(), cachingResponse.headers, portalRequest.getRepositoryId().toString(),
-                            new BitesWriter( cachingResponse.body ) );
+                        BytesWriter.of( cachingResponse.body ) );
     }
 
 

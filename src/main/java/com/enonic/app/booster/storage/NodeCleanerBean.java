@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.storage;
 
 import java.time.Instant;
 import java.util.Collection;

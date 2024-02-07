@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.storage;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,6 +19,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.enonic.app.booster.BoosterConfig;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
@@ -38,7 +39,7 @@ public class BoosterInvalidator
 
     private final TaskService taskService;
 
-    volatile Set<String> repos = new HashSet<>();
+    private volatile Set<String> repos = new HashSet<>();
 
     private volatile List<String> appList = List.of();
 

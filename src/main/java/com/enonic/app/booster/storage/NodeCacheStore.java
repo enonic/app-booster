@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.storage;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.io.ByteSource;
 
+import com.enonic.app.booster.CacheItem;
+import com.enonic.app.booster.MessageDigests;
+import com.enonic.app.booster.io.BytesWriter;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
@@ -69,7 +72,6 @@ public class NodeCacheStore
             final String etag = node.data().getString( "etag" );
             final String url = node.data().getString( "url" );
             final Instant cachedTime = node.data().getInstant( "cachedTime" );
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             final ByteSource body;
             try
             {
@@ -81,13 +83,12 @@ public class NodeCacheStore
                 return null;
             }
 
-            body.copyTo( outputStream );
-            return new CacheItem( url, contentType, headers, cachedTime, contentLength, etag, outputStream );
+            return new CacheItem( url, contentType, headers, cachedTime, contentLength, etag, BytesWriter.of( body ) );
         } );
     }
 
     public void put( final String cacheKey, final String fullUrl, final String contentType, final Map<String, String[]> headers, final String repo,
-                     BitesWriter bytes )
+                     BytesWriter bytes )
     {
         final NodeId nodeId = NodeId.from( cacheKey );
 
@@ -119,30 +120,45 @@ public class NodeCacheStore
             {
                 LOG.debug( "Updating existing cache node {}", nodeId );
 
-                nodeService.update( UpdateNodeParams.create()
-                                        .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
-                                        .id( nodeId )
-                                        .editor( editor -> editor.data = data )
-                                        .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
-                                        .build() );
+                try
+                {
+                    nodeService.update( UpdateNodeParams.create()
+                                            .id( nodeId )
+                                            .editor( editor -> editor.data = data )
+                                            .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
+                                            .build() );
+                }
+                catch ( Exception e )
+                {
+                    LOG.debug( "Cannot update node {}", nodeId, e );
+                }
             }
             else
             {
                 LOG.debug( "Creating new cache node {}", nodeId );
-                nodeService.create( CreateNodeParams.create()
-                                        .parent( NodePath.ROOT )
-                                        .setNodeId( nodeId )
-                                        .data( data )
-                                        .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
-                                        .name( cacheKey )
-                                        .build() );
+                try
+                {
+                    nodeService.create( CreateNodeParams.create()
+                                            .parent( NodePath.ROOT )
+                                            .setNodeId( nodeId )
+                                            .data( data )
+                                            .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
+                                            .name( cacheKey )
+                                            .build() );
+                }
+                catch ( Exception e )
+                {
+                    LOG.debug( "Cannot create node {}", nodeId, e );
+                }
             }
         } );
     }
 
     public String generateCacheKey( final String url )
     {
-        return MessageDigests.sha256_128( ( url ).getBytes( StandardCharsets.ISO_8859_1 ) );
+        final byte[] digest = MessageDigests.sha256().digest( ( url ).getBytes( StandardCharsets.ISO_8859_1 ) );
+        final byte[] truncated = Arrays.copyOf( digest, 16 );
+        return HexFormat.of().formatHex( truncated );
     }
 
     private Map<String, String[]> adaptHeaders( final Map<String, Object> headers )

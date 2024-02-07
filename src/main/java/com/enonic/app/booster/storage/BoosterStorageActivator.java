@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.storage;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -10,12 +10,12 @@ import com.enonic.xp.repository.CreateRepositoryParams;
 import com.enonic.xp.repository.RepositoryService;
 
 @Component(immediate = true)
-public class BoosterActivator
+public class BoosterStorageActivator
 {
-    private static final Logger LOG = LoggerFactory.getLogger( BoosterRequestFilter.class );
+    private static final Logger LOG = LoggerFactory.getLogger( BoosterStorageActivator.class );
 
     @Activate
-    public BoosterActivator( @Reference final RepositoryService repositoryService )
+    public BoosterStorageActivator( @Reference final RepositoryService repositoryService )
     {
         try
         {
@@ -26,6 +26,5 @@ public class BoosterActivator
         {
             LOG.debug( "Repository is probably already exists", e );
         }
-
     }
 }
