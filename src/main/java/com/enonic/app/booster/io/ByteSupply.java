@@ -9,31 +9,32 @@ import java.io.UncheckedIOException;
 
 import com.google.common.io.ByteSource;
 
-public abstract class BytesWriter
+public abstract class ByteSupply
 {
     public abstract int size();
 
     public abstract void writeTo( final OutputStream out )
         throws IOException;
 
-    public abstract InputStream openStream();
+    public abstract InputStream openStream()
+        throws IOException;
 
-    public static BytesWriter of( final ByteArrayOutputStream baos )
+    public static ByteSupply of( final ByteArrayOutputStream baos )
     {
-        return new BaosBytes( baos );
+        return new BaosByteSupply( baos );
     }
 
-    public static BytesWriter of( final ByteSource byteSource )
+    public static ByteSupply of( final ByteSource byteSource )
     {
-        return new ByteSourceBytes( byteSource );
+        return new ByteSourceByteSupply( byteSource );
     }
 
-    private static final class BaosBytes
-        extends BytesWriter
+    private static final class BaosByteSupply
+        extends ByteSupply
     {
         final ByteArrayOutputStream baos;
 
-        public BaosBytes( final ByteArrayOutputStream baos )
+        public BaosByteSupply( final ByteArrayOutputStream baos )
         {
             this.baos = baos;
         }
@@ -58,12 +59,12 @@ public abstract class BytesWriter
         }
     }
 
-    private static final class ByteSourceBytes
-        extends BytesWriter
+    private static final class ByteSourceByteSupply
+        extends ByteSupply
     {
         final ByteSource byteSource;
 
-        public ByteSourceBytes( final ByteSource byteSource )
+        public ByteSourceByteSupply( final ByteSource byteSource )
         {
             this.byteSource = byteSource;
         }
@@ -89,15 +90,10 @@ public abstract class BytesWriter
         }
 
         @Override
-        public InputStream openStream() {
-            try
-            {
+        public InputStream openStream()
+            throws IOException
+        {
                 return byteSource.openStream();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
         }
     }
 }

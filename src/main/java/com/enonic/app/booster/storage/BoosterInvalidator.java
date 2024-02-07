@@ -1,6 +1,5 @@
 package com.enonic.app.booster.storage;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -20,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.BoosterConfig;
+import com.enonic.app.booster.BoosterConfigParsed;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
@@ -41,9 +40,7 @@ public class BoosterInvalidator
 
     private volatile Set<String> repos = new HashSet<>();
 
-    private volatile List<String> appList = List.of();
-
-    private volatile int cacheSize = 10_000;
+    private volatile BoosterConfigParsed config;
 
     synchronized void addRepos( Collection<String> repo )
     {
@@ -66,16 +63,18 @@ public class BoosterInvalidator
     }
 
     @Deactivate
-    public void deactivate() {
+    public void deactivate()
+    {
         executorService.shutdownNow();
     }
 
     @Activate
     @Modified
-    public void activate(final BoosterConfig config) {
-        appList = Arrays.stream( config.appsInvalidateCacheOnStart().split( "," ) ).map( String::trim ).collect( Collectors.toList() );
-        cacheSize = config.cacheSize();
+    public void activate( final BoosterConfig config )
+    {
+        this.config = BoosterConfigParsed.parse( config );
     }
+
     @Override
     public void onEvent( final Event event )
     {
@@ -97,7 +96,9 @@ public class BoosterInvalidator
             }
         }
 
-        if (type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) && appList.contains( event.getData().get( "applicationKey" ) ) ) {
+        if ( type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) &&
+            config.appList().contains( event.getData().get( "applicationKey" ) ) )
+        {
             doInvalidateAll();
         }
 
@@ -113,7 +114,8 @@ public class BoosterInvalidator
                     {
 
                         final boolean added = repos.add( repo );
-                        if (added) {
+                        if ( added )
+                        {
                             LOG.debug( "Added repo {} to cleanup list due to event {}", repo, event.getType() );
                         }
                     }
@@ -132,12 +134,12 @@ public class BoosterInvalidator
             {
                 return;
             }
-            final PropertyTree config = new PropertyTree();
-            config.addStrings( "repos", repos );
+            final PropertyTree data = new PropertyTree();
+            data.addStrings( "repos", repos );
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
                                                               .descriptorKey(
                                                                   DescriptorKey.from( "com.enonic.app.booster:booster-node-cleaner" ) )
-                                                              .data( config )
+                                                              .data( data )
                                                               .build() );
             LOG.debug( "Cleanup task submitted {}", taskId );
         }
@@ -147,16 +149,16 @@ public class BoosterInvalidator
         }
     }
 
-    private void doCapped( )
+    private void doCapped()
     {
         try
         {
-            final PropertyTree config = new PropertyTree();
-            config.setLong( "cacheSize", (long) cacheSize );
+            final PropertyTree data = new PropertyTree();
+            data.setLong( "cacheSize", (long) config.cacheSize() );
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
                                                               .descriptorKey(
                                                                   DescriptorKey.from( "com.enonic.app.booster:booster-capped" ) )
-                                                              .data( config )
+                                                              .data( data )
                                                               .build() );
             LOG.debug( "Capped task submitted {}", taskId );
         }
@@ -166,7 +168,8 @@ public class BoosterInvalidator
         }
     }
 
-    private void doInvalidateAll() {
+    private void doInvalidateAll()
+    {
         try
         {
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()

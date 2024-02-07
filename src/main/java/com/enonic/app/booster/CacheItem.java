@@ -3,33 +3,9 @@ package com.enonic.app.booster;
 import java.time.Instant;
 import java.util.Map;
 
-import com.enonic.app.booster.io.BytesWriter;
+import com.enonic.app.booster.io.ByteSupply;
 
-public class CacheItem
+public record CacheItem(String url, String contentType, Map<String, String[]> headers, Instant cachedTime, int contentLength, String etag,
+                        ByteSupply gzipData)
 {
-    final String url;
-
-    final String contentType;
-
-    final BytesWriter gzipData;
-
-    final Map<String, String[]> headers;
-
-    final String etag;
-
-    final Instant cachedTime;
-
-    final int contentLength;
-
-    public CacheItem( final String url, final String contentType, final Map<String, String[]> headers, final Instant cachedTime,
-                      final int contentLength, final String etag, final BytesWriter gzipData )
-    {
-        this.url = url;
-        this.contentType = contentType;
-        this.headers = headers;
-        this.cachedTime = cachedTime;
-        this.contentLength = contentLength;
-        this.etag = etag;
-        this.gzipData = gzipData;
-    }
 }

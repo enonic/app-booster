@@ -21,7 +21,7 @@ import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.MessageDigests;
-import com.enonic.app.booster.io.BytesWriter;
+import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
@@ -83,12 +83,12 @@ public class NodeCacheStore
                 return null;
             }
 
-            return new CacheItem( url, contentType, headers, cachedTime, contentLength, etag, BytesWriter.of( body ) );
+            return new CacheItem( url, contentType, headers, cachedTime, contentLength, etag, ByteSupply.of( body ) );
         } );
     }
 
     public void put( final String cacheKey, final String fullUrl, final String contentType, final Map<String, String[]> headers, final String repo,
-                     BytesWriter bytes )
+                     ByteSupply bytes )
     {
         final NodeId nodeId = NodeId.from( cacheKey );
 

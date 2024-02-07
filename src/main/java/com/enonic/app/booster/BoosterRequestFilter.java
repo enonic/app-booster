@@ -2,13 +2,11 @@ package com.enonic.app.booster;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -33,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.escape.Escaper;
 import com.google.common.net.UrlEscapers;
 
-import com.enonic.app.booster.io.BytesWriter;
+import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.app.ApplicationKey;
@@ -56,9 +54,7 @@ public class BoosterRequestFilter
 
     private final NodeCacheStore cacheStore;
 
-    private volatile long cacheTtlSeconds = Long.MAX_VALUE;
-
-    private volatile List<String> excludeQueryParams = List.of();
+    private volatile BoosterConfigParsed config;
 
     @Activate
     public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore )
@@ -70,9 +66,7 @@ public class BoosterRequestFilter
     @Modified
     public void activate( final BoosterConfig config )
     {
-        cacheTtlSeconds =
-            ( config.cacheTtl() == null || config.cacheTtl().isBlank() ) ? Long.MAX_VALUE : Duration.parse( config.cacheTtl() ).toSeconds();
-        excludeQueryParams = Arrays.stream( config.excludeQueryParams().split( "," ) ).map( String::trim ).collect( Collectors.toList() );
+        this.config = BoosterConfigParsed.parse( config );
     }
 
     @Override
@@ -108,14 +102,17 @@ public class BoosterRequestFilter
 
         CacheItem cached = cacheStore.get( cacheKey );
 
-        if ( cached != null && cached.cachedTime.plus( cacheTtlSeconds, ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
+        if ( cached != null && cached.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
         {
             LOG.debug( "Cached response is found but stale" );
             cached = null;
         }
 
-        // Report cache HIT or MISS. Header is not present if cache is not used
-        response.setHeader( "x-booster-cache", cached != null ? "HIT" : "MISS" );
+        if ( !config.disableXBoosterCacheHeader() )
+        {
+            // Report cache HIT or MISS. Header is not present if cache is not used
+            response.setHeader( "x-booster-cache", cached != null ? "HIT" : "MISS" );
+        }
 
         if ( cached != null )
         {
@@ -252,8 +249,8 @@ public class BoosterRequestFilter
             LOG.debug( "Not cacheable because of site engine branch is {}", requestBranch );
             return;
         }
-        cacheStore.put( cacheKey, fullUrl, cachingResponse.getContentType(), cachingResponse.headers, portalRequest.getRepositoryId().toString(),
-                        BytesWriter.of( cachingResponse.body ) );
+        cacheStore.put( cacheKey, fullUrl, cachingResponse.getContentType(), cachingResponse.headers,
+                        portalRequest.getRepositoryId().toString(), ByteSupply.of( cachingResponse.body ) );
     }
 
 
@@ -359,7 +356,7 @@ public class BoosterRequestFilter
         final Escaper urlEscaper = UrlEscapers.urlFormParameterEscaper();
         return params.entrySet()
             .stream()
-            .filter( entry -> !excludeQueryParams.contains( entry.getKey() ) )
+            .filter( entry -> !config.excludeQueryParams().contains( entry.getKey() ) )
             .sorted( Map.Entry.comparingByKey() )
             .flatMap( entry -> Arrays.stream( entry.getValue() )
                 .map( value -> urlEscaper.escape( entry.getKey() ) + "=" + urlEscaper.escape( value ) ) )

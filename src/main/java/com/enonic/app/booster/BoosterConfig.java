@@ -8,5 +8,7 @@ public @interface BoosterConfig
 
     String appsInvalidateCacheOnStart() default "";
 
-    String excludeQueryParams() default ""; //fbclid,_ga,utm_source,utm_medium,utm_campaign,utm_content,utm_term
+    String excludeQueryParams() default "";
+
+    boolean disableXBoosterCacheHeader() default false;
 }

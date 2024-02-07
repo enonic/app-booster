@@ -23,9 +23,9 @@ public class ResponseWriter
     {
         final boolean supportsGzip = supportsGzip( request );
 
-        response.setContentType( cached.contentType );
+        response.setContentType( cached.contentType() );
 
-        final String eTagValue = "\"" + cached.etag + ( supportsGzip ? "-gzip" : "" ) + "\"";
+        final String eTagValue = "\"" + cached.etag() + ( supportsGzip ? "-gzip" : "" ) + "\"";
 
         final boolean notModified = eTagValue.equals( request.getHeader( "If-None-Match" ) );
 
@@ -46,23 +46,23 @@ public class ResponseWriter
             LOG.debug( "Request accepts gzip. Writing gzipped response body from cache" );
             // Headers will tell Jetty to not apply compression, as it is done already
             response.setHeader( "Content-Encoding", "gzip" );
-            response.setContentLength( cached.gzipData.size() );
-            cached.gzipData.writeTo( response.getOutputStream() );
+            response.setContentLength( cached.gzipData().size() );
+            cached.gzipData().writeTo( response.getOutputStream() );
         }
         else
         {
             // we don't store decompressed data in cache as it is mostly waste of space
             // we can recreate uncompressed response from compressed data
             LOG.debug( "Request does not accept gzip. Writing plain response body from cache" );
-            response.setContentLength( cached.contentLength );
+            response.setContentLength( cached.contentLength() );
 
-            new GZIPInputStream( cached.gzipData.openStream() ).transferTo( response.getOutputStream() );
+            new GZIPInputStream( cached.gzipData().openStream() ).transferTo( response.getOutputStream() );
         }
     }
 
     private static void copyHeaders( final HttpServletResponse res, final CacheItem cached, final boolean notModified )
     {
-        for ( var o : cached.headers.entrySet() )
+        for ( var o : cached.headers().entrySet() )
         {
             if ( notModified && !NOT_MODIFIED_HEADERS.contains( o.getKey() ) )
             {
