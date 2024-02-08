@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
@@ -65,13 +66,14 @@ public class NodeCacheStore
                 return null;
             }
 
-            final Map<String, String[]> headers = adaptHeaders( node.data().getSet( "headers" ).toMap() );
+            final var headers = adaptHeaders( node.data().getSet( "headers" ).toMap() );
 
             final String contentType = node.data().getString( "contentType" );
             final int contentLength = node.data().getLong( "contentLength" ).intValue();
             final String etag = node.data().getString( "etag" );
             final String url = node.data().getString( "url" );
             final Instant cachedTime = node.data().getInstant( "cachedTime" );
+            final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
             final ByteSource body;
             try
             {
@@ -83,12 +85,12 @@ public class NodeCacheStore
                 return null;
             }
 
-            return new CacheItem( url, contentType, headers, cachedTime, contentLength, etag, ByteSupply.of( body ) );
+            return new CacheItem( url, contentType, headers, cachedTime, invalidatedTime, contentLength, etag, ByteSupply.of( body ) );
         } );
     }
 
-    public void put( final String cacheKey, final String fullUrl, final String contentType, final Map<String, String[]> headers, final String repo,
-                     ByteSupply bytes )
+    public void put( final String cacheKey, final String fullUrl, final String contentType,
+                     final Map<String, ? extends Collection<String>> headers, final String repo, ByteSupply bytes )
     {
         final NodeId nodeId = NodeId.from( cacheKey );
 
@@ -161,20 +163,20 @@ public class NodeCacheStore
         return HexFormat.of().formatHex( truncated );
     }
 
-    private Map<String, String[]> adaptHeaders( final Map<String, Object> headers )
+    private Map<String, List<String>> adaptHeaders( final Map<String, Object> headers )
     {
-        final LinkedHashMap<String, String[]> result = new LinkedHashMap<>();
+        final LinkedHashMap<String, List<String>> result = new LinkedHashMap<>();
         for ( Map.Entry<String, Object> stringObjectEntry : headers.entrySet() )
         {
             final String key = stringObjectEntry.getKey();
             final Object value = stringObjectEntry.getValue();
-            if ( value instanceof Collection<?> )
+            if ( value instanceof Collection )
             {
-                result.put( key, ( (Collection<String>) value ).toArray( String[]::new ) );
+                result.put( key, List.copyOf( (Collection<String>) value ) );
             }
             else if ( value instanceof String )
             {
-                result.put( key, new String[]{(String) value} );
+                result.put( key, List.of( (String) value ) );
             }
         }
         return result;

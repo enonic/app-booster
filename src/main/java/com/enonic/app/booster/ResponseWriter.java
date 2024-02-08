@@ -1,6 +1,8 @@
 package com.enonic.app.booster;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -11,33 +13,43 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ResponseWriter
+public final class ResponseWriter
 {
     private static final Logger LOG = LoggerFactory.getLogger( ResponseWriter.class );
 
     private static final Set<String> NOT_MODIFIED_HEADERS = Set.of( "cache-control", "content-location", "expires", "vary" );
-    // Date, ETag are not in the list, because they are not controlled by Content controllers
 
-    public static void writeCached( final HttpServletRequest request, final HttpServletResponse response, final CacheItem cached )
+    private static final Set<String> CONTROLLED_HEADERS = Set.of( "age", "x-booster-cache", "etag", "content-type", "content-length" );
+
+    private ResponseWriter()
+    {
+    }
+
+    public static void writeCached( final HttpServletRequest request, final HttpServletResponse response, final CacheItem cached, boolean preventDownstreamCaching )
         throws IOException
     {
-        final boolean supportsGzip = supportsGzip( request );
-
         response.setContentType( cached.contentType() );
 
+        final boolean supportsGzip = supportsGzip( request );
         final String eTagValue = "\"" + cached.etag() + ( supportsGzip ? "-gzip" : "" ) + "\"";
 
         final boolean notModified = eTagValue.equals( request.getHeader( "If-None-Match" ) );
 
         copyHeaders( response, cached, notModified );
 
-        response.addHeader( "vary", "Accept-Encoding" );
-        response.setHeader( "etag", eTagValue );
+        if ( preventDownstreamCaching)
+        {
+            LOG.debug( "Prevent downstream caching" );
+            response.setHeader( "Cache-Control", "no-store" );
+        }
 
+        response.addHeader( "Vary", "Accept-Encoding" );
+        response.setHeader( "Etag", eTagValue );
+        response.setIntHeader( "Age", (int) ( Instant.now().getEpochSecond() - cached.cachedTime().getEpochSecond()) );
         if ( notModified )
         {
             LOG.debug( "Returning 304 Not Modified" );
-            response.setStatus( 304 );
+            response.sendError( 304 );
             return;
         }
 
@@ -62,17 +74,18 @@ public class ResponseWriter
 
     private static void copyHeaders( final HttpServletResponse res, final CacheItem cached, final boolean notModified )
     {
-        for ( var o : cached.headers().entrySet() )
+        for ( var entry : cached.headers().entrySet() )
         {
-            if ( notModified && !NOT_MODIFIED_HEADERS.contains( o.getKey() ) )
+            final String headerName = entry.getKey();
+            if ( CONTROLLED_HEADERS.contains( headerName ) )
             {
                 continue;
             }
-            final String[] strings = o.getValue();
-            for ( String string : strings )
+            if ( notModified && !NOT_MODIFIED_HEADERS.contains( headerName ) )
             {
-                res.addHeader( o.getKey(), string );
+                continue;
             }
+            entry.getValue().forEach( string -> res.addHeader( headerName, string ) );
         }
     }
 

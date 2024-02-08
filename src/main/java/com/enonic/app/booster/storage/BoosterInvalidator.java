@@ -99,7 +99,7 @@ public class BoosterInvalidator
         if ( type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) &&
             config.appList().contains( event.getData().get( "applicationKey" ) ) )
         {
-            doInvalidateAll();
+            doPurgeAll();
         }
 
         if ( type.equals( "node.pushed" ) || type.equals( "node.deleted" ) )
@@ -168,16 +168,16 @@ public class BoosterInvalidator
         }
     }
 
-    private void doInvalidateAll()
+    private void doPurgeAll()
     {
         try
         {
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
                                                               .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-invalidate-all" ) )
+                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-purge-all" ) )
                                                               .data( new PropertyTree() )
                                                               .build() );
-            LOG.debug( "Invalidate all task submitted {}", taskId );
+            LOG.debug( "Purge all task submitted {}", taskId );
         }
         catch ( Exception e )
         {

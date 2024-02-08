@@ -11,4 +11,6 @@ public @interface BoosterConfig
     String excludeQueryParams() default "";
 
     boolean disableXBoosterCacheHeader() default false;
+
+    boolean preventDownstreamCaching() default false;
 }
