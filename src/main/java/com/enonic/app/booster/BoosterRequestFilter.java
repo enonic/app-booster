@@ -52,8 +52,6 @@ public class BoosterRequestFilter
     protected void doHandle( final HttpServletRequest request, final HttpServletResponse response, final FilterChain chain )
         throws Exception
     {
-        final Instant now = Instant.now();
-
         final Conditions conditions = new Conditions( config );
 
         if ( !conditions.checkPreconditions( request ) )
@@ -74,7 +72,7 @@ public class BoosterRequestFilter
         final CacheItem cached;
         if ( stored != null )
         {
-            if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( now ) )
+            if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
             {
                 LOG.debug( "Cached response is found but stale" );
                 cached = null;
@@ -103,7 +101,7 @@ public class BoosterRequestFilter
         if ( cached != null )
         {
             LOG.debug( "Found in cache" );
-            ResponseWriter.writeCached( request, response, cached, config.preventDownstreamCaching() );
+            new ResponseWriter( config ).writeCached( request, response, cached );
             return;
         }
 

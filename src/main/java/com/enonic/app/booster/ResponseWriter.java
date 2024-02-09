@@ -2,7 +2,6 @@ package com.enonic.app.booster;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -21,11 +20,14 @@ public final class ResponseWriter
 
     private static final Set<String> CONTROLLED_HEADERS = Set.of( "age", "x-booster-cache", "etag", "content-type", "content-length" );
 
-    private ResponseWriter()
+    private final BoosterConfigParsed config;
+
+    public ResponseWriter( BoosterConfigParsed config )
     {
+        this.config = config;
     }
 
-    public static void writeCached( final HttpServletRequest request, final HttpServletResponse response, final CacheItem cached, boolean preventDownstreamCaching )
+    public void writeCached( final HttpServletRequest request, final HttpServletResponse response, final CacheItem cached )
         throws IOException
     {
         response.setContentType( cached.contentType() );
@@ -37,7 +39,7 @@ public final class ResponseWriter
 
         copyHeaders( response, cached, notModified );
 
-        if ( preventDownstreamCaching)
+        if ( config.preventDownstreamCaching() )
         {
             LOG.debug( "Prevent downstream caching" );
             response.setHeader( "Cache-Control", "no-store" );
@@ -45,7 +47,7 @@ public final class ResponseWriter
 
         response.addHeader( "Vary", "Accept-Encoding" );
         response.setHeader( "Etag", eTagValue );
-        response.setIntHeader( "Age", (int) ( Instant.now().getEpochSecond() - cached.cachedTime().getEpochSecond()) );
+        response.setIntHeader( "Age", (int) ( Instant.now().getEpochSecond() - cached.cachedTime().getEpochSecond() ) );
         if ( notModified )
         {
             LOG.debug( "Returning 304 Not Modified" );
@@ -55,20 +57,36 @@ public final class ResponseWriter
 
         if ( supportsGzip )
         {
-            LOG.debug( "Request accepts gzip. Writing gzipped response body from cache" );
+            LOG.debug( "Request accepts gzip. Set correct gzip headers" );
             // Headers will tell Jetty to not apply compression, as it is done already
             response.setHeader( "Content-Encoding", "gzip" );
             response.setContentLength( cached.gzipData().size() );
-            cached.gzipData().writeTo( response.getOutputStream() );
         }
         else
         {
             // we don't store decompressed data in cache as it is mostly waste of space
             // we can recreate uncompressed response from compressed data
-            LOG.debug( "Request does not accept gzip. Writing plain response body from cache" );
+            LOG.debug( "Request does not accept gzip. Set correct headers" );
             response.setContentLength( cached.contentLength() );
+        }
 
-            new GZIPInputStream( cached.gzipData().openStream() ).transferTo( response.getOutputStream() );
+        final boolean headRequest = request.getMethod().equalsIgnoreCase( "HEAD" );
+        if ( !headRequest )
+        {
+            LOG.debug( "Writing cached response body" );
+            if ( supportsGzip )
+            {
+                cached.gzipData().writeTo( response.getOutputStream() );
+            }
+            else
+            {
+                new GZIPInputStream( cached.gzipData().openStream() ).transferTo( response.getOutputStream() );
+            }
+        } else {
+            LOG.debug( "Request method is HEAD. Don't write cached body" );
+
+            // Make sure Jetty does not try to calculate content-length response header for HEAD request
+            response.flushBuffer();
         }
     }
 

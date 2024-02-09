@@ -38,7 +38,7 @@ public class Conditions
     {
         // Anything else except http and https (like ws, wss) we bypass.
         final String scheme = request.getScheme();
-        if ( scheme.equals( "http" ) || scheme.equals( "https" ) )
+        if ( !scheme.equals( "http" ) && !scheme.equals( "https" ) )
         {
             LOG.debug( "Bypassing request with scheme {}", scheme );
             return false;
