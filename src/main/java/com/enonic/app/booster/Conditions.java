@@ -86,6 +86,7 @@ public class Conditions
         if ( !"GET".equalsIgnoreCase( request.getMethod() ) )
         {
             LOG.debug( "Not caching response for request with method {}", request.getMethod() );
+            return false;
         }
 
         // responses with session are not cached - because session is bound to a specific user

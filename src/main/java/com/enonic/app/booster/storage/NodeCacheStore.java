@@ -1,8 +1,6 @@
 package com.enonic.app.booster.storage;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.DigestOutputStream;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,7 +8,6 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPOutputStream;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -26,6 +23,7 @@ import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
+import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeNotFoundException;
@@ -37,7 +35,10 @@ import com.enonic.xp.util.BinaryReference;
 @Component(immediate = true, service = NodeCacheStore.class)
 public class NodeCacheStore
 {
+
     private static final Logger LOG = LoggerFactory.getLogger( NodeCacheStore.class );
+
+    public static final BinaryReference DATA_BINARY_REFERENCE = BinaryReference.from( "data.gzip" );
 
     private final NodeService nodeService;
 
@@ -49,7 +50,6 @@ public class NodeCacheStore
 
     public CacheItem get( final String cacheKey )
     {
-
         return BoosterContext.callInContext( () -> {
 
             final NodeId nodeId = NodeId.from( cacheKey );
@@ -77,7 +77,7 @@ public class NodeCacheStore
             final ByteSource body;
             try
             {
-                body = nodeService.getBinary( nodeId, BinaryReference.from( "data.gzip" ) );
+                body = nodeService.getBinary( nodeId, DATA_BINARY_REFERENCE );
             }
             catch ( NodeNotFoundException e )
             {
@@ -89,33 +89,26 @@ public class NodeCacheStore
         } );
     }
 
-    public void put( final String cacheKey, final String fullUrl, final String contentType,
-                     final Map<String, ? extends Collection<String>> headers, final String repo, ByteSupply bytes )
+    public void put( final String cacheKey, String repo, CacheItem cacheItem )
     {
+        final Instant now = Instant.now();
+
         final NodeId nodeId = NodeId.from( cacheKey );
 
+        final ByteSource byteSource = ByteSupply.asByteSource( cacheItem.gzipData() );
+
         BoosterContext.runInContext( () -> {
-
-            ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
-            final GZIPOutputStream gzipOutputStream = new GZIPOutputStream( gzipData );
-            final DigestOutputStream digestOutputStream = new DigestOutputStream( gzipOutputStream, MessageDigests.sha256() );
-            try (gzipOutputStream; digestOutputStream)
-            {
-                bytes.writeTo( digestOutputStream );
-            }
-
             final PropertyTree data = new PropertyTree();
-            data.setString( "url", fullUrl );
-            data.setString( "contentType", contentType );
-            data.setLong( "contentLength", (long) bytes.size() );
-            data.setString( "etag", HexFormat.of().formatHex( Arrays.copyOf( digestOutputStream.getMessageDigest().digest(), 16 ) ) );
-            data.setBinaryReference( "gzipData", BinaryReference.from( "data.gzip" ) );
+            data.setString( "url", cacheItem.url() );
+            data.setString( "contentType", cacheItem.contentType() );
+            data.setLong( "contentLength", (long) cacheItem.contentLength() );
+            data.setString( "etag", cacheItem.etag() );
+            data.setBinaryReference( "gzipData", DATA_BINARY_REFERENCE );
             data.setString( "repo", repo );
-            data.setInstant( "cachedTime", Instant.now() );
+            data.setInstant( "cachedTime", now );
+
             final PropertySet headersPropertyTree = data.newSet();
-
-            headers.forEach( headersPropertyTree::addStrings );
-
+            cacheItem.headers().forEach( headersPropertyTree::addStrings );
             data.setSet( "headers", headersPropertyTree );
 
             if ( nodeService.nodeExists( nodeId ) )
@@ -127,7 +120,7 @@ public class NodeCacheStore
                     nodeService.update( UpdateNodeParams.create()
                                             .id( nodeId )
                                             .editor( editor -> editor.data = data )
-                                            .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
+                                            .attachBinary( DATA_BINARY_REFERENCE, byteSource )
                                             .build() );
                 }
                 catch ( Exception e )
@@ -144,7 +137,7 @@ public class NodeCacheStore
                                             .parent( NodePath.ROOT )
                                             .setNodeId( nodeId )
                                             .data( data )
-                                            .attachBinary( BinaryReference.from( "data.gzip" ), ByteSource.wrap( gzipData.toByteArray() ) )
+                                            .attachBinary( DATA_BINARY_REFERENCE, byteSource )
                                             .name( cacheKey )
                                             .build() );
                 }
@@ -152,6 +145,21 @@ public class NodeCacheStore
                 {
                     LOG.debug( "Cannot create node {}", nodeId, e );
                 }
+            }
+        } );
+    }
+
+    public void remove( final String cacheKey )
+    {
+        BoosterContext.runInContext( () -> {
+            final NodeId nodeId = NodeId.from( cacheKey );
+            try
+            {
+                nodeService.delete( DeleteNodeParams.create().nodeId( nodeId ).build() );
+            }
+            catch ( NodeNotFoundException e )
+            {
+                LOG.debug( "Cached node not found {}", nodeId );
             }
         } );
     }

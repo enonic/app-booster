@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 
+import com.google.common.base.Optional;
 import com.google.common.io.ByteSource;
 
 public abstract class ByteSupply
@@ -27,6 +28,27 @@ public abstract class ByteSupply
     public static ByteSupply of( final ByteSource byteSource )
     {
         return new ByteSourceByteSupply( byteSource );
+    }
+
+    public static ByteSource asByteSource( ByteSupply byteSupply )
+    {
+        return new ByteSource()
+        {
+            @Override
+            public InputStream openStream()
+                throws IOException
+            {
+                return byteSupply.openStream();
+            }
+
+            @Override
+            public Optional<Long> sizeIfKnown()
+            {
+                return Optional.of( (long) byteSupply.size() );
+            }
+
+        };
+
     }
 
     private static final class BaosByteSupply
@@ -93,7 +115,7 @@ public abstract class ByteSupply
         public InputStream openStream()
             throws IOException
         {
-                return byteSource.openStream();
+            return byteSource.openStream();
         }
     }
 }

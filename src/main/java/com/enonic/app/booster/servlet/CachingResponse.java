@@ -8,8 +8,12 @@ import javax.servlet.http.HttpServletResponse;
 
 public interface CachingResponse extends HttpServletResponse
 {
-    ByteArrayOutputStream getCachedBody();
+    ByteArrayOutputStream getCachedGzipBody();
 
+
+    String getEtag();
+
+    int getSize();
 
     Map<String, List<String>> getCachedHeaders();
 }

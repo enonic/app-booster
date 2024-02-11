@@ -35,6 +35,8 @@ public class BoosterRequestFilter
 
     private volatile BoosterConfigParsed config;
 
+    private final Collapser<CacheItem> requestCollapser = new Collapser<>();
+
     @Activate
     public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore )
     {
@@ -70,9 +72,10 @@ public class BoosterRequestFilter
 
         final CacheItem stored = cacheStore.get( cacheKey );
         final CacheItem cached;
+        final Instant now = Instant.now();
         if ( stored != null )
         {
-            if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
+            if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( now ) )
             {
                 LOG.debug( "Cached response is found but stale" );
                 cached = null;
@@ -92,6 +95,7 @@ public class BoosterRequestFilter
             cached = null;
         }
 
+
         if ( !config.disableXBoosterCacheHeader() )
         {
             // Report cache HIT or MISS. Header is not present if cache is not used
@@ -105,21 +109,64 @@ public class BoosterRequestFilter
             return;
         }
 
-        LOG.debug( "Processing request" );
 
-        final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( response );
-        chain.doFilter( request, cachingResponse );
-
-        LOG.debug( "Response received" );
-
-        if ( !conditions.checkPostconditions( request, cachingResponse ) )
+        CacheItem cacheItem = null;
+        try
         {
-            return;
+            if ( stored != null )
+            {
+                // response is very likely cacheable, we can collapse requests (wait for one request to do rendering)
+                cacheItem = requestCollapser.await( cacheKey );
+                if ( cacheItem != null )
+                {
+                    LOG.debug( "Another request has already processed this URL" );
+                    new ResponseWriter( config ).writeCached( request, response, cacheItem );
+                    return;
+                }
+            }
+
+            LOG.debug( "Processing request" );
+
+            final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( response );
+            try
+            {
+                chain.doFilter( request, cachingResponse );
+            }
+            catch ( Exception e )
+            {
+                cacheStore.remove( cacheKey );
+                throw e;
+            }
+
+            LOG.debug( "Response received" );
+
+            if ( conditions.checkPostconditions( request, cachingResponse ) )
+            {
+                final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
+
+                cacheItem =
+                    new CacheItem( fullUrl, cachingResponse.getContentType(), cachingResponse.getCachedHeaders(), now, null,
+                                   cachingResponse.getSize(), cachingResponse.getEtag(),
+                                   ByteSupply.of( cachingResponse.getCachedGzipBody() ) );
+                cacheStore.put( cacheKey, portalRequest.getRepositoryId().toString(), cacheItem );
+            }
+            else
+            {
+                if ( stored != null )
+                {
+                    // Evacuate item from cache immediately if it is no longer cacheable
+                    // This prevents request collapsing
+                    cacheStore.remove( cacheKey );
+                }
+            }
+
         }
-
-        final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
-
-        cacheStore.put( cacheKey, fullUrl, cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
-                        portalRequest.getRepositoryId().toString(), ByteSupply.of( cachingResponse.getCachedBody() ) );
+        finally
+        {
+            if ( stored != null )
+            {
+                requestCollapser.signalAll( cacheKey, cacheItem );
+            }
+        }
     }
 }

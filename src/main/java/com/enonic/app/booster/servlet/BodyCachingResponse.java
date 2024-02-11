@@ -36,7 +36,7 @@ public class BodyCachingResponse
     final Map<String, List<String>> headers = new LinkedHashMap<>();
 
     @Override
-    public ByteArrayOutputStream getCachedBody()
+    public ByteArrayOutputStream getCachedGzipBody()
     {
         return body;
     }
@@ -45,6 +45,18 @@ public class BodyCachingResponse
     public Map<String, List<String>> getCachedHeaders()
     {
         return headers;
+    }
+
+    @Override
+    public String getEtag()
+    {
+        return "";
+    }
+
+    @Override
+    public int getSize()
+    {
+        return 0;
     }
 
     @Override

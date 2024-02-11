@@ -2,38 +2,96 @@ package com.enonic.app.booster.servlet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.security.DigestOutputStream;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import com.enonic.app.booster.MessageDigests;
+
 public final class CachingResponseWrapper
     extends HttpServletResponseWrapper
     implements CachingResponse
 {
-    final ByteArrayOutputStream body = new ByteArrayOutputStream();
+    String etag;
+
+    final ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
+
+    final DigestOutputStream digestOutputStream;
+
+    final GZIPOutputStream gzipOutputStream;
+
+    int size;
 
     final Map<String, List<String>> headers = new LinkedHashMap<>();
 
     public CachingResponseWrapper( final HttpServletResponse response )
     {
         super( response );
+        try
+        {
+            gzipOutputStream = new GZIPOutputStream( gzipData );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        digestOutputStream = new DigestOutputStream( gzipOutputStream, MessageDigests.sha256() );
     }
 
     @Override
-    public ByteArrayOutputStream getCachedBody()
+    public ByteArrayOutputStream getCachedGzipBody()
     {
-        return body;
+        try
+        {
+            digestOutputStream.close();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        return gzipData;
+    }
+
+    @Override
+    public String getEtag()
+    {
+        try
+        {
+            digestOutputStream.close();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+
+        if ( etag == null )
+        {
+            etag = HexFormat.of().formatHex( Arrays.copyOf( digestOutputStream.getMessageDigest().digest(), 16 ) );
+        }
+
+        return etag;
+    }
+
+    @Override
+    public int getSize()
+    {
+        return size;
     }
 
     @Override
@@ -139,17 +197,18 @@ public final class CachingResponseWrapper
             public void write( final int b )
                 throws IOException
             {
+                CachingResponseWrapper.this.size++;
                 delegate.write( b );
-                body.write( b );
+                gzipOutputStream.write( b );
             }
 
             @Override
             public void write( final byte[] b, final int off, final int len )
                 throws IOException
             {
-
+                CachingResponseWrapper.this.size += len;
                 delegate.write( b, off, len );
-                body.write( b, off, len );
+                gzipOutputStream.write( b );
             }
         };
     }
