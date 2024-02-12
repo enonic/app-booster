@@ -50,7 +50,7 @@ public class NodeCleanerBean
             FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
 
             long hits = nodesToInvalidate.getHits();
-            LOG.debug( "Found {} nodes total to be invalidate", nodesToInvalidate.getTotalHits() );
+            LOG.debug( "Found {} nodes total to be invalidated", nodesToInvalidate.getTotalHits() );
 
             while ( hits > 0 )
             {
@@ -59,7 +59,6 @@ public class NodeCleanerBean
                 {
                     nodeService.update( UpdateNodeParams.create().id( nodeHit.getNodeId() ).editor( editor -> {
                         editor.data.setInstant( "invalidatedTime", cutOffTime );
-                        System.out.println( editor.data );
                     } ).build() );
                 }
                 LOG.debug( "Invalidated nodes {}", nodeHits.getSize() );
