@@ -1,0 +1,8 @@
+<task>
+  <description>Background job</description>
+  <form>
+    <input type="Long" name="cacheSize">
+      <label>Maximum Size of cache</label>
+    </input>
+  </form>
+</task>

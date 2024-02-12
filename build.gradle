@@ -25,6 +25,9 @@ app {
 dependencies {
 	implementation "com.enonic.xp:core-api:${xpVersion}"
 	implementation "com.enonic.xp:portal-api:${xpVersion}"
+	include "com.enonic.xp:lib-task:${xpVersion}"
+	include "com.enonic.xp:lib-project:${xpVersion}"
+
 }
 
 java {

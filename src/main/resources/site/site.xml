@@ -1,0 +1,22 @@
+<site>
+  <form>
+    <input name="disable" type="Checkbox">
+      <label>Disable Booster</label>
+      <default>false</default>
+    </input>
+
+    <item-set name="patterns">
+      <label>Patterns</label>
+      <occurrences minimum="0" maximum="0"/>
+      <items>
+        <input name="pattern" type="TextLine">
+          <label>Pattern</label>
+        </input>
+        <input name="invert" type="Checkbox">
+          <label>Invert</label>
+          <default>false</default>
+        </input>
+      </items>
+    </item-set>
+  </form>
+</site>
