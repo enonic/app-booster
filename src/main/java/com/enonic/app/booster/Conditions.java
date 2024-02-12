@@ -127,15 +127,13 @@ public class Conditions
         }
 
         // Check if there are cache headers in the response that prevent caching
-        // NOTE: some of them actually say DO cache. But parsing and checking them all is quite a bit of work
         final Collection<String> cacheControl = response.getHeaders( "Cache-Control" );
         if ( cacheControl != null )
         {
             LOG.debug( "Evaluating cache-control headers in response {}", cacheControl );
             if ( cacheControl.stream()
                 .anyMatch(
-                    s -> s.contains( "no-cache" ) || s.contains( "no-store" ) || s.contains( "max-age" ) || s.contains( "s-maxage" ) ||
-                        s.contains( "private" ) ) )
+                    s -> s.contains( "no-store" ) || s.contains( "private" ) ) )
             {
                 LOG.debug( "Not cacheable because of cache-control headers in response" );
                 return false;
@@ -150,7 +148,6 @@ public class Conditions
             return false;
         }
 
-        // only cache in LIVE mode, and only master branch
         final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
         if ( portalRequest == null )
         {
@@ -191,6 +188,7 @@ public class Conditions
             }
         }
 
+        // only cache in LIVE mode, and only master branch
         final RenderMode renderMode = portalRequest.getMode();
         if ( RenderMode.LIVE != renderMode )
         {
