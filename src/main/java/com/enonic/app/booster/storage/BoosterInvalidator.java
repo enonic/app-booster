@@ -138,7 +138,7 @@ public class BoosterInvalidator
             data.addStrings( "repos", repos );
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
                                                               .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-node-cleaner" ) )
+                                                                  DescriptorKey.from( "com.enonic.app.booster:invalidate" ) )
                                                               .data( data )
                                                               .build() );
             LOG.debug( "Cleanup task submitted {}", taskId );
@@ -157,7 +157,7 @@ public class BoosterInvalidator
             data.setLong( "cacheSize", (long) config.cacheSize() );
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
                                                               .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-capped" ) )
+                                                                  DescriptorKey.from( "com.enonic.app.booster:enforce-limit" ) )
                                                               .data( data )
                                                               .build() );
             LOG.debug( "Capped task submitted {}", taskId );
@@ -174,7 +174,7 @@ public class BoosterInvalidator
         {
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
                                                               .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:booster-purge-all" ) )
+                                                                  DescriptorKey.from( "com.enonic.app.booster:purge-all" ) )
                                                               .data( new PropertyTree() )
                                                               .build() );
             LOG.debug( "Purge all task submitted {}", taskId );

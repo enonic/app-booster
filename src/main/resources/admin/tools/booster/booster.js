@@ -13,7 +13,7 @@ exports.post = function (req) {
     let taskId;
     if (req.params) {
         taskId  = taskLib.submitTask({
-            descriptor: 'booster-node-cleaner',
+            descriptor: 'invalidate',
             config: {
                 repos: req.params.repos
             }

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <tool xmlns="urn:enonic:xp:model:1.0">
-  <display-name>Booster App</display-name>
-  <description>Booster App admin tool</description>
+  <display-name>Booster</display-name>
+  <description>Manage Booster cache</description>
   <allow>
     <principal>role:system.admin</principal>
   </allow>
