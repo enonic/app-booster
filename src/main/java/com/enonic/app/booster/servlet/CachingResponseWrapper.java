@@ -22,6 +22,10 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import com.aayushatharva.brotli4j.Brotli4jLoader;
+import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
+import com.aayushatharva.brotli4j.encoder.Encoder;
+
 import com.enonic.app.booster.MessageDigests;
 
 public final class CachingResponseWrapper
@@ -32,9 +36,13 @@ public final class CachingResponseWrapper
 
     final ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
 
+    final ByteArrayOutputStream brotliData = new ByteArrayOutputStream();
+
     final DigestOutputStream digestOutputStream;
 
     final GZIPOutputStream gzipOutputStream;
+
+    final BrotliOutputStream brotliOutputStream;
 
     int size;
 
@@ -43,9 +51,11 @@ public final class CachingResponseWrapper
     public CachingResponseWrapper( final HttpServletResponse response )
     {
         super( response );
+        Brotli4jLoader.ensureAvailability();
         try
         {
             gzipOutputStream = new GZIPOutputStream( gzipData );
+            brotliOutputStream = new BrotliOutputStream( brotliData, new Encoder.Parameters().setQuality( 4 ) );
         }
         catch ( IOException e )
         {
@@ -55,33 +65,25 @@ public final class CachingResponseWrapper
     }
 
     @Override
-    public ByteArrayOutputStream getCachedGzipBody()
+    public ByteArrayOutputStream getCachedGzipBody() throws IOException
     {
-        try
-        {
-            digestOutputStream.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        closeStreams();
         return gzipData;
     }
 
     @Override
-    public String getEtag()
+    public ByteArrayOutputStream getCachedBrBody() throws IOException
     {
-        try
-        {
-            digestOutputStream.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        closeStreams();
+        return brotliData;
+    }
 
+    @Override
+    public String getEtag() throws IOException
+    {
         if ( etag == null )
         {
+            closeStreams();
             etag = HexFormat.of().formatHex( Arrays.copyOf( digestOutputStream.getMessageDigest().digest(), 16 ) );
         }
 
@@ -200,6 +202,7 @@ public final class CachingResponseWrapper
                 CachingResponseWrapper.this.size++;
                 delegate.write( b );
                 gzipOutputStream.write( b );
+                brotliOutputStream.write( b );
             }
 
             @Override
@@ -208,8 +211,29 @@ public final class CachingResponseWrapper
             {
                 CachingResponseWrapper.this.size += len;
                 delegate.write( b, off, len );
-                gzipOutputStream.write( b );
+                gzipOutputStream.write( b, off, len );
+                brotliOutputStream.write( b, off, len );
             }
         };
+    }
+
+    @Override
+    public void close()
+        throws Exception
+    {
+        closeStreams();
+    }
+
+    private void closeStreams()
+        throws IOException
+    {
+        try
+        {
+            brotliOutputStream.close();
+        }
+        finally
+        {
+            digestOutputStream.close();
+        }
     }
 }

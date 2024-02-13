@@ -1,0 +1,25 @@
+[versions]
+junitVersion = "5.10.1"
+mockitoVersion = "5.8.0"
+brotli4jVersion = "1.16.0"
+
+[libraries]
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junitVersion" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junitVersion" }
+junit-jupiter-vintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitVersion" }
+
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoVersion" }
+mockito-junitjupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockitoVersion" }
+
+equalsverifier = { module = "nl.jqno.equalsverifier:equalsverifier", version = "3.15.6" }
+
+assertj-core = { module = "org.assertj:assertj-core", version = "3.25.1" }
+
+brotli4j-brotli4j = { module = "com.aayushatharva.brotli4j:brotli4j", version.ref = "brotli4jVersion" }
+brotli4j-native-windows-amd64 = { module = "com.aayushatharva.brotli4j:native-windows-x86_64", version.ref = "brotli4jVersion" }
+brotli4j-native-linux-amd64 = { module = "com.aayushatharva.brotli4j:native-linux-x86_64", version.ref = "brotli4jVersion" }
+brotli4j-native-linux-aarch64 = { module = "com.aayushatharva.brotli4j:native-linux-aarch64", version.ref = "brotli4jVersion" }
+brotli4j-native-osx-amd64 = { module = "com.aayushatharva.brotli4j:native-osx-x86_64", version.ref = "brotli4jVersion" }
+brotli4j-native-osx-aarch64 = { module = "com.aayushatharva.brotli4j:native-osx-aarch64", version.ref = "brotli4jVersion" }
+
+[plugins]

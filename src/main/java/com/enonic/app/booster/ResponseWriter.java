@@ -33,7 +33,9 @@ public final class ResponseWriter
         response.setContentType( cached.contentType() );
 
         final boolean supportsGzip = supportsGzip( request );
-        final String eTagValue = "\"" + cached.etag() + ( supportsGzip ? "-gzip" : "" ) + "\"";
+        final boolean supportsBrotli = cached.brotliData() != null && supportsBrotli( request );
+
+        final String eTagValue = "\"" + cached.etag() + ( supportsBrotli ? "-br" : ( supportsGzip ? "-gzip" : "" ) ) + "\"";
 
         final boolean notModified = eTagValue.equals( request.getHeader( "If-None-Match" ) );
 
@@ -55,7 +57,14 @@ public final class ResponseWriter
             return;
         }
 
-        if ( supportsGzip )
+        if ( supportsBrotli )
+        {
+            LOG.debug( "Request accepts brotli. Set correct gzip headers" );
+            // Headers will tell Jetty to not apply compression, as it is done already
+            response.setHeader( "Content-Encoding", "br" );
+            response.setContentLength( cached.brotliData().size() );
+        }
+        else if ( supportsGzip )
         {
             LOG.debug( "Request accepts gzip. Set correct gzip headers" );
             // Headers will tell Jetty to not apply compression, as it is done already
@@ -74,6 +83,10 @@ public final class ResponseWriter
         if ( !headRequest )
         {
             LOG.debug( "Writing cached response body" );
+            if ( supportsBrotli )
+            {
+                cached.brotliData().writeTo( response.getOutputStream() );
+            }
             if ( supportsGzip )
             {
                 cached.gzipData().writeTo( response.getOutputStream() );
@@ -82,7 +95,9 @@ public final class ResponseWriter
             {
                 new GZIPInputStream( cached.gzipData().openStream() ).transferTo( response.getOutputStream() );
             }
-        } else {
+        }
+        else
+        {
             LOG.debug( "Request method is HEAD. Don't write cached body" );
 
             // Make sure Jetty does not try to calculate content-length response header for HEAD request
@@ -123,4 +138,22 @@ public final class ResponseWriter
         }
         return false;
     }
+
+    private static boolean supportsBrotli( final HttpServletRequest req )
+    {
+        final Enumeration<String> acceptEncodingHeaders = req.getHeaders( "Accept-Encoding" );
+        if ( acceptEncodingHeaders != null )
+        {
+            while ( acceptEncodingHeaders.hasMoreElements() )
+            {
+                String acceptEncoding = acceptEncodingHeaders.nextElement();
+                if ( acceptEncoding.contains( "br" ) )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 }

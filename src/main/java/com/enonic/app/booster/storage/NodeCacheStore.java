@@ -38,7 +38,9 @@ public class NodeCacheStore
 
     private static final Logger LOG = LoggerFactory.getLogger( NodeCacheStore.class );
 
-    public static final BinaryReference DATA_BINARY_REFERENCE = BinaryReference.from( "data.gzip" );
+    public static final BinaryReference GZIP_DATA_BINARY_REFERENCE = BinaryReference.from( "data.gzip" );
+
+    public static final BinaryReference BROTLI_DATA_BINARY_REFERENCE = BinaryReference.from( "data.br" );
 
     private final NodeService nodeService;
 
@@ -74,10 +76,11 @@ public class NodeCacheStore
             final String url = node.data().getString( "url" );
             final Instant cachedTime = node.data().getInstant( "cachedTime" );
             final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
-            final ByteSource body;
+            final ByteSource gzipBody;
+            ByteSource brotliBody = null;
             try
             {
-                body = nodeService.getBinary( nodeId, DATA_BINARY_REFERENCE );
+                gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
             }
             catch ( NodeNotFoundException e )
             {
@@ -85,7 +88,17 @@ public class NodeCacheStore
                 return null;
             }
 
-            return new CacheItem( url, contentType, headers, cachedTime, invalidatedTime, contentLength, etag, ByteSupply.of( body ) );
+            try
+            {
+                brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
+            }
+            catch ( NodeNotFoundException e )
+            {
+                LOG.warn( "Cached node does not have brotli attachment {}", nodeId );
+            }
+
+            return new CacheItem( url, contentType, headers, cachedTime, invalidatedTime, contentLength, etag, ByteSupply.of( gzipBody ),
+                                  brotliBody == null ? null : ByteSupply.of( brotliBody ) );
         } );
     }
 
@@ -95,7 +108,9 @@ public class NodeCacheStore
 
         final NodeId nodeId = NodeId.from( cacheKey );
 
-        final ByteSource byteSource = ByteSupply.asByteSource( cacheItem.gzipData() );
+        final ByteSource gzipByteSource = ByteSupply.asByteSource( cacheItem.gzipData() );
+
+        final ByteSource brotliByteSource = cacheItem.brotliData() == null ? null : ByteSupply.asByteSource( cacheItem.brotliData() );
 
         BoosterContext.runInContext( () -> {
             final PropertyTree data = new PropertyTree();
@@ -103,7 +118,11 @@ public class NodeCacheStore
             data.setString( "contentType", cacheItem.contentType() );
             data.setLong( "contentLength", (long) cacheItem.contentLength() );
             data.setString( "etag", cacheItem.etag() );
-            data.setBinaryReference( "gzipData", DATA_BINARY_REFERENCE );
+            data.setBinaryReference( "gzipData", GZIP_DATA_BINARY_REFERENCE );
+            if ( brotliByteSource != null )
+            {
+                data.setBinaryReference( "brotliData", BROTLI_DATA_BINARY_REFERENCE );
+            }
             data.setString( "repo", repo );
             data.setInstant( "cachedTime", now );
 
@@ -117,11 +136,15 @@ public class NodeCacheStore
 
                 try
                 {
-                    nodeService.update( UpdateNodeParams.create()
-                                            .id( nodeId )
-                                            .editor( editor -> editor.data = data )
-                                            .attachBinary( DATA_BINARY_REFERENCE, byteSource )
-                                            .build() );
+                    final UpdateNodeParams.Builder updateParams = UpdateNodeParams.create()
+                        .id( nodeId )
+                        .editor( editor -> editor.data = data )
+                        .attachBinary( GZIP_DATA_BINARY_REFERENCE, gzipByteSource );
+                    if ( brotliByteSource != null )
+                    {
+                        updateParams.attachBinary( BROTLI_DATA_BINARY_REFERENCE, brotliByteSource );
+                    }
+                    nodeService.update( updateParams.build() );
                 }
                 catch ( Exception e )
                 {
@@ -133,13 +156,18 @@ public class NodeCacheStore
                 LOG.debug( "Creating new cache node {}", nodeId );
                 try
                 {
-                    nodeService.create( CreateNodeParams.create()
-                                            .parent( NodePath.ROOT )
-                                            .setNodeId( nodeId )
-                                            .data( data )
-                                            .attachBinary( DATA_BINARY_REFERENCE, byteSource )
-                                            .name( cacheKey )
-                                            .build() );
+                    final CreateNodeParams.Builder createParams = CreateNodeParams.create()
+                        .name( cacheKey )
+                        .parent( NodePath.ROOT )
+                        .setNodeId( nodeId )
+                        .data( data )
+                        .attachBinary( GZIP_DATA_BINARY_REFERENCE, gzipByteSource );
+                    if ( brotliByteSource != null )
+                    {
+                        createParams.attachBinary( BROTLI_DATA_BINARY_REFERENCE, brotliByteSource );
+                    }
+
+                    nodeService.create( createParams.build() );
                 }
                 catch ( Exception e )
                 {

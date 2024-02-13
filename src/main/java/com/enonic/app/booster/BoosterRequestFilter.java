@@ -128,7 +128,7 @@ public class BoosterRequestFilter
             LOG.debug( "Processing request with cache key {}", cacheKey );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( response );
-            try
+            try (cachingResponse)
             {
                 chain.doFilter( request, cachingResponse );
             }
@@ -146,7 +146,7 @@ public class BoosterRequestFilter
 
                 newCached = new CacheItem( fullUrl, cachingResponse.getContentType(), cachingResponse.getCachedHeaders(), now, null,
                                            cachingResponse.getSize(), cachingResponse.getEtag(),
-                                           ByteSupply.of( cachingResponse.getCachedGzipBody() ) );
+                                           ByteSupply.of( cachingResponse.getCachedGzipBody() ), ByteSupply.of( cachingResponse.getCachedBrBody() ) );
                 cacheStore.put( cacheKey, portalRequest.getRepositoryId().toString(), newCached );
             }
             else

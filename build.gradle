@@ -25,6 +25,13 @@ app {
 dependencies {
 	implementation "com.enonic.xp:core-api:${xpVersion}"
 	implementation "com.enonic.xp:portal-api:${xpVersion}"
+
+	include libs.brotli4j.brotli4j
+	include libs.brotli4j.native.windows.amd64
+	include libs.brotli4j.native.linux.amd64
+	include libs.brotli4j.native.linux.aarch64
+	include libs.brotli4j.native.osx.aarch64
+	include libs.brotli4j.native.osx.amd64
 	include "com.enonic.xp:lib-task:${xpVersion}"
 	include "com.enonic.xp:lib-project:${xpVersion}"
 
