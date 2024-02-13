@@ -47,13 +47,13 @@ public final class ResponseWriter
             response.setHeader( "Cache-Control", "no-store" );
         }
 
-        response.addHeader( "Vary", "Accept-Encoding" );
         response.setHeader( "Etag", eTagValue );
         response.setIntHeader( "Age", (int) ( Instant.now().getEpochSecond() - cached.cachedTime().getEpochSecond() ) );
         if ( notModified )
         {
             LOG.debug( "Returning 304 Not Modified" );
-            response.sendError( 304 );
+            response.setStatus( 304 );
+            response.flushBuffer();
             return;
         }
 

@@ -2,6 +2,7 @@ package com.enonic.app.booster;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -99,6 +100,13 @@ public class BoosterRequestFilter
         {
             // Report cache HIT or MISS. Header is not present if cache is not used
             response.setHeader( "X-Booster-Cache", cached != null ? "HIT" : "MISS" );
+        }
+
+        // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
+        // Make sure we don't set the header twice - Jetty also can set this header sometimes
+        if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
+        {
+            response.addHeader( "Vary", "Accept-Encoding" );
         }
 
         if ( cached != null )
