@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
+import com.enonic.app.booster.CacheMeta;
 import com.enonic.app.booster.MessageDigests;
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.xp.data.PropertySet;
@@ -102,7 +103,7 @@ public class NodeCacheStore
         } );
     }
 
-    public void put( final String cacheKey, String repo, CacheItem cacheItem )
+    public void put( final String cacheKey,CacheItem cacheItem, final CacheMeta cacheMeta )
     {
         final Instant now = Instant.now();
 
@@ -123,7 +124,11 @@ public class NodeCacheStore
             {
                 data.setBinaryReference( "brotliData", BROTLI_DATA_BINARY_REFERENCE );
             }
-            data.setString( "repo", repo );
+            data.setString( "project", cacheMeta.project() );
+            data.setString( "siteId", cacheMeta.siteId() );
+            data.setString( "contentId", cacheMeta.contentId() );
+            data.setString( "contentPath", cacheMeta.contentPath() );
+
             data.setInstant( "cachedTime", now );
 
             final PropertySet headersPropertyTree = data.newSet();

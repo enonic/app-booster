@@ -1,8 +1,8 @@
 <task>
   <description>Background job</description>
   <form>
-    <input type="TextLine" name="repos">
-      <label>Repositories to clean</label>
+    <input type="TextLine" name="projects">
+      <label>Projects to clean</label>
     </input>
   </form>
 </task>

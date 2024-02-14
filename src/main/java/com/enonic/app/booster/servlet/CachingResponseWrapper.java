@@ -199,20 +199,20 @@ public final class CachingResponseWrapper
             public void write( final int b )
                 throws IOException
             {
-                CachingResponseWrapper.this.size++;
                 delegate.write( b );
                 gzipOutputStream.write( b );
                 brotliOutputStream.write( b );
+                size++;
             }
 
             @Override
             public void write( final byte[] b, final int off, final int len )
                 throws IOException
             {
-                CachingResponseWrapper.this.size += len;
                 delegate.write( b, off, len );
                 gzipOutputStream.write( b, off, len );
                 brotliOutputStream.write( b, off, len );
+                size += len;
             }
         };
     }

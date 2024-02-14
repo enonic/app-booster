@@ -15,7 +15,7 @@ exports.post = function (req) {
         taskId  = taskLib.submitTask({
             descriptor: 'invalidate',
             config: {
-                repos: req.params.repos
+                projects: req.params.projects
             }
         });
     }
@@ -30,13 +30,13 @@ function drawForm() {
 
     let checkboxesHtml = '<ul>';
     for (let i = 0; i < projects.length; i++) {
-        checkboxesHtml += '<li><label><input type="checkbox" name="repos" value="' + 'com.enonic.cms.'+ projects[i].id + '">' + projects[i].displayName + '</label></li>';
+        checkboxesHtml += '<li><label><input type="checkbox" name="projects" value="' + projects[i].id + '">' + projects[i].displayName + '</label></li>';
     }
     checkboxesHtml += '</ul>'
 
     return '<form action="" method="post">' +
            '<fieldset>' +
-           '<legend>repos</legend>' +
+           '<legend>projects</legend>' +
            checkboxesHtml +
            '</fieldset>' +
            '<input type="submit" value="Purge Cache">' +
