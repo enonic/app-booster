@@ -39,7 +39,7 @@ public class NodeCleanerBean
         this.nodeService = beanContext.getService( NodeService.class ).get();
     }
 
-    public void invalidateProject( List<String> projects )
+    public void invalidateProjects( List<String> projects )
     {
         Instant cutOffTime = Instant.now();
         BoosterContext.runInContext( () -> {
@@ -70,7 +70,72 @@ public class NodeCleanerBean
             }
             LOG.debug( "Done invalidating cache for projects {}", projects );
         } );
+    }
 
+    public void invalidateContent( String project, String contentId )
+    {
+        Instant cutOffTime = Instant.now();
+        BoosterContext.runInContext( () -> {
+            LOG.debug( "Invalidating cache for project {} and contentId {}", project, contentId );
+            final NodeQuery query = queryNodesToInvalidateContent( project, contentId, cutOffTime );
+
+            nodeService.refresh( RefreshMode.SEARCH );
+            FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
+
+            long hits = nodesToInvalidate.getHits();
+            LOG.debug( "Found {} nodes total to be invalidated", nodesToInvalidate.getTotalHits() );
+
+            while ( hits > 0 )
+            {
+                final NodeHits nodeHits = nodesToInvalidate.getNodeHits();
+                for ( NodeHit nodeHit : nodeHits )
+                {
+                    nodeService.update( UpdateNodeParams.create().id( nodeHit.getNodeId() ).editor( editor -> {
+                        editor.data.setInstant( "invalidatedTime", cutOffTime );
+                    } ).build() );
+                }
+                LOG.debug( "Invalidated nodes {}", nodeHits.getSize() );
+
+                nodeService.refresh( RefreshMode.SEARCH );
+                nodesToInvalidate = nodeService.findByQuery( query );
+
+                hits = nodesToInvalidate.getHits();
+            }
+            LOG.debug( "Done invalidating cache for project {} and contentId {}", project, contentId );
+        } );
+    }
+
+    public void invalidateSite( String project, String siteId )
+    {
+        Instant cutOffTime = Instant.now();
+        BoosterContext.runInContext( () -> {
+            LOG.debug( "Invalidating cache for project {} and siteId {}", project, siteId );
+            final NodeQuery query = queryNodesToInvalidateSite( project, siteId, cutOffTime );
+
+            nodeService.refresh( RefreshMode.SEARCH );
+            FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
+
+            long hits = nodesToInvalidate.getHits();
+            LOG.debug( "Found {} nodes total to be invalidated", nodesToInvalidate.getTotalHits() );
+
+            while ( hits > 0 )
+            {
+                final NodeHits nodeHits = nodesToInvalidate.getNodeHits();
+                for ( NodeHit nodeHit : nodeHits )
+                {
+                    nodeService.update( UpdateNodeParams.create().id( nodeHit.getNodeId() ).editor( editor -> {
+                        editor.data.setInstant( "invalidatedTime", cutOffTime );
+                    } ).build() );
+                }
+                LOG.debug( "Invalidated nodes {}", nodeHits.getSize() );
+
+                nodeService.refresh( RefreshMode.SEARCH );
+                nodesToInvalidate = nodeService.findByQuery( query );
+
+                hits = nodesToInvalidate.getHits();
+            }
+            LOG.debug( "Done invalidating cache for project {} and siteId {}", project, siteId );
+        } );
     }
 
     public void purgeAll()
@@ -139,13 +204,13 @@ public class NodeCleanerBean
         return builder.build();
     }
 
-    private NodeQuery queryNodesToInvalidate( Collection<String> repos, Instant cutOffTime )
+    private NodeQuery queryNodesToInvalidate( Collection<String> projects, Instant cutOffTime )
     {
         final NodeQuery.Builder builder = NodeQuery.create();
         builder.parent( NodePath.ROOT );
-        if ( !repos.isEmpty() )
+        if ( !projects.isEmpty() )
         {
-            builder.addQueryFilter( ValueFilter.create().fieldName( "repo" ).addValues( repos ).build() );
+            builder.addQueryFilter( ValueFilter.create().fieldName( "project" ).addValues( projects ).build() );
         }
 
         builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
@@ -155,4 +220,37 @@ public class NodeCleanerBean
 
         return builder.build();
     }
+
+    private NodeQuery queryNodesToInvalidateContent( String project, String contentId, Instant cutOffTime )
+    {
+        final NodeQuery.Builder builder = NodeQuery.create();
+        builder.parent( NodePath.ROOT );
+
+        builder.addQueryFilter( ValueFilter.create().fieldName( "project" ).addValue( ValueFactory.newString( project ) ).build() );
+        builder.addQueryFilter( ValueFilter.create().fieldName( "contentId" ).addValue( ValueFactory.newString( contentId ) ).build() );
+
+        builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
+            .addQueryFilter( BooleanFilter.create().mustNot( ExistsFilter.create().fieldName( "invalidatedTime" ).build() ).build() )
+            .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
+            .size( 10_000 );
+
+        return builder.build();
+    }
+
+    private NodeQuery queryNodesToInvalidateSite( String project, String siteId, Instant cutOffTime )
+    {
+        final NodeQuery.Builder builder = NodeQuery.create();
+        builder.parent( NodePath.ROOT );
+
+        builder.addQueryFilter( ValueFilter.create().fieldName( "project" ).addValue( ValueFactory.newString( project ) ).build() );
+        builder.addQueryFilter( ValueFilter.create().fieldName( "siteId" ).addValue( ValueFactory.newString( siteId ) ).build() );
+
+        builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
+            .addQueryFilter( BooleanFilter.create().mustNot( ExistsFilter.create().fieldName( "invalidatedTime" ).build() ).build() )
+            .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
+            .size( 10_000 );
+
+        return builder.build();
+    }
+
 }

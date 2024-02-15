@@ -2,6 +2,7 @@ package com.enonic.app.booster;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Enumeration;
 import java.util.Locale;
 
 import javax.servlet.Filter;

@@ -1,8 +1,16 @@
 <task>
   <description>Background job</description>
   <form>
-    <input type="TextLine" name="projects">
+    <input type="TextLine" name="project">
       <label>Projects to clean</label>
+    </input>
+    <input type="TextLine" name="site">
+      <label>Site to clean</label>
+      <occurrences minimum="0" maximum="1"/>
+    </input>
+    <input type="TextLine" name="content">
+      <label>Content to clean</label>
+      <occurrences minimum="0" maximum="1"/>
     </input>
   </form>
 </task>
