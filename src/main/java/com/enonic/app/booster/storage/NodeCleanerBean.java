@@ -39,12 +39,12 @@ public class NodeCleanerBean
         this.nodeService = beanContext.getService( NodeService.class ).get();
     }
 
-    public void invalidateRepos( List<String> repos )
+    public void invalidateProject( List<String> projects )
     {
         Instant cutOffTime = Instant.now();
         BoosterContext.runInContext( () -> {
-            LOG.debug( "Invalidating cache for repositories {}", repos );
-            final NodeQuery query = queryNodesToInvalidate( repos, cutOffTime );
+            LOG.debug( "Invalidating cache for projects {}", projects );
+            final NodeQuery query = queryNodesToInvalidate( projects, cutOffTime );
 
             nodeService.refresh( RefreshMode.SEARCH );
             FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
@@ -68,7 +68,7 @@ public class NodeCleanerBean
 
                 hits = nodesToInvalidate.getHits();
             }
-            LOG.debug( "Done invalidating cache for repositories {}", repos );
+            LOG.debug( "Done invalidating cache for projects {}", projects );
         } );
 
     }

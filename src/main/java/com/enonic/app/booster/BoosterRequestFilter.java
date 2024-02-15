@@ -38,10 +38,13 @@ public class BoosterRequestFilter
 
     private final Collapser<CacheItem> requestCollapser = new Collapser<>();
 
+    private final SiteConfigService siteConfigService;
+
     @Activate
-    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore )
+    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore, @Reference final SiteConfigService siteConfigService )
     {
         this.cacheStore = cacheStore;
+        this.siteConfigService = siteConfigService;
     }
 
     @Activate
@@ -148,14 +151,16 @@ public class BoosterRequestFilter
 
             LOG.debug( "Response received key cache  {}", cacheKey );
 
-            if ( conditions.checkPostconditions( request, cachingResponse ) )
+            if ( conditions.checkPostconditions( request, () -> siteConfigService.execute( request ), cachingResponse ) )
             {
                 final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
+                final CacheMeta cacheMeta = createCacheMeta( portalRequest );
 
                 newCached = new CacheItem( fullUrl, cachingResponse.getContentType(), cachingResponse.getCachedHeaders(), now, null,
                                            cachingResponse.getSize(), cachingResponse.getEtag(),
-                                           ByteSupply.of( cachingResponse.getCachedGzipBody() ), ByteSupply.of( cachingResponse.getCachedBrBody() ) );
-                cacheStore.put( cacheKey, portalRequest.getRepositoryId().toString(), newCached );
+                                           ByteSupply.of( cachingResponse.getCachedGzipBody() ),
+                                           ByteSupply.of( cachingResponse.getCachedBrBody() ) );
+                cacheStore.put( cacheKey, newCached, cacheMeta );
             }
             else
             {
@@ -175,5 +180,24 @@ public class BoosterRequestFilter
                 latch.unlock( newCached );
             }
         }
+    }
+
+    private static CacheMeta createCacheMeta( final PortalRequest portalRequest )
+    {
+        final String project = portalRequest.getRepositoryId() != null ? portalRequest.getRepositoryId().toString().substring( "com.enonic.cms.".length() ) : null;
+        final String siteId = portalRequest.getSite() != null ? portalRequest.getSite().getId().toString() : null;
+        final String contentId;
+        final String contentPath;
+        if ( portalRequest.getContent() != null )
+        {
+            contentId = portalRequest.getContent().getId().toString();
+            contentPath = portalRequest.getContent().getPath().toString();
+        }
+        else
+        {
+            contentId = null;
+            contentPath = null;
+        }
+        return new CacheMeta( project, siteId, contentId, contentPath );
     }
 }
