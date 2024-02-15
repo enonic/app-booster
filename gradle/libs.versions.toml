@@ -1,15 +1,7 @@
 [versions]
-junitVersion = "5.10.1"
-mockitoVersion = "5.8.0"
 brotli4jVersion = "1.16.0"
 
 [libraries]
-junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junitVersion" }
-junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junitVersion" }
-junit-jupiter-vintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitVersion" }
-
-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoVersion" }
-mockito-junitjupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockitoVersion" }
 
 equalsverifier = { module = "nl.jqno.equalsverifier:equalsverifier", version = "3.15.6" }
 

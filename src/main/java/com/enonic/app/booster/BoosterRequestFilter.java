@@ -2,7 +2,6 @@ package com.enonic.app.booster;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Enumeration;
 import java.util.Locale;
 
 import javax.servlet.Filter;
@@ -106,6 +105,13 @@ public class BoosterRequestFilter
             response.setHeader( "X-Booster-Cache", cached != null ? "HIT" : "MISS" );
         }
 
+        // log request headers and their values
+/*        final Enumeration<String> headerNames = request.getHeaderNames();
+        while ( headerNames.hasMoreElements() ) {
+            String headerName = headerNames.nextElement();
+            LOG.info("Header: {} Value: {}", headerName, request.getHeader(headerName));
+        }*/
+
         // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
         // Make sure we don't set the header twice - Jetty also can set this header sometimes
         if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
@@ -185,7 +191,9 @@ public class BoosterRequestFilter
 
     private static CacheMeta createCacheMeta( final PortalRequest portalRequest )
     {
-        final String project = portalRequest.getRepositoryId() != null ? portalRequest.getRepositoryId().toString().substring( "com.enonic.cms.".length() ) : null;
+        final String project = portalRequest.getRepositoryId() != null
+            ? portalRequest.getRepositoryId().toString().substring( "com.enonic.cms.".length() )
+            : null;
         final String siteId = portalRequest.getSite() != null ? portalRequest.getSite().getId().toString() : null;
         final String contentId;
         final String contentPath;
