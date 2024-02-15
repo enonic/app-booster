@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'jacoco'
 	id 'maven-publish'
 	id 'com.enonic.defaults' version '2.1.5'
 	id 'com.enonic.xp.app' version '3.4.0'
@@ -53,3 +54,12 @@ java {
 test {
 	useJUnitPlatform()
 }
+
+jacocoTestReport {
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+check.dependsOn jacocoTestReport
