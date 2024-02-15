@@ -1,0 +1,7 @@
+<widget>
+    <display-name>Booster</display-name>
+    <description>Manage Booster cache</description>
+    <interfaces>
+        <interface>contentstudio.contextpanel</interface>
+    </interfaces>
+</widget>
