@@ -11,11 +11,11 @@ exports.get = function (req) {
 
 exports.post = function (req) {
     let taskId;
-    if (req.params) {
+    if (req.params && req.params.projects) {
         taskId  = taskLib.submitTask({
             descriptor: 'invalidate',
             config: {
-                projects: req.params.projects
+                project: req.params.projects
             }
         });
     }
