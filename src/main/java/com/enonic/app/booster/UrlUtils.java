@@ -1,5 +1,7 @@
 package com.enonic.app.booster;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
@@ -7,9 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.google.common.escape.Escaper;
-import com.google.common.net.UrlEscapers;
 
 public final class UrlUtils
 {
@@ -54,13 +53,12 @@ public final class UrlUtils
             return "";
         }
 
-        final Escaper urlEscaper = UrlEscapers.urlFormParameterEscaper();
         return params.entrySet()
             .stream()
             .filter( entry -> !exclude.contains( entry.getKey() ) )
             .sorted( Map.Entry.comparingByKey() )
             .flatMap( entry -> Arrays.stream( entry.getValue() )
-                .map( value -> urlEscaper.escape( entry.getKey() ) + "=" + urlEscaper.escape( value ) ) )
+                .map( value -> URLEncoder.encode( entry.getKey(), StandardCharsets.UTF_8 ) + "=" + URLEncoder.encode( value, StandardCharsets.UTF_8 ) ) )
             .collect( Collectors.joining( "&" ) );
     }
 }
