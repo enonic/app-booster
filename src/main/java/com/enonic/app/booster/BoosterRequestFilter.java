@@ -106,10 +106,10 @@ public class BoosterRequestFilter
         }
 
         // log request headers and their values
-/*        final Enumeration<String> headerNames = request.getHeaderNames();
+/*        final var headerNames = request.getHeaderNames();
         while ( headerNames.hasMoreElements() ) {
             String headerName = headerNames.nextElement();
-            LOG.info("Header: {} Value: {}", headerName, request.getHeader(headerName));
+            LOG.info("Header: {}: {}", headerName, request.getHeader(headerName));
         }*/
 
         // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding

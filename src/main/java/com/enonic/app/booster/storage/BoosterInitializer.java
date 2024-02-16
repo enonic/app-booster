@@ -28,7 +28,7 @@ public class BoosterInitializer
     @Override
     protected void doInitialize()
     {
-        BoosterContext.callInContext( () -> repositoryService.createRepository(
+        BoosterContext.runInContext( () -> repositoryService.createRepository(
             CreateRepositoryParams.create().repositoryId( BoosterContext.REPOSITORY_ID ).build() ) );
     }
 
