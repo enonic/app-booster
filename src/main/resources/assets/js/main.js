@@ -1,21 +1,17 @@
 (() => {
+
+    const actions = {
+        INVALIDATE: 'invalidate'
+    };
+
     const sendRequest = (url, action, data) => {
         const req = new XMLHttpRequest();
         req.open("POST", url, true);
 
         req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
 
-        req.onload = () => {
-            if (req.status >= 200 && req.status < 300) {
-                onSuccess && onSuccess(req.responseText && JSON.parse(req.responseText));
-            } else {
-                onError && onError(req.status, req.statusText);
-            }
-        };
-
-        req.onerror = () => {
-            onError && onError(req.status, req.statusText);
-        };
+        req.onload = () => showResponse(action, req);
+        req.onerror = () => showResponse(action, req);
 
         const params = {
             action,
@@ -25,16 +21,43 @@
         req.send(JSON.stringify(params));
     };
 
-    const onSuccess = (responseText) => {
-        const responseContainer = document.getElementById('widget-booster-action-response');
-        responseContainer.classList.remove('failure');
-        responseContainer.classList.add('success');
+    const isSuccessfulRequest = (request) => {
+        const statusOk = request.status >= 200 && request.status < 300;
+        if (statusOk) {
+            const response = request.response && JSON.parse(request.response);
+            if (!response.taskId) {
+                return false;
+            }
+        }
+        return statusOk;
     }
 
-    const onError = (status, statusText) => {
+    const showResponse = (action, request) => {
         const responseContainer = document.getElementById('widget-booster-action-response');
+        const success = isSuccessfulRequest(request);
+        responseContainer.classList.toggle('success', success);
+        responseContainer.classList.toggle('failure', !success);
+        if (action === actions.INVALIDATE) {
+            const errorMessage = !success && `${request.statusText} (${request.status})`;
+
+            responseContainer.innerText = success ? 'Cache successfully invalidated' : `Failed to invalidate: ${errorMessage}`;
+            setTimeout(() => hideResponse(), 3000);
+        }
+    }
+
+    const hideResponse = () => {
+        const responseContainer = document.getElementById('widget-booster-action-response');
+        responseContainer.innerText = '';
+        responseContainer.classList.remove('failure');
         responseContainer.classList.remove('success');
-        responseContainer.classList.add('failure');
+    }
+
+    const onSuccess = (action, request) => {
+        showResponse(action, request);
+    }
+
+    const onError = (action, request) => {
+        showResponse(action, request);
     }
 
     if (!document.currentScript) {
@@ -52,7 +75,7 @@
     const submitButton = document.getElementById('widget-booster-container-action');
     if (submitButton) {
         submitButton.addEventListener('click', () => {
-            sendRequest(serviceUrl, 'invalidate', { project, contentId });
+            sendRequest(serviceUrl, actions.INVALIDATE, { project, contentId });
         });
     }
 })()

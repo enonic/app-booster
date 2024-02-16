@@ -1,24 +1,26 @@
+#widget-booster .widget-booster-container {
+    text-align: center;
+    margin: 10px 0;
+}
+
 #widget-booster .widget-booster-button {
     margin: 20px auto;
     display: block;
     padding: 5px 20px;
 }
 
-#widget-booster #widget-booster-action-response span{
-    display: none;
-}
-
 #widget-booster #widget-booster-action-response {
+    display: none;
     text-align: center;
     font-size: 14px;
 }
 
-#widget-booster #widget-booster-action-response.success #success {
+#widget-booster #widget-booster-action-response.success {
     display: block;
     color: green;
 }
 
-#widget-booster #widget-booster-action-response.failure #failure {
+#widget-booster #widget-booster-action-response.failure {
     display: block;
     color: red;
 }

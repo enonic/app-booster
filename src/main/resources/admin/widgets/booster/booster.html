@@ -2,12 +2,21 @@
     <link rel="stylesheet" href="{{assetsUri}}/styles/main.css" type="text/css" media="all"/>
     <script src="{{assetsUri}}/js/main.js" data-service-url="{{serviceUrl}}" data-project="{{project}}" data-content-id="{{contentId}}"></script>
     <div id="widget-booster-container" class="widget-booster-container">
+        {{#isContentSelected}}
+        <h6>Content: {{contentPath}}</h6>
+        {{/isContentSelected}}
+
+        {{#isSiteSelected}}
+        <h6>Site: {{contentPath}}</h6>
+        {{/isSiteSelected}}
+
+        {{#isProjectSelected}}
+        <h6>Project: {{project}}</h6>
+        {{/isProjectSelected}}
+
         <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red">
-            <span>Invalidate cache</span>
+            <span>Purge cache</span>
         </button>
-        <p id="widget-booster-action-response">
-            <span id="success">Cache invalidated</span>
-            <span id="failure">Failed to invalidate</span>
-        </p>
+        <p id="widget-booster-action-response"></p>
     </div>
 </widget>

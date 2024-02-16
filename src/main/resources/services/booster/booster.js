@@ -1,3 +1,4 @@
+const contentLib = require('/lib/xp/content');
 const taskLib = require('/lib/xp/task');
 
 const submitTask = function (descriptor, config) {
@@ -20,15 +21,29 @@ exports.post = function (req) {
     const action = params.action.trim();
     const contentId = params.data.contentId;
     const project = params.data.project;
+    const config = { project };
+
+    if (contentId) {
+        const content = contentLib.get({
+            key: contentId
+        });
+        if (content.type === 'portal:site') {
+            config.site = contentId;
+        } else {
+            config.content = contentId;
+        }
+    }
 
     let taskId;
     if (action === 'invalidate') {
-        taskId = submitTask(action, { projects: [project] });
+        taskId = submitTask(action, config);
     }
 
     return {
         contentType: 'application/json',
-        taskId,
+        body: {
+            taskId
+        },
         status: 200
     };
 };
