@@ -2,6 +2,8 @@
     <link rel="stylesheet" href="{{assetsUri}}/styles/main.css" type="text/css" media="all"/>
     <script src="{{assetsUri}}/js/main.js" data-service-url="{{serviceUrl}}" data-project="{{project}}" data-content-id="{{contentId}}"></script>
     <div id="widget-booster-container" class="widget-booster-container">
+        {{#isEnabled}}
+
         {{#isContentSelected}}
         <h6>Content: {{contentPath}}</h6>
         {{/isContentSelected}}
@@ -18,5 +20,11 @@
             <span>Purge cache</span>
         </button>
         <p id="widget-booster-action-response"></p>
+
+        {{/isEnabled}}
+
+        {{^isEnabled}}
+        <div class="error">Booster app not added to the site</div>
+        {{/isEnabled}}
     </div>
 </widget>

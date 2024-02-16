@@ -2,8 +2,29 @@ const portal = require('/lib/xp/portal');
 const contentLib = require('/lib/xp/content');
 const mustache = require('/lib/mustache');
 
+const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
+
 function handleGet(req) {
     return renderWidgetView(req);
+}
+
+function isAppEnabledOnSite(contentId) {
+    if (!contentId) {
+        return false;
+    }
+    const site = contentLib.getSite({ key: contentId });
+    if (!site || !site.data || !site.data.siteConfig) {
+        return false;
+    }
+    log.info(JSON.stringify(forceArray(site.data.siteConfig), null, 4));
+    let siteConfig;
+    forceArray(site.data.siteConfig).forEach(config => {
+        if (config.applicationKey == app.name) {
+            siteConfig = config
+        }
+    });
+    log.info(JSON.stringify(siteConfig, null, 4));
+    return !!siteConfig;
 }
 
 function renderWidgetView(req) {
@@ -30,6 +51,7 @@ function renderWidgetView(req) {
         isContentSelected,
         isSiteSelected,
         isProjectSelected: !isContentSelected && !isSiteSelected,
+        isEnabled: isAppEnabledOnSite(contentId),
         assetsUri: portal.assetUrl({
             path: ''
         }),

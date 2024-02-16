@@ -15,7 +15,7 @@
 
         const params = {
             action,
-            data: data
+            data
         }
 
         req.send(JSON.stringify(params));
