@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.servlet.CachingResponse;
+import com.enonic.app.booster.servlet.UrlUtils;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;

@@ -17,8 +17,10 @@ import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.enonic.app.booster.concurrent.Collapser;
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.servlet.CachingResponseWrapper;
+import com.enonic.app.booster.servlet.UrlUtils;
 import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.portal.PortalRequest;

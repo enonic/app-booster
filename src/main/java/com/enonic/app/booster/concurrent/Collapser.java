@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.concurrent;
 
 import java.util.Objects;
 import java.util.Optional;

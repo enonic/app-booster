@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.servlet;
 
 import java.util.Map;
 import java.util.Set;
@@ -6,6 +6,8 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.junit.jupiter.api.Test;
+
+import com.enonic.app.booster.servlet.UrlUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;

@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.servlet;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;

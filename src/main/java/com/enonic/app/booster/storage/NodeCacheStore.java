@@ -62,48 +62,45 @@ public class NodeCacheStore
             try
             {
                 node = nodeService.getById( nodeId );
+
+                final var headers = adaptHeaders( node.data().getSet( "headers" ) );
+
+                final String contentType = node.data().getString( "contentType" );
+                final Long contentLengthLong = node.data().getLong( "contentLength" );
+                if (contentLengthLong == null )
+                {
+                    LOG.warn( "Cached node does not have content length {}", nodeId );
+                    return null;
+                }
+                final int contentLength = contentLengthLong.intValue();
+                final String etag = node.data().getString( "etag" );
+                final String url = node.data().getString( "url" );
+                final Instant cachedTime = node.data().getInstant( "cachedTime" );
+                final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
+                final ByteSource gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
+                if ( gzipBody == null )
+                {
+                    LOG.warn( "Cached node does not have response body attachment {}", nodeId );
+                    return null;
+                }
+
+                // Might want to move brotli compression in background process. In this case brotli-compressed body would be optional
+                final ByteSource brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
+
+                return new CacheItem( url, contentType, headers, cachedTime, invalidatedTime, contentLength, etag,
+                                      ByteSupply.of( gzipBody ), brotliBody == null ? null : ByteSupply.of( brotliBody ) );
             }
             catch ( NodeNotFoundException e )
             {
+                // without extra query to Node API we cannot distinguish between not found and deleted node
+                // exception also can be caught in case of concurrent delete when we try to fetch binaries
                 LOG.debug( "Cached node not found {}", nodeId );
                 return null;
             }
-
-            final var headers = adaptHeaders( node.data().getSet( "headers" ).toMap() );
-
-            final String contentType = node.data().getString( "contentType" );
-            final int contentLength = node.data().getLong( "contentLength" ).intValue();
-            final String etag = node.data().getString( "etag" );
-            final String url = node.data().getString( "url" );
-            final Instant cachedTime = node.data().getInstant( "cachedTime" );
-            final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
-            final ByteSource gzipBody;
-            ByteSource brotliBody = null;
-            try
-            {
-                gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
-            }
-            catch ( NodeNotFoundException e )
-            {
-                LOG.warn( "Cached node does not have response body attachment {}", nodeId );
-                return null;
-            }
-
-            try
-            {
-                brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
-            }
-            catch ( NodeNotFoundException e )
-            {
-                LOG.warn( "Cached node does not have brotli attachment {}", nodeId );
-            }
-
-            return new CacheItem( url, contentType, headers, cachedTime, invalidatedTime, contentLength, etag, ByteSupply.of( gzipBody ),
-                                  brotliBody == null ? null : ByteSupply.of( brotliBody ) );
         } );
     }
 
-    public void put( final String cacheKey,CacheItem cacheItem, final CacheMeta cacheMeta )
+    public void put( final String cacheKey, CacheItem cacheItem, final CacheMeta cacheMeta )
     {
         final Instant now = Instant.now();
 
@@ -204,10 +201,14 @@ public class NodeCacheStore
         return HexFormat.of().formatHex( truncated );
     }
 
-    private Map<String, List<String>> adaptHeaders( final Map<String, Object> headers )
+    private Map<String, List<String>> adaptHeaders( final PropertySet headers )
     {
+        if ( headers == null )
+        {
+            return Map.of();
+        }
         final LinkedHashMap<String, List<String>> result = new LinkedHashMap<>();
-        for ( Map.Entry<String, Object> stringObjectEntry : headers.entrySet() )
+        for ( Map.Entry<String, Object> stringObjectEntry : headers.toMap().entrySet() )
         {
             final String key = stringObjectEntry.getKey();
             final Object value = stringObjectEntry.getValue();

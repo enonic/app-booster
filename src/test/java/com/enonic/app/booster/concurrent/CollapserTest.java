@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.concurrent;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
