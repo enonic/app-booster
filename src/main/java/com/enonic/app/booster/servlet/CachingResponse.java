@@ -1,22 +1,19 @@
 package com.enonic.app.booster.servlet;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-public interface CachingResponse extends HttpServletResponse, AutoCloseable
+public interface CachingResponse
+    extends HttpServletResponse, AutoCloseable
 {
-    ByteArrayOutputStream getCachedGzipBody()
-        throws IOException;
+    ByteArrayOutputStream getCachedGzipBody();
 
-    ByteArrayOutputStream getCachedBrBody()
-        throws IOException;
+    ByteArrayOutputStream getCachedBrBody();
 
-    String getEtag()
-        throws IOException;
+    String getEtag();
 
     int getSize();
 

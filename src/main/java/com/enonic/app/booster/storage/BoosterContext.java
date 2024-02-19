@@ -1,8 +1,8 @@
 package com.enonic.app.booster.storage;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import com.enonic.app.booster.io.RunnableWithException;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
@@ -15,7 +15,7 @@ public interface BoosterContext
 {
     RepositoryId REPOSITORY_ID = RepositoryId.from( "com.enonic.app.booster" );
 
-    static void runInContext( final IORunnable runnable )
+    static void runInContext( final RunnableWithException runnable )
     {
         callInContext( () -> {
             runnable.run();
@@ -36,9 +36,4 @@ public interface BoosterContext
             .callWith( callable );
     }
 
-    interface IORunnable
-    {
-        void run()
-            throws IOException;
-    }
 }

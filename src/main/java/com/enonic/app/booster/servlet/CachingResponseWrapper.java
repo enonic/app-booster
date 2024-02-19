@@ -40,8 +40,6 @@ public final class CachingResponseWrapper
 
     final DigestOutputStream digestOutputStream;
 
-    final GZIPOutputStream gzipOutputStream;
-
     final BrotliOutputStream brotliOutputStream;
 
     int size;
@@ -54,36 +52,32 @@ public final class CachingResponseWrapper
         Brotli4jLoader.ensureAvailability();
         try
         {
-            gzipOutputStream = new GZIPOutputStream( gzipData );
-            brotliOutputStream = new BrotliOutputStream( brotliData, new Encoder.Parameters().setQuality( 4 ) );
+            this.brotliOutputStream = new BrotliOutputStream( brotliData, new Encoder.Parameters().setQuality( 4 ) );
+            this.digestOutputStream = new DigestOutputStream( new GZIPOutputStream( gzipData ), MessageDigests.sha256() );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
-        digestOutputStream = new DigestOutputStream( gzipOutputStream, MessageDigests.sha256() );
     }
 
     @Override
-    public ByteArrayOutputStream getCachedGzipBody() throws IOException
+    public ByteArrayOutputStream getCachedGzipBody()
     {
-        closeStreams();
         return gzipData;
     }
 
     @Override
-    public ByteArrayOutputStream getCachedBrBody() throws IOException
+    public ByteArrayOutputStream getCachedBrBody()
     {
-        closeStreams();
         return brotliData;
     }
 
     @Override
-    public String getEtag() throws IOException
+    public String getEtag()
     {
         if ( etag == null )
         {
-            closeStreams();
             etag = HexFormat.of().formatHex( Arrays.copyOf( digestOutputStream.getMessageDigest().digest(), 16 ) );
         }
 
@@ -181,6 +175,7 @@ public final class CachingResponseWrapper
         throws IOException
     {
         final ServletOutputStream delegate = super.getOutputStream();
+
         return new ServletOutputStream()
         {
             @Override
@@ -200,7 +195,7 @@ public final class CachingResponseWrapper
                 throws IOException
             {
                 delegate.write( b );
-                gzipOutputStream.write( b );
+                digestOutputStream.write( b );
                 brotliOutputStream.write( b );
                 size++;
             }
@@ -210,7 +205,7 @@ public final class CachingResponseWrapper
                 throws IOException
             {
                 delegate.write( b, off, len );
-                gzipOutputStream.write( b, off, len );
+                digestOutputStream.write( b, off, len );
                 brotliOutputStream.write( b, off, len );
                 size += len;
             }
