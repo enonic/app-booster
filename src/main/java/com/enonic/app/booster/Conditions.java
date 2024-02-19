@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.servlet.CachingResponse;
-import com.enonic.app.booster.servlet.UrlUtils;
+import com.enonic.app.booster.servlet.RequestUtils;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
@@ -204,7 +204,7 @@ public class Conditions
         final boolean patternHasQueryParameters = pattern.contains( "\\?" );
         final boolean patternMatches = PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile )
             .matcher( patternHasQueryParameters
-                          ? relativePath + "?" + UrlUtils.normalizedQueryParams( params, config.excludeQueryParams() )
+                          ? relativePath + "?" + RequestUtils.normalizedQueryParams( params, config.excludeQueryParams() )
                           : relativePath )
             .matches();
         return invert != patternMatches;

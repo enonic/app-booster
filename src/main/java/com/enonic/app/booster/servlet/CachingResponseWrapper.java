@@ -9,7 +9,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +35,7 @@ public final class CachingResponseWrapper
 
     final ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
 
-    final ByteArrayOutputStream brotliData = new ByteArrayOutputStream();
+    final ByteArrayOutputStream brotliData;
 
     final DigestOutputStream digestOutputStream;
 
@@ -46,13 +45,29 @@ public final class CachingResponseWrapper
 
     final Map<String, List<String>> headers = new LinkedHashMap<>();
 
+    static boolean BROTLI_SUPPORTED;
+
+    static
+    {
+        try
+        {
+            Brotli4jLoader.ensureAvailability();
+            BROTLI_SUPPORTED = true;
+        }
+        catch ( UnsatisfiedLinkError e )
+        {
+            BROTLI_SUPPORTED = false;
+        }
+    }
+
     public CachingResponseWrapper( final HttpServletResponse response )
     {
         super( response );
-        Brotli4jLoader.ensureAvailability();
         try
         {
-            this.brotliOutputStream = new BrotliOutputStream( brotliData, new Encoder.Parameters().setQuality( 4 ) );
+            this.brotliData = BROTLI_SUPPORTED ? new ByteArrayOutputStream() : null;
+            this.brotliOutputStream =
+                BROTLI_SUPPORTED ? new BrotliOutputStream( brotliData, new Encoder.Parameters().setQuality( 4 ) ) : null;
             this.digestOutputStream = new DigestOutputStream( new GZIPOutputStream( gzipData ), MessageDigests.sha256() );
         }
         catch ( IOException e )
@@ -78,7 +93,7 @@ public final class CachingResponseWrapper
     {
         if ( etag == null )
         {
-            etag = HexFormat.of().formatHex( Arrays.copyOf( digestOutputStream.getMessageDigest().digest(), 16 ) );
+            etag = HexFormat.of().formatHex( digestOutputStream.getMessageDigest().digest(), 0, 16 );
         }
 
         return etag;
@@ -196,7 +211,10 @@ public final class CachingResponseWrapper
             {
                 delegate.write( b );
                 digestOutputStream.write( b );
-                brotliOutputStream.write( b );
+                if ( brotliOutputStream != null )
+                {
+                    brotliOutputStream.write( b );
+                }
                 size++;
             }
 
@@ -206,7 +224,10 @@ public final class CachingResponseWrapper
             {
                 delegate.write( b, off, len );
                 digestOutputStream.write( b, off, len );
-                brotliOutputStream.write( b, off, len );
+                if ( brotliOutputStream != null )
+                {
+                    brotliOutputStream.write( b, off, len );
+                }
                 size += len;
             }
         };
@@ -224,7 +245,10 @@ public final class CachingResponseWrapper
     {
         try
         {
-            brotliOutputStream.close();
+            if ( brotliOutputStream != null )
+            {
+                brotliOutputStream.close();
+            }
         }
         finally
         {
