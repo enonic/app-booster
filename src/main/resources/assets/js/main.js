@@ -1,5 +1,11 @@
 (() => {
 
+    if (!document.currentScript) {
+        throw 'Legacy browsers are not supported';
+    }
+
+    let confirmationCallback;
+
     const actions = {
         INVALIDATE: 'invalidate'
     };
@@ -52,16 +58,24 @@
         responseContainer.classList.remove('success');
     }
 
-    const onSuccess = (action, request) => {
-        showResponse(action, request);
+    const hideConfirmation = () => {
+        confirmationContainer.classList.remove('visible');
     }
 
-    const onError = (action, request) => {
-        showResponse(action, request);
-    }
-
-    if (!document.currentScript) {
-        throw 'Legacy browsers are not supported';
+    const showConfirmation = (text) => {
+        confirmationText.innerHTML = text || 'Are you sure?'
+        confirmationContainer.classList.add('visible');
+        const cancelIcon = document.querySelector('#widget-booster-confirmation-dialog .cancel-button-top');
+        const onCancelConfirmation = (e) => {
+            if (modalDialogWrapper.contains(e.target) && e.target.id !== 'cancel-button-top') {
+                return;
+            }
+            hideConfirmation();
+            cancelIcon.removeEventListener('click', onCancelConfirmation);
+            confirmationContainer.removeEventListener('click', onCancelConfirmation);
+        }
+        cancelIcon.addEventListener('click', onCancelConfirmation);
+        confirmationContainer.addEventListener('click', onCancelConfirmation);
     }
 
     const serviceUrl = document.currentScript.getAttribute('data-service-url');
@@ -71,11 +85,40 @@
 
     const project = document.currentScript.getAttribute('data-project');
     const contentId = document.currentScript.getAttribute('data-content-id');
+    const contentPath = document.currentScript.getAttribute('data-content-path');
+
+    const confirmationContainer = document.getElementById('widget-booster-confirmation-dialog');
+    const modalDialogWrapper = document.getElementById('widget-booster-modal-dialog-wrapper');
+    const confirmationText = document.getElementById('widget-booster-confirmation-text');
 
     const submitButton = document.getElementById('widget-booster-container-action');
     if (submitButton) {
         submitButton.addEventListener('click', () => {
-            sendRequest(serviceUrl, actions.INVALIDATE, { project, contentId });
+            confirmationCallback = () => sendRequest(serviceUrl, actions.INVALIDATE, {project, contentId})
+            let confirmationQuestion;
+            if (contentPath) {
+                confirmationQuestion = `Invalidate cache for "<b>${contentPath}</b>"?`;
+            } else {
+                confirmationQuestion = `Invalidate cache for all content in project "<b>${project}</b>"?`;
+            }
+            showConfirmation(confirmationQuestion);
         });
     }
+
+    const confirmYesButton = document.getElementById('widget-booster-confirmation-button-yes');
+    if (confirmYesButton) {
+        confirmYesButton.addEventListener('click', () => {
+            hideConfirmation();
+            if (confirmationCallback) {
+                confirmationCallback();
+            }
+        });
+    }
+
+    const confirmNoButton = document.getElementById('widget-booster-confirmation-button-no');
+
+    if (confirmNoButton) {
+        confirmNoButton.addEventListener('click', () => hideConfirmation());
+    }
+
 })()

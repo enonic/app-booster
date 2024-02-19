@@ -4,30 +4,26 @@ const mustache = require('/lib/mustache');
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
 
-function handleGet(req) {
-    return renderWidgetView(req);
-}
-
-function isAppEnabledOnSite(contentId) {
+const isAppEnabledOnSite = (contentId) => {
     if (!contentId) {
-        return false;
+        return true;
     }
     const site = contentLib.getSite({ key: contentId });
     if (!site || !site.data || !site.data.siteConfig) {
         return false;
     }
-    log.info(JSON.stringify(forceArray(site.data.siteConfig), null, 4));
+
     let siteConfig;
     forceArray(site.data.siteConfig).forEach(config => {
         if (config.applicationKey == app.name) {
             siteConfig = config
         }
     });
-    log.info(JSON.stringify(siteConfig, null, 4));
+
     return !!siteConfig;
 }
 
-function renderWidgetView(req) {
+const renderWidgetView = (req) => {
     const contentId = req.params.contentId || '';
     const project = req.params.repository.replace('com.enonic.cms.', '') || '';
     let contentPath = '';
@@ -64,4 +60,4 @@ function renderWidgetView(req) {
     };
 }
 
-exports.get = handleGet;
+exports.get = (req) => renderWidgetView(req);
