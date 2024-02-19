@@ -34,7 +34,7 @@ const renderWidgetView = (req) => {
         const content = contentLib.get({
             key: contentId
         });
-        contentPath = content._path;
+        contentPath = content._name;
         isSiteSelected = content.type === 'portal:site';
         isContentSelected = !isSiteSelected;
     }

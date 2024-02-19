@@ -58,9 +58,7 @@
         responseContainer.classList.remove('success');
     }
 
-    const hideConfirmation = () => {
-        confirmationContainer.classList.remove('visible');
-    }
+    const hideConfirmation = () => confirmationContainer.classList.remove('visible');
 
     const showConfirmation = (text) => {
         confirmationText.innerHTML = text || 'Are you sure?'
@@ -78,6 +76,22 @@
         confirmationContainer.addEventListener('click', onCancelConfirmation);
     }
 
+    const getConfirmationQuestion = () => {
+        const basePart = 'Purge cache for';
+        let customPart;
+        if (contentPath) {
+            if (isSiteSelected) {
+                customPart = `all content in site "<b>${contentPath}</b>"?`;
+            } else {
+                customPart = `content "<b>${contentPath}</b>"?`;
+            }
+        } else {
+            customPart = `all content in project "<b>${project}</b>"?`;
+        }
+
+        return `${basePart} ${customPart}`;
+    };
+
     const serviceUrl = document.currentScript.getAttribute('data-service-url');
     if (!serviceUrl) {
         throw 'Unable to find Booster service';
@@ -86,6 +100,7 @@
     const project = document.currentScript.getAttribute('data-project');
     const contentId = document.currentScript.getAttribute('data-content-id');
     const contentPath = document.currentScript.getAttribute('data-content-path');
+    const isSiteSelected = document.currentScript.getAttribute('data-site-selected') === 'true';
 
     const confirmationContainer = document.getElementById('widget-booster-confirmation-dialog');
     const modalDialogWrapper = document.getElementById('widget-booster-modal-dialog-wrapper');
@@ -95,13 +110,7 @@
     if (submitButton) {
         submitButton.addEventListener('click', () => {
             confirmationCallback = () => sendRequest(serviceUrl, actions.INVALIDATE, {project, contentId})
-            let confirmationQuestion;
-            if (contentPath) {
-                confirmationQuestion = `Invalidate cache for "<b>${contentPath}</b>"?`;
-            } else {
-                confirmationQuestion = `Invalidate cache for all content in project "<b>${project}</b>"?`;
-            }
-            showConfirmation(confirmationQuestion);
+            showConfirmation(getConfirmationQuestion());
         });
     }
 
