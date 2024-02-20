@@ -60,7 +60,9 @@ public class BoosterRequestFilter
     protected void doHandle( final HttpServletRequest request, final HttpServletResponse response, final FilterChain chain )
         throws Exception
     {
-        final Conditions conditions = new Conditions( config );
+        final Conditions conditions =
+            new Conditions( new Conditions.SiteConfigConditions( config, () -> siteConfigService.execute( request ) )::check,
+                            new Conditions.PortalRequestConditions()::check );
 
         if ( !conditions.checkPreconditions( request ) )
         {
@@ -78,10 +80,9 @@ public class BoosterRequestFilter
 
         final CacheItem stored = cacheStore.get( cacheKey );
         final CacheItem cached;
-        final Instant now = Instant.now();
         if ( stored != null )
         {
-            if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( now ) )
+            if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
             {
                 LOG.debug( "Cached response {} is found but stale", cacheKey );
                 cached = null;
@@ -166,15 +167,17 @@ public class BoosterRequestFilter
 
             LOG.debug( "Response received key cache  {}", cacheKey );
 
-            if ( conditions.checkPostconditions( request, () -> siteConfigService.execute( request ), cachingResponse ) )
+            if ( conditions.checkPostconditions( request, cachingResponse ) )
             {
                 final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
                 final CacheMeta cacheMeta = createCacheMeta( portalRequest );
 
-                newCached = new CacheItem( fullUrl, cachingResponse.getContentType(), cachingResponse.getCachedHeaders(), now, null,
-                                           cachingResponse.getSize(), cachingResponse.getEtag(),
-                                           ByteSupply.of( cachingResponse.getCachedGzipBody() ),
-                                           cachingResponse.getCachedBrBody() != null ? ByteSupply.of( cachingResponse.getCachedBrBody() ) : null );
+                newCached = new CacheItem( fullUrl, cachingResponse.getStatus(), cachingResponse.getContentType(),
+                                           cachingResponse.getCachedHeaders(), Instant.now(), null, cachingResponse.getSize(),
+                                           cachingResponse.getEtag(), ByteSupply.of( cachingResponse.getCachedGzipBody() ),
+                                           cachingResponse.getCachedBrBody() != null
+                                               ? ByteSupply.of( cachingResponse.getCachedBrBody() )
+                                               : null );
                 cacheStore.put( cacheKey, newCached, cacheMeta );
             }
             else

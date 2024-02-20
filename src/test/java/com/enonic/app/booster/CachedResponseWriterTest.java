@@ -220,7 +220,7 @@ class CachedResponseWriterTest
             Map.of( "x-booster-cache", List.of( "ignored" ), "vary", List.of( "Accept-Language" ), "cache-control",
                     List.of( "max-age=1" ) );
 
-        return new CacheItem( "https://example.com/", "text/xhtml", headers, Instant.EPOCH, null, data.length(), "etag",
+        return new CacheItem( "https://example.com/", 200, "text/xhtml", headers, Instant.EPOCH, null, data.length(), "etag",
                               ByteSupply.of( baosGzip ), ByteSupply.of( baosBrotli ) );
     }
 }

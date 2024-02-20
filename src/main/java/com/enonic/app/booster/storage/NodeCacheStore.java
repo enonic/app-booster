@@ -67,11 +67,22 @@ public class NodeCacheStore
 
                 final String contentType = node.data().getString( "contentType" );
                 final Long contentLengthLong = node.data().getLong( "contentLength" );
-                if (contentLengthLong == null )
+                if ( contentLengthLong == null )
                 {
                     LOG.warn( "Cached node does not have content length {}", nodeId );
                     return null;
                 }
+                int status;
+                final Long statusLong = node.data().getLong( "status" );
+                if ( statusLong == null )
+                {
+                    status = 200;
+                }
+                else
+                {
+                    status = statusLong.intValue();
+                }
+
                 final int contentLength = contentLengthLong.intValue();
                 final String etag = node.data().getString( "etag" );
                 final String url = node.data().getString( "url" );
@@ -87,7 +98,7 @@ public class NodeCacheStore
                 // Might want to move brotli compression in background process. In this case brotli-compressed body would be optional
                 final ByteSource brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
 
-                return new CacheItem( url, contentType, headers, cachedTime, invalidatedTime, contentLength, etag,
+                return new CacheItem( url, status, contentType, headers, cachedTime, invalidatedTime, contentLength, etag,
                                       ByteSupply.of( gzipBody ), brotliBody == null ? null : ByteSupply.of( brotliBody ) );
             }
             catch ( NodeNotFoundException e )
@@ -102,8 +113,6 @@ public class NodeCacheStore
 
     public void put( final String cacheKey, CacheItem cacheItem, final CacheMeta cacheMeta )
     {
-        final Instant now = Instant.now();
-
         final NodeId nodeId = NodeId.from( cacheKey );
 
         final ByteSource gzipByteSource = ByteSupply.asByteSource( cacheItem.gzipData() );
@@ -111,26 +120,7 @@ public class NodeCacheStore
         final ByteSource brotliByteSource = cacheItem.brotliData() == null ? null : ByteSupply.asByteSource( cacheItem.brotliData() );
 
         BoosterContext.runInContext( () -> {
-            final PropertyTree data = new PropertyTree();
-            data.setString( "url", cacheItem.url() );
-            data.setString( "contentType", cacheItem.contentType() );
-            data.setLong( "contentLength", (long) cacheItem.contentLength() );
-            data.setString( "etag", cacheItem.etag() );
-            data.setBinaryReference( "gzipData", GZIP_DATA_BINARY_REFERENCE );
-            if ( brotliByteSource != null )
-            {
-                data.setBinaryReference( "brotliData", BROTLI_DATA_BINARY_REFERENCE );
-            }
-            data.setString( "project", cacheMeta.project() );
-            data.setString( "siteId", cacheMeta.siteId() );
-            data.setString( "contentId", cacheMeta.contentId() );
-            data.setString( "contentPath", cacheMeta.contentPath() );
-
-            data.setInstant( "cachedTime", now );
-
-            final PropertySet headersPropertyTree = data.newSet();
-            cacheItem.headers().forEach( headersPropertyTree::addStrings );
-            data.setSet( "headers", headersPropertyTree );
+            final PropertyTree data = buildData( cacheItem, cacheMeta, brotliByteSource != null );
 
             if ( nodeService.nodeExists( nodeId ) )
             {
@@ -177,6 +167,31 @@ public class NodeCacheStore
                 }
             }
         } );
+    }
+
+    private static PropertyTree buildData( final CacheItem cacheItem, final CacheMeta cacheMeta, boolean withBrotli )
+    {
+        final PropertyTree data = new PropertyTree();
+        data.setLong( "status", (long) cacheItem.status() );
+        data.setString( "url", cacheItem.url() );
+        data.setString( "contentType", cacheItem.contentType() );
+        data.setLong( "contentLength", (long) cacheItem.contentLength() );
+        data.setString( "etag", cacheItem.etag() );
+        data.setBinaryReference( "gzipData", GZIP_DATA_BINARY_REFERENCE );
+        if ( withBrotli )
+        {
+            data.setBinaryReference( "brotliData", BROTLI_DATA_BINARY_REFERENCE );
+        }
+        data.setString( "project", cacheMeta.project() );
+        data.setString( "siteId", cacheMeta.siteId() );
+        data.setString( "contentId", cacheMeta.contentId() );
+        data.setString( "contentPath", cacheMeta.contentPath() );
+        data.setInstant( "cachedTime", cacheItem.cachedTime() );
+        final PropertySet headersPropertyTree = data.newSet();
+        cacheItem.headers().forEach( headersPropertyTree::addStrings );
+        data.setSet( "headers", headersPropertyTree );
+
+        return data;
     }
 
     public void remove( final String cacheKey )
