@@ -1,0 +1,41 @@
+#widget-booster .widget-booster-container {
+    text-align: center;
+    margin: 10px 0;
+}
+
+#widget-booster .widget-booster-button {
+    margin: 20px auto;
+    display: block;
+    padding: 5px 20px;
+}
+
+#widget-booster #widget-booster-action-response {
+    display: none;
+    text-align: center;
+    font-size: 14px;
+}
+
+#widget-booster #widget-booster-action-response.success {
+    display: block;
+    color: green;
+}
+
+#widget-booster #widget-booster-action-response.failure {
+    display: block;
+    color: red;
+}
+
+#widget-booster-confirmation-dialog {
+    display: none;
+    text-align: left;
+}
+
+#widget-booster-confirmation-dialog.visible {
+    display: flex;
+    background-color: rgb(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+#widget-booster-confirmation-dialog.visible .confirmation-dialog {
+    display: block;
+}

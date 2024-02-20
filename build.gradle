@@ -33,8 +33,11 @@ dependencies {
 	include libs.brotli4j.native.linux.aarch64
 	include libs.brotli4j.native.osx.aarch64
 	include libs.brotli4j.native.osx.amd64
+	include "com.enonic.xp:lib-content:${xpVersion}"
 	include "com.enonic.xp:lib-task:${xpVersion}"
 	include "com.enonic.xp:lib-project:${xpVersion}"
+	include "com.enonic.xp:lib-portal:${xpVersion}"
+	include "com.enonic.lib:lib-mustache:2.1.1"
 
 	testImplementation(platform('org.junit:junit-bom:5.10.2'))
     testImplementation(platform("org.mockito:mockito-bom:5.10.0"))
