@@ -12,5 +12,5 @@ public @interface BoosterConfig
 
     boolean disableXBoosterCacheHeader() default false;
 
-    boolean preventDownstreamCaching() default false;
+    String overrideCacheControlHeader();
 }

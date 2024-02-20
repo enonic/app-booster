@@ -35,7 +35,7 @@ public final class CachedResponseWriter
         acceptEncoding = RequestUtils.acceptEncoding( request );
         expectEtag = request.getHeader( "If-None-Match" );
         writeBody = request.getMethod().equalsIgnoreCase( "GET" );
-        cacheControlOverride = config.preventDownstreamCaching();
+        cacheControlOverride = config.overrideCacheControlHeader() != null;
     }
 
     /**

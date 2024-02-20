@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableXBoosterCacheHeader, int cacheSize,
-                                  Set<String> appList, boolean preventDownstreamCaching)
+                                  Set<String> appList, String overrideCacheControlHeader)
 {
 
     public static BoosterConfigParsed parse( BoosterConfig config )
@@ -24,9 +24,9 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
             .map( String::trim )
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
-        var preventDownstreamCaching = config.preventDownstreamCaching();
+        var overrideCacheControlHeader = config.overrideCacheControlHeader();
 
         return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableXBoosterCacheHeader, cacheSize, appList,
-                                        preventDownstreamCaching );
+                                        overrideCacheControlHeader );
     }
 }

@@ -121,11 +121,10 @@ public class BoosterRequestFilter
             response.addHeader( "Vary", "Accept-Encoding" );
         }
 
-        if ( config.preventDownstreamCaching() )
+        if ( config.overrideCacheControlHeader() != null )
         {
-            LOG.debug( "Prevent downstream caching" );
-            // Fastly does not respect no-store. But does respect private
-            response.setHeader( "Cache-Control", "private, no-store" );
+            LOG.debug( "Override Cache-Control header {}", config.overrideCacheControlHeader() );
+            response.setHeader( "Cache-Control", config.overrideCacheControlHeader() );
         }
 
         if ( cached != null )
