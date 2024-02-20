@@ -25,65 +25,19 @@ import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.site.SiteConfig;
 
-public class Conditions
+public class Postconditions
 {
+    private static final Logger LOG = LoggerFactory.getLogger( Postconditions.class );
 
     List<BiFunction<HttpServletRequest, CachingResponse, Boolean>> extraPostconditions;
 
     @SafeVarargs
-    public Conditions( BiFunction<HttpServletRequest, CachingResponse, Boolean>... extraPostconditions )
+    public Postconditions( BiFunction<HttpServletRequest, CachingResponse, Boolean>... extraPostconditions )
     {
         this.extraPostconditions = List.of( extraPostconditions );
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger( Conditions.class );
-
-    public boolean checkPreconditions( final HttpServletRequest request )
-    {
-        // Anything else except http and https (like ws, wss) we bypass.
-        final String scheme = request.getScheme();
-        if ( !scheme.equals( "http" ) && !scheme.equals( "https" ) )
-        {
-            LOG.debug( "Bypassing request with scheme {}", scheme );
-            return false;
-        }
-
-        // Browsers use only GET then they visit pages. We also allow HEAD requests but only for the case that we can serve response from cache.
-        final String method = request.getMethod();
-        if ( !"GET".equalsIgnoreCase( method ) && !"HEAD".equalsIgnoreCase( method ) )
-        {
-            LOG.debug( "Bypassing request with method {}", method );
-            return false;
-        }
-
-        // Authorization header indicates that request is personalized.
-        // Don't cache even if later response has cache-control 'public' to information leak do to misconfiguration.
-        final boolean hasAuthorization = request.getHeader( "Authorization" ) != null;
-        if ( hasAuthorization )
-        {
-            LOG.debug( "Bypassing request with Authorization" );
-            return false;
-        }
-
-        // Session means that request is personalized.
-        final boolean validSession = request.isRequestedSessionIdValid();
-        if ( validSession )
-        {
-            LOG.debug( "Bypassing request with valid session" );
-            return false;
-        }
-
-        // If path contains /_/ it is a controller request. We don't cache them here at least for now.
-        final String requestURI = request.getRequestURI();
-        if ( requestURI.contains( "/_/" ) )
-        {
-            LOG.debug( "Bypassing request with uri {}", requestURI );
-            return false;
-        }
-        return true;
-    }
-
-    public boolean checkPostconditions( final HttpServletRequest request, final CachingResponse response )
+    public boolean check( final HttpServletRequest request, final CachingResponse response )
     {
         // In case of HEAD method there might be an empty body. We definitely don't want to cache it.
         // In fact, we don't want to cache responses for requests with anything except GET method.
@@ -198,19 +152,19 @@ public class Conditions
     {
         private final BoosterConfigParsed config;
 
-        private final Supplier<SiteConfig> siteConfigSupplier;
+        private final SiteConfigService siteConfigService;
 
-        public SiteConfigConditions( final BoosterConfigParsed config, Supplier<SiteConfig> siteConfigSupplier )
+        public SiteConfigConditions( final BoosterConfigParsed config, final SiteConfigService siteConfigService )
         {
             this.config = config;
-            this.siteConfigSupplier = siteConfigSupplier;
+            this.siteConfigService = siteConfigService;
         }
 
         private static final ConcurrentMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
         public boolean check( HttpServletRequest request, CachingResponse response )
         {
-            final SiteConfig siteConfig = siteConfigSupplier.get();
+            final SiteConfig siteConfig = siteConfigService.execute( request );
 
             // site must have booster application
             if ( siteConfig == null )
