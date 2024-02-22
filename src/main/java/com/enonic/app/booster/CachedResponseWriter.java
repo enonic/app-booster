@@ -62,13 +62,18 @@ public final class CachedResponseWriter
 
         copyHeaders( response, cached.headers(), notModified );
 
+        response.setHeader( "ETag", eTagValue );
+
         if ( !config.disableXBoosterCacheHeader() )
         {
             response.setHeader( "X-Booster-Cache", "HIT" );
         }
-        response.setHeader( "ETag", eTagValue );
-        response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
-                                                                   Integer.MAX_VALUE ) ) );
+
+        if ( !config.disableAgeHeader() )
+        {
+            response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
+                                                                       Integer.MAX_VALUE ) ) );
+        }
 
         if ( notModified )
         {

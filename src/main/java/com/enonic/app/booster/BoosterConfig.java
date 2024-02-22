@@ -12,5 +12,7 @@ public @interface BoosterConfig
 
     boolean disableXBoosterCacheHeader() default false;
 
+    boolean disableAgeHeader() default false;
+
     String overrideCacheControlHeader();
 }

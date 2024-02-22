@@ -6,7 +6,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableXBoosterCacheHeader, int cacheSize,
+public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableXBoosterCacheHeader, boolean disableAgeHeader,
+                                  int cacheSize,
                                   Set<String> appList, String overrideCacheControlHeader)
 {
 
@@ -25,8 +26,9 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
         var overrideCacheControlHeader = config.overrideCacheControlHeader();
+        var disableAgeHeader = config.disableAgeHeader();
 
-        return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableXBoosterCacheHeader, cacheSize, appList,
+        return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableXBoosterCacheHeader, disableAgeHeader, cacheSize, appList,
                                         overrideCacheControlHeader );
     }
 }

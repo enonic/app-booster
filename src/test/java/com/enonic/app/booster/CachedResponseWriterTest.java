@@ -51,7 +51,7 @@ class CachedResponseWriterTest
     void write304()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
@@ -76,7 +76,7 @@ class CachedResponseWriterTest
     void writeHead()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
@@ -101,7 +101,7 @@ class CachedResponseWriterTest
     void write()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
@@ -127,7 +127,7 @@ class CachedResponseWriterTest
     void write_no_booster_header()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), true, 1, Set.of(), "private" );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), true, false, 1, Set.of(), "private" );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
@@ -147,11 +147,12 @@ class CachedResponseWriterTest
         verify( response ).getOutputStream();
         verifyNoMoreInteractions( response );
     }
+
     @Test
     void write_brotli()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
@@ -178,7 +179,7 @@ class CachedResponseWriterTest
     void write_gzip()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
@@ -205,7 +206,7 @@ class CachedResponseWriterTest
     void no_cache_control_override()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), null );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))

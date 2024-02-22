@@ -225,7 +225,7 @@ class PostconditionsTest
         SiteConfigService siteConfigService = mock();
         when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), null );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
         final Postconditions.SiteConfigConditions siteConfigConditions =
             new Postconditions.SiteConfigConditions( config, siteConfigService );
@@ -242,7 +242,7 @@ class PostconditionsTest
         SiteConfigService siteConfigService = mock();
         when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), null );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
         final Postconditions.SiteConfigConditions siteConfigConditions =
             new Postconditions.SiteConfigConditions( config, siteConfigService );
@@ -262,7 +262,7 @@ class PostconditionsTest
         SiteConfigService siteConfigService = mock();
         when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), null );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
@@ -288,7 +288,7 @@ class PostconditionsTest
         SiteConfigService siteConfigService = mock();
         when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, 1, Set.of(), null );
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
