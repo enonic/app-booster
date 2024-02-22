@@ -28,14 +28,14 @@ public final class CachedResponseWriter
 
     final boolean writeBody;
 
-    final boolean cacheControlOverride;
+    final BoosterConfigParsed config;
 
     public CachedResponseWriter( final HttpServletRequest request, final BoosterConfigParsed config )
     {
-        acceptEncoding = RequestUtils.acceptEncoding( request );
-        expectEtag = request.getHeader( "If-None-Match" );
-        writeBody = request.getMethod().equalsIgnoreCase( "GET" );
-        cacheControlOverride = config.overrideCacheControlHeader() != null;
+        this.acceptEncoding = RequestUtils.acceptEncoding( request );
+        this.expectEtag = request.getHeader( "If-None-Match" );
+        this.writeBody = request.getMethod().equalsIgnoreCase( "GET" );
+        this.config = config;
     }
 
     /**
@@ -51,22 +51,24 @@ public final class CachedResponseWriter
     public void write( final HttpServletResponse response, final CacheItem cached )
         throws IOException
     {
-        response.setContentType( cached.contentType() );
-
         final String eTagValue = switch ( acceptEncoding )
         {
             case BROTLI -> "\"" + cached.etag() + "-br" + "\"";
             case GZIP -> "\"" + cached.etag() + "-gzip" + "\"";
             default -> "\"" + cached.etag() + "\"";
         };
-        response.setHeader( "ETag", eTagValue );
-
-        response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
-                                                                   Integer.MAX_VALUE ) ) );
 
         final boolean notModified = eTagValue.equals( expectEtag );
 
         copyHeaders( response, cached.headers(), notModified );
+
+        if ( !config.disableXBoosterCacheHeader() )
+        {
+            response.setHeader( "X-Booster-Cache", "HIT" );
+        }
+        response.setHeader( "ETag", eTagValue );
+        response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
+                                                                   Integer.MAX_VALUE ) ) );
 
         if ( notModified )
         {
@@ -77,6 +79,7 @@ public final class CachedResponseWriter
         }
         else
         {
+            response.setContentType( cached.contentType() );
             response.setStatus( 200 );
         }
 
@@ -122,7 +125,6 @@ public final class CachedResponseWriter
         }
         else
         {
-
             LOG.debug( "Request method is HEAD. Don't write cached body" );
             // Make sure Jetty does not try to calculate content-length response header for HEAD request
             response.flushBuffer();
@@ -135,7 +137,7 @@ public final class CachedResponseWriter
         headers.entrySet()
             .stream()
             .filter( entry -> !OVERRIDE_HEADERS.contains( entry.getKey() ) )
-            .filter( entry -> !cacheControlOverride || !entry.getKey().equals( "cache-control" ) )
+            .filter( entry -> config.overrideCacheControlHeader() == null || !entry.getKey().equals( "cache-control" ) )
             .filter( entry -> !notModified || NOT_MODIFIED_HEADERS.contains( entry.getKey() ) )
             .forEach( entry -> entry.getValue().forEach( value -> response.addHeader( entry.getKey(), value ) ) );
     }

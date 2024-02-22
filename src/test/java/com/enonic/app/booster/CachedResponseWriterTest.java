@@ -63,11 +63,11 @@ class CachedResponseWriterTest
         }
 
         writer.write( response, newCacheItem() );
+        verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
         verify( response ).addHeader( "vary", "Accept-Language" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setStatus( 304 );
-        verify( response ).setContentType( "text/xhtml" );
         verify( response ).flushBuffer();
         verifyNoMoreInteractions( response );
     }
@@ -87,6 +87,7 @@ class CachedResponseWriterTest
         }
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
+        verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
         verify( response ).addHeader( "vary", "Accept-Language" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
@@ -112,6 +113,7 @@ class CachedResponseWriterTest
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
+        verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
         verify( response ).addHeader( "vary", "Accept-Language" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
@@ -121,6 +123,30 @@ class CachedResponseWriterTest
         verifyNoMoreInteractions( response );
     }
 
+    @Test
+    void write_no_booster_header()
+        throws Exception
+    {
+        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), true, 1, Set.of(), "private" );
+
+        final CachedResponseWriter writer;
+        try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
+        {
+            when( request.getMethod() ).thenReturn( "GET" );
+            requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
+            writer = new CachedResponseWriter( request, config );
+        }
+        when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
+        writer.write( response, newCacheItem() );
+        verify( response ).setContentType( "text/xhtml" );
+        verify( response ).setHeader( "ETag", "\"etag\"" );
+        verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).setIntHeader( eq( "Age" ), anyInt() );
+        verify( response ).setContentLength( 12 );
+        verify( response ).setStatus( 200 );
+        verify( response ).getOutputStream();
+        verifyNoMoreInteractions( response );
+    }
     @Test
     void write_brotli()
         throws Exception
@@ -137,6 +163,7 @@ class CachedResponseWriterTest
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
+        verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag-br\"" );
         verify( response ).setHeader( "Content-Encoding", "br" );
         verify( response ).addHeader( "vary", "Accept-Language" );
@@ -163,6 +190,7 @@ class CachedResponseWriterTest
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
+        verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag-gzip\"" );
         verify( response ).setHeader( "Content-Encoding", "gzip" );
         verify( response ).addHeader( "vary", "Accept-Language" );
@@ -189,6 +217,7 @@ class CachedResponseWriterTest
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
+        verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
         verify( response ).addHeader( "vary", "Accept-Language" );
         verify( response ).addHeader( "cache-control", "max-age=1" );

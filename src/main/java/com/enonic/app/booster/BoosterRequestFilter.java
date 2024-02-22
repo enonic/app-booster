@@ -82,12 +82,6 @@ public class BoosterRequestFilter
             LOG.debug( "Cached response is stale {}", cacheKey );
         }
 
-        if ( !config.disableXBoosterCacheHeader() )
-        {
-            // Report cache HIT or MISS. Header is not present if cache is not used
-            response.setHeader( "X-Booster-Cache", cached != null ? "HIT" : "MISS" );
-        }
-
         // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
         // Make sure we don't set the header twice - Jetty also can set this header sometimes
         if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
@@ -128,6 +122,10 @@ public class BoosterRequestFilter
             }
 
             LOG.debug( "Processing request with cache key {}", cacheKey );
+            if ( !config.disableXBoosterCacheHeader() )
+            {
+                response.setHeader( "X-Booster-Cache", "MISS" );
+            }
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( response );
             try (cachingResponse)
