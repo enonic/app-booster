@@ -1,21 +1,25 @@
 package com.enonic.app.booster.servlet;
 
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
+
+import com.enonic.app.booster.io.ByteSupply;
 
 public interface CachingResponse
     extends HttpServletResponse, AutoCloseable
 {
-    ByteArrayOutputStream getCachedGzipBody();
+    ByteSupply getCachedGzipBody();
 
-    ByteArrayOutputStream getCachedBrBody();
+    Optional<ByteSupply> getCachedBrBody();
 
     String getEtag();
 
     int getSize();
 
     Map<String, List<String>> getCachedHeaders();
+
+    boolean isCached();
 }

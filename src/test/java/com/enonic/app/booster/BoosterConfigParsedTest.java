@@ -1,5 +1,6 @@
 package com.enonic.app.booster;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class BoosterConfigParsedTest
         assertEquals( Set.of(), parse.appList() );
         assertEquals( 10000, parse.cacheSize() );
         assertFalse( parse.disableXBoosterCacheHeader() );
-        assertNull( parse.overrideCacheControlHeader() );
+        assertEquals( Map.of(), parse.overrideHeaders() );
     }
 
     @Test
@@ -35,9 +36,11 @@ class BoosterConfigParsedTest
         when( config.excludeQueryParams() ).thenReturn( "b, a" );
         when( config.appsInvalidateCacheOnStart() ).thenReturn( "app2, app1" );
         when( config.cacheTtl() ).thenReturn( "PT24H" );
+        when( config.overrideHeaders() ).thenReturn( "\"Cache-Control: private, no-store\", \"X-Instance: \"\"jupiter\"\"\"" );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
         assertEquals( Set.of( "a", "b" ), parse.excludeQueryParams() );
         assertEquals( Set.of( "app1", "app2" ), parse.appList() );
         assertEquals( 86400, parse.cacheTtlSeconds() );
+        assertEquals( Map.of( "Cache-Control", "private, no-store", "X-Instance", "\"jupiter\"" ), parse.overrideHeaders() );
     }
 }

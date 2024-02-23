@@ -2,6 +2,7 @@ package com.enonic.app.booster.servlet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.security.DigestOutputStream;
 import java.time.Instant;
@@ -14,23 +15,36 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 
-import com.enonic.app.booster.MessageDigests;
+import com.enonic.app.booster.BoosterConfigParsed;
+import com.enonic.app.booster.utils.MessageDigests;
+import com.enonic.app.booster.Postconditions;
+import com.enonic.app.booster.io.ByteSupply;
 
 public final class CachingResponseWrapper
     extends HttpServletResponseWrapper
     implements CachingResponse
 {
+    private static final Logger LOG = LoggerFactory.getLogger( CachingResponseWrapper.class );
+
     String etag;
 
     final ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
@@ -44,6 +58,18 @@ public final class CachingResponseWrapper
     int size;
 
     final Map<String, List<String>> headers = new LinkedHashMap<>();
+
+    final HttpServletRequest request;
+
+    final HttpServletResponse response;
+
+    final BiFunction<HttpServletRequest, CachingResponse, Boolean> postconditions;
+
+    final AtomicReference<ServletOutputStream> outputStream = new AtomicReference<>();
+
+    Boolean cached;
+
+    final BoosterConfigParsed config;
 
     static boolean BROTLI_SUPPORTED;
 
@@ -60,9 +86,14 @@ public final class CachingResponseWrapper
         }
     }
 
-    public CachingResponseWrapper( final HttpServletResponse response )
+    public CachingResponseWrapper( final HttpServletRequest request, final HttpServletResponse response,
+                                   final BiFunction<HttpServletRequest, CachingResponse, Boolean> postconditions, final BoosterConfigParsed config )
     {
         super( response );
+        this.request = request;
+        this.response = response;
+        this.postconditions = postconditions;
+        this.config = config;
         try
         {
             this.brotliData = BROTLI_SUPPORTED ? new ByteArrayOutputStream() : null;
@@ -77,15 +108,21 @@ public final class CachingResponseWrapper
     }
 
     @Override
-    public ByteArrayOutputStream getCachedGzipBody()
+    public boolean isCached()
     {
-        return gzipData;
+        return Boolean.TRUE.equals( cached );
     }
 
     @Override
-    public ByteArrayOutputStream getCachedBrBody()
+    public ByteSupply getCachedGzipBody()
     {
-        return brotliData;
+        return ByteSupply.of( gzipData );
+    }
+
+    @Override
+    public Optional<ByteSupply> getCachedBrBody()
+    {
+        return Optional.ofNullable( brotliData ).map( ByteSupply::of );
     }
 
     @Override
@@ -189,48 +226,87 @@ public final class CachingResponseWrapper
     public ServletOutputStream getOutputStream()
         throws IOException
     {
-        final ServletOutputStream delegate = super.getOutputStream();
-
-        return new ServletOutputStream()
+        final ServletOutputStream delegateCached = outputStream.get();
+        if ( delegateCached != null )
         {
-            @Override
-            public void setWriteListener( final WriteListener writeListener )
+            return delegateCached;
+        }
+
+        final ServletOutputStream delegate = super.getOutputStream();
+        if ( cached == null && postconditions.apply( request, this ) )
+        {
+            cached = true;
+
+            // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
+            // Make sure we don't set the header twice - Jetty also can set this header sometimes
+            if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
             {
-                delegate.setWriteListener( writeListener );
+                response.addHeader( "Vary", "Accept-Encoding" );
             }
 
-            @Override
-            public boolean isReady()
-            {
-                return delegate.isReady();
-            }
+            config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
 
-            @Override
-            public void write( final int b )
-                throws IOException
-            {
-                delegate.write( b );
-                digestOutputStream.write( b );
-                if ( brotliOutputStream != null )
-                {
-                    brotliOutputStream.write( b );
-                }
-                size++;
-            }
+            outputStream.set( new CachingOutputStream( delegate ) );
+        }
+        else
+        {
+            outputStream.set( delegate );
+        }
+        return outputStream.get();
+    }
 
-            @Override
-            public void write( final byte[] b, final int off, final int len )
-                throws IOException
-            {
-                delegate.write( b, off, len );
-                digestOutputStream.write( b, off, len );
-                if ( brotliOutputStream != null )
-                {
-                    brotliOutputStream.write( b, off, len );
-                }
-                size += len;
-            }
-        };
+    @Override
+    public void addCookie( final Cookie cookie )
+    {
+        cached = false;
+        super.addCookie( cookie );
+    }
+
+    @Override
+    public void sendError( final int sc, final String msg )
+        throws IOException
+    {
+        cached = false;
+        super.sendError( sc, msg );
+    }
+
+    @Override
+    public void sendError( final int sc )
+        throws IOException
+    {
+        cached = false;
+        super.sendError( sc );
+    }
+
+    @Override
+    public void sendRedirect( final String location )
+        throws IOException
+    {
+        cached = false;
+        super.sendRedirect( location );
+    }
+
+    @Override
+    public PrintWriter getWriter()
+        throws IOException
+    {
+        cached = false;
+        return super.getWriter();
+    }
+
+    @Override
+    public void reset()
+    {
+        cached = false;
+        outputStream.set( null );
+        super.reset();
+    }
+
+    @Override
+    public void resetBuffer()
+    {
+        cached = false;
+        super.resetBuffer();
     }
 
     @Override
@@ -253,6 +329,55 @@ public final class CachingResponseWrapper
         finally
         {
             digestOutputStream.close();
+        }
+    }
+
+    private class CachingOutputStream
+        extends ServletOutputStream
+    {
+        private final ServletOutputStream delegate;
+
+        public CachingOutputStream( final ServletOutputStream delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void setWriteListener( final WriteListener writeListener )
+        {
+            delegate.setWriteListener( writeListener );
+        }
+
+        @Override
+        public boolean isReady()
+        {
+            return delegate.isReady();
+        }
+
+        @Override
+        public void write( final int b )
+            throws IOException
+        {
+            delegate.write( b );
+            digestOutputStream.write( b );
+            if ( brotliOutputStream != null )
+            {
+                brotliOutputStream.write( b );
+            }
+            size++;
+        }
+
+        @Override
+        public void write( final byte[] b, final int off, final int len )
+            throws IOException
+        {
+            delegate.write( b, off, len );
+            digestOutputStream.write( b, off, len );
+            if ( brotliOutputStream != null )
+            {
+                brotliOutputStream.write( b, off, len );
+            }
+            size += len;
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.enonic.app.booster;
+package com.enonic.app.booster.utils;
 
 import java.util.HexFormat;
 

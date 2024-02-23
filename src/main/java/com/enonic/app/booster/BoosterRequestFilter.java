@@ -2,7 +2,6 @@ package com.enonic.app.booster;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Locale;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -18,12 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.concurrent.Collapser;
-import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.servlet.CachingResponseWrapper;
 import com.enonic.app.booster.servlet.RequestUtils;
 import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.portal.PortalRequest;
+import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.web.filter.OncePerRequestFilter;
 
 @Component(immediate = true, service = Filter.class, property = {"connector=xp"}, configurationPid = "com.enonic.app.booster")
@@ -40,13 +39,10 @@ public class BoosterRequestFilter
 
     private final Collapser<CacheItem> requestCollapser = new Collapser<>();
 
-    private final SiteConfigService siteConfigService;
-
     @Activate
-    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore, @Reference final SiteConfigService siteConfigService )
+    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore )
     {
         this.cacheStore = cacheStore;
-        this.siteConfigService = siteConfigService;
     }
 
     @Activate
@@ -82,21 +78,6 @@ public class BoosterRequestFilter
             LOG.debug( "Cached response is stale {}", cacheKey );
         }
 
-        // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
-        // Make sure we don't set the header twice - Jetty also can set this header sometimes
-        if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
-        {
-            response.addHeader( "Vary", "Accept-Encoding" );
-        }
-
-        if ( config.overrideCacheControlHeader() != null )
-        {
-            // TODO. We probably can't do it here, because we don't know if response is cacheable yet
-            // we can only do it if we change to pre-cache strategy
-            LOG.debug( "Override Cache-Control header {}", config.overrideCacheControlHeader() );
-            response.setHeader( "Cache-Control", config.overrideCacheControlHeader() );
-        }
-
         if ( cached != null )
         {
             LOG.debug( "Writing directly from cache {}", cacheKey );
@@ -127,33 +108,25 @@ public class BoosterRequestFilter
                 response.setHeader( "X-Booster-Cache", "MISS" );
             }
 
-            final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( response );
+            final Postconditions postconditions = new Postconditions( new Postconditions.PortalRequestConditions()::check,
+                                                                      new Postconditions.SiteConfigConditions( config )::check );
+
+            final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, postconditions::check, config );
             try (cachingResponse)
             {
                 chain.doFilter( request, cachingResponse );
             }
-            catch ( Exception e )
-            {
-                cacheStore.remove( cacheKey );
-                throw e;
-            }
 
-            LOG.debug( "Response received key cache {}", cacheKey );
+            LOG.debug( "Response received for cache key {}. Can be stored: {}", cacheKey, cachingResponse.isCached() );
 
-            final Postconditions postconditions = new Postconditions( new Postconditions.PortalRequestConditions()::check,
-                                                                      new Postconditions.SiteConfigConditions( config,
-                                                                                                               siteConfigService )::check );
-
-            if ( postconditions.check( request, cachingResponse ) )
+            if ( cachingResponse.isCached() )
             {
                 final CacheMeta cacheMeta = createCacheMeta( request );
 
                 newCached = new CacheItem( fullUrl, cachingResponse.getStatus(), cachingResponse.getContentType(),
                                            cachingResponse.getCachedHeaders(), Instant.now(), null, cachingResponse.getSize(),
-                                           cachingResponse.getEtag(), ByteSupply.of( cachingResponse.getCachedGzipBody() ),
-                                           cachingResponse.getCachedBrBody() != null
-                                               ? ByteSupply.of( cachingResponse.getCachedBrBody() )
-                                               : null );
+                                           cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
+                                           cachingResponse.getCachedBrBody().orElse( null ) );
                 cacheStore.put( cacheKey, newCached, cacheMeta );
             }
             else
@@ -161,7 +134,7 @@ public class BoosterRequestFilter
                 if ( stored != null )
                 {
                     // Evacuate item from cache immediately if it is no longer cacheable
-                    // This prevents request collapsing
+                    // to prevent needless request collapsing
                     cacheStore.remove( cacheKey );
                 }
             }
@@ -178,21 +151,18 @@ public class BoosterRequestFilter
 
     private CacheItem getCached( final CacheItem stored )
     {
-        if ( stored != null )
+        if ( stored == null )
         {
-            if ( stored.invalidatedTime() != null ||
-                stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
-            {
-                return null;
-            }
-            else
-            {
-                return stored;
-            }
+            return null;
+        }
+        if ( stored.invalidatedTime() != null ||
+            stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
+        {
+            return null;
         }
         else
         {
-            return null;
+            return stored;
         }
     }
 
@@ -200,9 +170,17 @@ public class BoosterRequestFilter
     {
         final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
 
-        final String project = portalRequest.getRepositoryId() != null
-            ? portalRequest.getRepositoryId().toString().substring( "com.enonic.cms.".length() )
-            : null;
+        final String project;
+        if ( portalRequest.getRepositoryId() != null )
+        {
+            final ProjectName projectName = ProjectName.from( portalRequest.getRepositoryId() );
+            project = projectName != null ? projectName.toString() : null;
+        }
+        else
+        {
+            project = null;
+        }
+
         final String siteId = portalRequest.getSite() != null ? portalRequest.getSite().getId().toString() : null;
         final String contentId;
         final String contentPath;

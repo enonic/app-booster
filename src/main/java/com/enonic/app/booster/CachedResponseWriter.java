@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -64,6 +65,13 @@ public final class CachedResponseWriter
 
         response.setHeader( "ETag", eTagValue );
 
+        if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
+        {
+            response.addHeader( "Vary", "Accept-Encoding" );
+        }
+
+        config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
+
         if ( !config.disableXBoosterCacheHeader() )
         {
             response.setHeader( "X-Booster-Cache", "HIT" );
@@ -74,6 +82,7 @@ public final class CachedResponseWriter
             response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
                                                                        Integer.MAX_VALUE ) ) );
         }
+
 
         if ( notModified )
         {
@@ -141,9 +150,9 @@ public final class CachedResponseWriter
     {
         headers.entrySet()
             .stream()
-            .filter( entry -> !OVERRIDE_HEADERS.contains( entry.getKey() ) )
-            .filter( entry -> config.overrideCacheControlHeader() == null || !entry.getKey().equals( "cache-control" ) )
             .filter( entry -> !notModified || NOT_MODIFIED_HEADERS.contains( entry.getKey() ) )
+            .filter( entry -> !OVERRIDE_HEADERS.contains( entry.getKey() ) )
+            .filter( entry -> config.overrideHeaders().keySet().stream().noneMatch( h -> h.equalsIgnoreCase( entry.getKey() ) ) )
             .forEach( entry -> entry.getValue().forEach( value -> response.addHeader( entry.getKey(), value ) ) );
     }
 }

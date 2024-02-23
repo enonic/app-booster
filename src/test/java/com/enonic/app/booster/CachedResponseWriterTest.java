@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,12 +52,14 @@ class CachedResponseWriterTest
     void write304()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             when( request.getHeader( "If-None-Match" ) ).thenReturn( "\"etag\"" );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, config );
@@ -65,7 +68,9 @@ class CachedResponseWriterTest
         writer.write( response, newCacheItem() );
         verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setStatus( 304 );
         verify( response ).flushBuffer();
@@ -76,12 +81,13 @@ class CachedResponseWriterTest
     void writeHead()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
-
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "HEAD" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, config );
         }
@@ -89,7 +95,9 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
@@ -101,12 +109,13 @@ class CachedResponseWriterTest
     void write()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
-
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, config );
         }
@@ -115,7 +124,9 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
@@ -127,12 +138,15 @@ class CachedResponseWriterTest
     void write_no_booster_header()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), true, false, 1, Set.of(), "private" );
-
+        final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( boosterConfig.disableXBoosterCacheHeader() ).thenReturn( true );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( boosterConfig );
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, config );
         }
@@ -140,7 +154,9 @@ class CachedResponseWriterTest
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
@@ -152,12 +168,14 @@ class CachedResponseWriterTest
     void write_brotli()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
-
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
+
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.BROTLI );
             writer = new CachedResponseWriter( request, config );
         }
@@ -166,8 +184,10 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag-br\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).setHeader( "Content-Encoding", "br" );
         verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 16 );
         verify( response ).setStatus( 200 );
@@ -179,12 +199,14 @@ class CachedResponseWriterTest
     void write_gzip()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), "private" );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.GZIP );
             writer = new CachedResponseWriter( request, config );
         }
@@ -193,8 +215,10 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag-gzip\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).setHeader( "Content-Encoding", "gzip" );
         verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 32 );
         verify( response ).setStatus( 200 );
@@ -206,12 +230,14 @@ class CachedResponseWriterTest
     void no_cache_control_override()
         throws Exception
     {
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
+            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, config );
         }
@@ -220,6 +246,7 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "X-Booster-Cache", "HIT" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
+        verify( response ).addHeader( "Vary", "Accept-Encoding" );
         verify( response ).addHeader( "vary", "Accept-Language" );
         verify( response ).addHeader( "cache-control", "max-age=1" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );

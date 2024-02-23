@@ -23,6 +23,7 @@ import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.site.SiteConfig;
+import com.enonic.xp.site.SiteConfigs;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -222,13 +223,17 @@ class PostconditionsTest
     {
         final SiteConfig siteConfig =
             SiteConfig.create().config( new PropertyTree() ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
-        SiteConfigService siteConfigService = mock();
-        when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
         final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "draft" ) );
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+
         final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config, siteConfigService );
+            new Postconditions.SiteConfigConditions( config );
         assertTrue( siteConfigConditions.check( request, response ) );
     }
 
@@ -239,13 +244,16 @@ class PostconditionsTest
         data.setBoolean( "disable", true );
         final SiteConfig siteConfig =
             SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
-        SiteConfigService siteConfigService = mock();
-        when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
         final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
-        final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config, siteConfigService );
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "draft" ) );
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+
+        final Postconditions.SiteConfigConditions siteConfigConditions = new Postconditions.SiteConfigConditions( config );
         assertFalse( siteConfigConditions.check( request, response ) );
     }
 
@@ -259,8 +267,6 @@ class PostconditionsTest
 
         final SiteConfig siteConfig =
             SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
-        SiteConfigService siteConfigService = mock();
-        when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
         final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
@@ -268,10 +274,10 @@ class PostconditionsTest
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
-        portalRequest.setSite( Site.create().path( "/site" ).build() );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
         portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "b" ).build() );
         final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config, siteConfigService );
+            new Postconditions.SiteConfigConditions( config );
         assertFalse( siteConfigConditions.check( request, response ) );
     }
 
@@ -285,8 +291,6 @@ class PostconditionsTest
 
         final SiteConfig siteConfig =
             SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
-        SiteConfigService siteConfigService = mock();
-        when( siteConfigService.execute( request ) ).thenReturn( siteConfig );
 
         final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
 
@@ -294,10 +298,10 @@ class PostconditionsTest
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
-        portalRequest.setSite( Site.create().path( "/site" ).build() );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
         portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
         final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config, siteConfigService );
+            new Postconditions.SiteConfigConditions( config );
         assertTrue( siteConfigConditions.check( request, response ) );
     }
 }

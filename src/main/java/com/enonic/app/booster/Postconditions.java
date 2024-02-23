@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.RequestUtils;
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.content.ContentPath;
 import com.enonic.xp.data.PropertySet;
@@ -24,6 +24,7 @@ import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.site.SiteConfig;
+import com.enonic.xp.site.SiteConfigs;
 
 public class Postconditions
 {
@@ -152,19 +153,19 @@ public class Postconditions
     {
         private final BoosterConfigParsed config;
 
-        private final SiteConfigService siteConfigService;
+        private static final ApplicationKey APPLICATION_KEY = ApplicationKey.from( "com.enonic.app.booster" );
 
-        public SiteConfigConditions( final BoosterConfigParsed config, final SiteConfigService siteConfigService )
+
+        public SiteConfigConditions( final BoosterConfigParsed config )
         {
             this.config = config;
-            this.siteConfigService = siteConfigService;
         }
 
         private static final ConcurrentMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
         public boolean check( HttpServletRequest request, CachingResponse response )
         {
-            final SiteConfig siteConfig = siteConfigService.execute( request );
+            final SiteConfig siteConfig = getSiteConfig( request );
 
             // site must have booster application
             if ( siteConfig == null )
@@ -195,6 +196,28 @@ public class Postconditions
                 }
             }
             return true;
+        }
+
+        public SiteConfig getSiteConfig( final HttpServletRequest request )
+        {
+            final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
+
+            if ( portalRequest == null )
+            {
+                return null;
+            }
+            final Site site = portalRequest.getSite();
+            final SiteConfigs siteConfigs;
+            if ( site != null )
+            {
+                siteConfigs = site.getSiteConfigs();
+            }
+            else
+            {
+                return null;
+            }
+
+            return siteConfigs.get( APPLICATION_KEY );
         }
 
         private boolean matchesUrlPattern( final String pattern, boolean invert, final String relativePath,

@@ -19,7 +19,7 @@ import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.CacheMeta;
-import com.enonic.app.booster.MessageDigests;
+import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;

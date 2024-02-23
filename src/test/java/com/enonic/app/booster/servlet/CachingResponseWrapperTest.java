@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.Test;
@@ -17,8 +18,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
 
+import com.enonic.app.booster.BoosterConfig;
+import com.enonic.app.booster.BoosterConfigParsed;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,15 +34,21 @@ class CachingResponseWrapperTest
     HttpServletResponse response;
 
     @Mock
+    HttpServletRequest request;
+
+    @Mock
     ServletOutputStream servletOutputStream;
 
     @Test
     void outputBody()
         throws Exception
     {
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+
         when( response.getOutputStream() ).thenReturn( servletOutputStream );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( response );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
         try (wrapper)
         {
             wrapper.getOutputStream().write( "Hello, World".getBytes( StandardCharsets.UTF_8 ) );
@@ -50,9 +61,9 @@ class CachingResponseWrapperTest
 
         assertEquals( 13, wrapper.getSize() );
         assertEquals( "Hello, World!", new String(
-            new GZIPInputStream( new ByteArrayInputStream( wrapper.getCachedGzipBody().toByteArray() ) ).readAllBytes() ) );
-        assertEquals( "Hello, World!", new String(
-            new BrotliInputStream( new ByteArrayInputStream( wrapper.getCachedBrBody().toByteArray() ) ).readAllBytes() ) );
+            new GZIPInputStream( new ByteArrayInputStream( wrapper.getCachedGzipBody().openStream().readAllBytes() ) ).readAllBytes() ) );
+        assertEquals( "Hello, World!", new String( new BrotliInputStream(
+            new ByteArrayInputStream( wrapper.getCachedBrBody().orElseThrow().openStream().readAllBytes() ) ).readAllBytes() ) );
         assertEquals( "dffd6021bb2bd5b0af676290809ec3a5", wrapper.getEtag() );
     }
 
@@ -60,7 +71,9 @@ class CachingResponseWrapperTest
     void headers_add()
         throws Exception
     {
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( response );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
@@ -75,7 +88,10 @@ class CachingResponseWrapperTest
     void headers_set()
         throws Exception
     {
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( response );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
@@ -91,7 +107,10 @@ class CachingResponseWrapperTest
     void headers_unset()
         throws Exception
     {
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( response );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
