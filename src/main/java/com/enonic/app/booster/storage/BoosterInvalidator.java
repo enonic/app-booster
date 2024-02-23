@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,6 +25,8 @@ import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
 import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.project.ProjectConstants;
+import com.enonic.xp.project.ProjectName;
+import com.enonic.xp.repository.RepositoryId;
 import com.enonic.xp.task.SubmitTaskParams;
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskService;
@@ -38,19 +41,19 @@ public class BoosterInvalidator
 
     private final TaskService taskService;
 
-    private volatile Set<String> repos = new HashSet<>();
+    private volatile Set<ProjectName> projects = new HashSet<>();
 
     private volatile BoosterConfigParsed config;
 
-    synchronized void addRepos( Collection<String> repo )
+    synchronized void addProject( Collection<ProjectName> projects )
     {
-        repos.addAll( repo );
+        projects.addAll( projects );
     }
 
-    synchronized Set<String> exchange()
+    synchronized Set<ProjectName> exchange()
     {
-        final Set<String> result = repos;
-        repos = new HashSet<>();
+        final Set<ProjectName> result = projects;
+        projects = new HashSet<>();
         return result;
     }
 
@@ -85,21 +88,22 @@ public class BoosterInvalidator
 
         final String type = event.getType();
 
-        Set<String> repos = new HashSet<>();
+        if ( type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) &&
+            config.appList().contains( event.getData().get( "applicationKey" ) ) )
+        {
+            doPurgeAll();
+            return;
+        }
+
+        Set<ProjectName> repos = new HashSet<>();
         if ( type.startsWith( "repository." ) )
         {
             final String repo = (String) event.getData().get( "id" );
             if ( repo != null && repo.startsWith( ProjectConstants.PROJECT_REPO_ID_PREFIX ) )
             {
                 LOG.debug( "Adding repo {} to cleanup list due to event {}", repo, event.getType() );
-                repos.add( repo );
+                repos.add( ProjectName.from( RepositoryId.from( repo ) ) );
             }
-        }
-
-        if ( type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) &&
-            config.appList().contains( event.getData().get( "applicationKey" ) ) )
-        {
-            doPurgeAll();
         }
 
         if ( type.equals( "node.pushed" ) || type.equals( "node.deleted" ) )
@@ -113,34 +117,32 @@ public class BoosterInvalidator
                     if ( repo.startsWith( ProjectConstants.PROJECT_REPO_ID_PREFIX ) )
                     {
 
-                        final boolean added = repos.add( repo );
+                        final ProjectName project = ProjectName.from( repo );
+                        final boolean added = repos.add( project );
                         if ( added )
                         {
-                            LOG.debug( "Added repo {} to cleanup list due to event {}", repo, event.getType() );
+                            LOG.debug( "Added project {} to cleanup list due to event {}", project, event.getType() );
                         }
                     }
                 }
             }
         }
 
-        addRepos( repos );
+        addProject( repos );
     }
 
-    private void doCleanUp( Collection<String> repos )
+    private void doCleanUp( Collection<ProjectName> projects )
     {
         try
         {
-            if ( repos.isEmpty() )
+            if ( projects.isEmpty() )
             {
                 return;
             }
             final PropertyTree data = new PropertyTree();
-            data.addStrings( "repos", repos );
-            final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
-                                                              .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:invalidate" ) )
-                                                              .data( data )
-                                                              .build() );
+            data.addStrings( "project", projects.stream().map( Objects::toString ).toArray( String[]::new ) );
+            final TaskId taskId = taskService.submitTask(
+                SubmitTaskParams.create().descriptorKey( DescriptorKey.from( "com.enonic.app.booster:invalidate" ) ).data( data ).build() );
             LOG.debug( "Cleanup task submitted {}", taskId );
         }
         catch ( Exception e )
@@ -156,8 +158,7 @@ public class BoosterInvalidator
             final PropertyTree data = new PropertyTree();
             data.setLong( "cacheSize", (long) config.cacheSize() );
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
-                                                              .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:enforce-limit" ) )
+                                                              .descriptorKey( DescriptorKey.from( "com.enonic.app.booster:enforce-limit" ) )
                                                               .data( data )
                                                               .build() );
             LOG.debug( "Capped task submitted {}", taskId );
@@ -173,8 +174,7 @@ public class BoosterInvalidator
         try
         {
             final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
-                                                              .descriptorKey(
-                                                                  DescriptorKey.from( "com.enonic.app.booster:purge-all" ) )
+                                                              .descriptorKey( DescriptorKey.from( "com.enonic.app.booster:purge-all" ) )
                                                               .data( new PropertyTree() )
                                                               .build() );
             LOG.debug( "Purge all task submitted {}", taskId );
