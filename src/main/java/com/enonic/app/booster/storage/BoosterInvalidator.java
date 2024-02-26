@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,16 +19,11 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
-import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
-import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.project.ProjectConstants;
 import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.repository.RepositoryId;
-import com.enonic.xp.task.SubmitTaskParams;
-import com.enonic.xp.task.TaskId;
-import com.enonic.xp.task.TaskService;
 
 @Component(immediate = true, configurationPid = "com.enonic.app.booster")
 public class BoosterInvalidator
@@ -37,32 +31,25 @@ public class BoosterInvalidator
 {
     private static final Logger LOG = LoggerFactory.getLogger( BoosterInvalidator.class );
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool( 1 );
+    private final ScheduledExecutorService executorService;
 
-    private final TaskService taskService;
-
-    private volatile Set<ProjectName> projects = new HashSet<>();
+    private final BoosterTasksFacade boosterTasksFacade;
 
     private volatile BoosterConfigParsed config;
 
-    synchronized void addProject( Collection<ProjectName> projects )
-    {
-        projects.addAll( projects );
-    }
-
-    synchronized Set<ProjectName> exchange()
-    {
-        final Set<ProjectName> result = projects;
-        projects = new HashSet<>();
-        return result;
-    }
+    private volatile Set<ProjectName> projects = new HashSet<>();
 
     @Activate
-    public BoosterInvalidator( @Reference TaskService taskService )
+    public BoosterInvalidator( @Reference final BoosterTasksFacade boosterTasksFacade )
     {
-        this.taskService = taskService;
-        executorService.scheduleWithFixedDelay( () -> doCleanUp( exchange() ), 10, 10, TimeUnit.SECONDS );
-        executorService.scheduleWithFixedDelay( this::doCapped, 10, 10, TimeUnit.SECONDS );
+        this( boosterTasksFacade, Executors.newSingleThreadScheduledExecutor() );
+    }
+
+    BoosterInvalidator( final BoosterTasksFacade boosterTasksFacade, final ScheduledExecutorService executorService )
+    {
+        this.boosterTasksFacade = boosterTasksFacade;
+        this.executorService = executorService;
+        this.executorService.scheduleWithFixedDelay( () -> boosterTasksFacade.invalidate( exchange() ), 10, 10, TimeUnit.SECONDS );
     }
 
     @Deactivate
@@ -91,18 +78,18 @@ public class BoosterInvalidator
         if ( type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) &&
             config.appList().contains( event.getData().get( "applicationKey" ) ) )
         {
-            doPurgeAll();
+            boosterTasksFacade.purgeAll();
             return;
         }
 
-        Set<ProjectName> repos = new HashSet<>();
+        Set<ProjectName> projects = new HashSet<>();
         if ( type.startsWith( "repository." ) )
         {
             final String repo = (String) event.getData().get( "id" );
             if ( repo != null && repo.startsWith( ProjectConstants.PROJECT_REPO_ID_PREFIX ) )
             {
                 LOG.debug( "Adding repo {} to cleanup list due to event {}", repo, event.getType() );
-                repos.add( ProjectName.from( RepositoryId.from( repo ) ) );
+                projects.add( ProjectName.from( RepositoryId.from( repo ) ) );
             }
         }
 
@@ -117,8 +104,8 @@ public class BoosterInvalidator
                     if ( repo.startsWith( ProjectConstants.PROJECT_REPO_ID_PREFIX ) )
                     {
 
-                        final ProjectName project = ProjectName.from( repo );
-                        final boolean added = repos.add( project );
+                        final ProjectName project = ProjectName.from( RepositoryId.from( repo ) );
+                        final boolean added = projects.add( project );
                         if ( added )
                         {
                             LOG.debug( "Added project {} to cleanup list due to event {}", project, event.getType() );
@@ -127,61 +114,18 @@ public class BoosterInvalidator
                 }
             }
         }
-
-        addProject( repos );
+        addProjects( projects );
     }
 
-    private void doCleanUp( Collection<ProjectName> projects )
+    synchronized void addProjects( Collection<ProjectName> projects )
     {
-        try
-        {
-            if ( projects.isEmpty() )
-            {
-                return;
-            }
-            final PropertyTree data = new PropertyTree();
-            data.addStrings( "project", projects.stream().map( Objects::toString ).toArray( String[]::new ) );
-            final TaskId taskId = taskService.submitTask(
-                SubmitTaskParams.create().descriptorKey( DescriptorKey.from( "com.enonic.app.booster:invalidate" ) ).data( data ).build() );
-            LOG.debug( "Cleanup task submitted {}", taskId );
-        }
-        catch ( Exception e )
-        {
-            LOG.error( "Task could not be submitted ", e );
-        }
+        this.projects.addAll( projects );
     }
 
-    private void doCapped()
+    synchronized Set<ProjectName> exchange()
     {
-        try
-        {
-            final PropertyTree data = new PropertyTree();
-            data.setLong( "cacheSize", (long) config.cacheSize() );
-            final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
-                                                              .descriptorKey( DescriptorKey.from( "com.enonic.app.booster:enforce-limit" ) )
-                                                              .data( data )
-                                                              .build() );
-            LOG.debug( "Capped task submitted {}", taskId );
-        }
-        catch ( Exception e )
-        {
-            LOG.error( "Task could not be submitted ", e );
-        }
-    }
-
-    private void doPurgeAll()
-    {
-        try
-        {
-            final TaskId taskId = taskService.submitTask( SubmitTaskParams.create()
-                                                              .descriptorKey( DescriptorKey.from( "com.enonic.app.booster:purge-all" ) )
-                                                              .data( new PropertyTree() )
-                                                              .build() );
-            LOG.debug( "Purge all task submitted {}", taskId );
-        }
-        catch ( Exception e )
-        {
-            LOG.error( "Task could not be submitted ", e );
-        }
+        final Set<ProjectName> result = projects;
+        projects = new HashSet<>();
+        return result;
     }
 }
