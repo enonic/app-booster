@@ -15,6 +15,10 @@
     font-size: 14px;
 }
 
+#widget-booster #widget-booster-action-response.visible {
+    display: block;
+}
+
 #widget-booster #widget-booster-action-response.success {
     display: block;
     color: green;
