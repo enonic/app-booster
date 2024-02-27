@@ -8,8 +8,23 @@ const submitTask = function (descriptor, config) {
     });
 }
 
+const getTaskStatus = function (taskId) {
+    const taskDetails = taskLib.get(taskId);
+    if (!taskDetails) {
+        return {
+            status: 404,
+            body: 'Task not found'
+        };
+    }
+    return {
+        contentType: 'application/json',
+        body: taskDetails,
+        status: 200
+    };
+}
+
 exports.post = function (req) {
-    const supportedActions = ['invalidate', 'purge-all', 'enforce-all'];
+    const supportedActions = ['invalidate', 'purge-all', 'enforce-all', 'status'];
     const params = JSON.parse(req.body);
 
     if (!params.action || supportedActions.indexOf(params.action.trim()) === -1) {
@@ -19,6 +34,12 @@ exports.post = function (req) {
         };
     }
     const action = params.action.trim();
+    let taskId = params.data.taskId;
+
+    if (action === 'status' && taskId) {
+        return getTaskStatus(taskId);
+    }
+
     const contentId = params.data.contentId;
     const project = params.data.project;
     const config = { project };
@@ -34,7 +55,6 @@ exports.post = function (req) {
         }
     }
 
-    let taskId;
     if (action === 'invalidate') {
         taskId = submitTask(action, config);
     }
