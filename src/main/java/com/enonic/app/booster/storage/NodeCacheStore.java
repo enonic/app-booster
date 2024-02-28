@@ -98,7 +98,7 @@ public class NodeCacheStore
                 // Might want to move brotli compression in background process. In this case brotli-compressed body would be optional
                 final ByteSource brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
 
-                return new CacheItem( url, status, contentType, headers, cachedTime, invalidatedTime, contentLength, etag,
+                return new CacheItem( status, contentType, headers, cachedTime, invalidatedTime, contentLength, etag,
                                       ByteSupply.of( gzipBody ), brotliBody == null ? null : ByteSupply.of( brotliBody ) );
             }
             catch ( NodeNotFoundException e )
@@ -173,7 +173,7 @@ public class NodeCacheStore
     {
         final PropertyTree data = new PropertyTree();
         data.setLong( "status", (long) cacheItem.status() );
-        data.setString( "url", cacheItem.url() );
+
         data.setString( "contentType", cacheItem.contentType() );
         data.setLong( "contentLength", (long) cacheItem.contentLength() );
         data.setString( "etag", cacheItem.etag() );
@@ -182,6 +182,9 @@ public class NodeCacheStore
         {
             data.setBinaryReference( "brotliData", BROTLI_DATA_BINARY_REFERENCE );
         }
+        data.setString( "url", cacheMeta.url() );
+        data.setString( "domain", cacheMeta.domain() );
+        data.setString( "path", cacheMeta.path() );
         data.setString( "project", cacheMeta.project() );
         data.setString( "siteId", cacheMeta.siteId() );
         data.setString( "contentId", cacheMeta.contentId() );

@@ -12,5 +12,13 @@
       <label>Content to clean</label>
       <occurrences minimum="0" maximum="1"/>
     </input>
+    <input type="TextLine" name="domain">
+      <label>Domain to clean</label>
+      <occurrences minimum="0" maximum="1"/>
+    </input>
+    <input type="TextLine" name="path">
+      <label>Path (prefix) to clean</label>
+      <occurrences minimum="0" maximum="1"/>
+    </input>
   </form>
 </task>

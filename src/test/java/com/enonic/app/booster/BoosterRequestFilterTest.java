@@ -188,7 +188,8 @@ class BoosterRequestFilterTest
             verify( cacheStore ).put( eq( "1ddd92089d02d31e68f1c6db45db255c" ), cacheCaptor.capture(), metaCaptor.capture() );
             final CacheItem cacheItem = cacheCaptor.getValue();
             final CacheMeta cacheMeta = metaCaptor.getValue();
-            assertEquals( "https://example.com/site/repo/branch/s", cacheItem.url() );
+            assertEquals( "e3b0c44298fc1c149afbf4c8996fb924", cacheItem.etag() );
+            assertEquals( "https://example.com/site/repo/branch/s", cacheMeta.url() );
             assertEquals( "repo1", cacheMeta.project() );
         }
     }
@@ -224,20 +225,20 @@ class BoosterRequestFilterTest
 
     static CacheItem invalidatedCacheItem()
     {
-        return new CacheItem( "https://example.com/", 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH,
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH,
                               Instant.EPOCH, 1234, "1234567890", ByteSupply.of( new ByteArrayOutputStream() ),
                               ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
     static CacheItem expiredCacheITem()
     {
-        return new CacheItem( "https://example.com/", 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, null, 1234,
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, null, 1234,
                               "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
     static CacheItem freshCacheItem()
     {
-        return new CacheItem( "https://example.com/", 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, 1234,
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, 1234,
                               "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 

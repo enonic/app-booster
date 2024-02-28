@@ -63,10 +63,11 @@ public class BoosterRequestFilter
             return;
         }
 
-        // Full URL is used, so scheme, host and port are included.
+        // Full URL is used, so scheme, domain and port are included.
         // Query String is also included with all parameters (there is an option to exclude some of them in config)
-        final String fullUrl = RequestUtils.buildFullURL( request, config.excludeQueryParams() );
+        final RequestUtils.RequestUrl requestUrl = RequestUtils.buildRequestURL( request, config.excludeQueryParams() );
 
+        final String fullUrl = requestUrl.fullUrl();
         final String cacheKey = cacheStore.generateCacheKey( fullUrl );
 
         LOG.debug( "Normalized URL of request {} with key {}", fullUrl, cacheKey );
@@ -121,12 +122,12 @@ public class BoosterRequestFilter
 
             if ( cachingResponse.isCached() )
             {
-                final CacheMeta cacheMeta = createCacheMeta( request );
+                final CacheMeta cacheMeta = createCacheMeta( request, requestUrl );
 
-                newCached = new CacheItem( fullUrl, cachingResponse.getStatus(), cachingResponse.getContentType(),
-                                           cachingResponse.getCachedHeaders(), Instant.now(), null, cachingResponse.getSize(),
-                                           cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
-                                           cachingResponse.getCachedBrBody().orElse( null ) );
+                newCached =
+                    new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
+                                   Instant.now(), null, cachingResponse.getSize(), cachingResponse.getEtag(),
+                                   cachingResponse.getCachedGzipBody(), cachingResponse.getCachedBrBody().orElse( null ) );
                 cacheStore.put( cacheKey, newCached, cacheMeta );
             }
             else
@@ -166,7 +167,7 @@ public class BoosterRequestFilter
         }
     }
 
-    private static CacheMeta createCacheMeta( final HttpServletRequest request )
+    private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestUtils.RequestUrl requestUrl )
     {
         final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
 
@@ -194,6 +195,6 @@ public class BoosterRequestFilter
             contentId = null;
             contentPath = null;
         }
-        return new CacheMeta( project, siteId, contentId, contentPath );
+        return new CacheMeta( requestUrl.fullUrl(), requestUrl.domain(), requestUrl.path(), project, siteId, contentId, contentPath );
     }
 }

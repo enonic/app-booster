@@ -11,11 +11,13 @@ exports.get = function (req) {
 
 exports.post = function (req) {
     let taskId;
-    if (req.params && req.params.projects) {
+    if (req.params) {
         taskId  = taskLib.submitTask({
             descriptor: 'invalidate',
             config: {
-                project: req.params.projects
+                project: req.params.projects,
+                domain: req.params.domain,
+                path: req.params.path,
             }
         });
     }
@@ -36,8 +38,13 @@ function drawForm() {
 
     return '<form action="" method="post">' +
            '<fieldset>' +
-           '<legend>projects</legend>' +
+           '<legend>Projects</legend>' +
            checkboxesHtml +
+           '<hr>' +
+           '<legend>Domain</legend>' +
+           '<input type="text" name="domain" value="">' +
+           '<legend>Path prefix</legend>' +
+           '<input type="text" name="path" value="">' +
            '</fieldset>' +
            '<input type="submit" value="Purge Cache">' +
            '</form>';

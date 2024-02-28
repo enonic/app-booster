@@ -16,7 +16,7 @@ public final class RequestUtils
     {
     }
 
-    public static String buildFullURL( final HttpServletRequest request, Set<String> excludeQueryParams )
+    public static RequestUrl buildRequestURL( final HttpServletRequest request, Set<String> excludeQueryParams )
     {
         // rebuild the URL from the request
         final String scheme = request.getScheme();
@@ -42,7 +42,7 @@ public final class RequestUtils
             urlBuilder.append( "?" ).append( queryString );
         }
 
-        return urlBuilder.toString();
+        return new RequestUrl(urlBuilder.toString(), serverName, path);
     }
 
 
@@ -58,7 +58,8 @@ public final class RequestUtils
             .filter( entry -> !exclude.contains( entry.getKey() ) )
             .sorted( Map.Entry.comparingByKey() )
             .flatMap( entry -> Arrays.stream( entry.getValue() )
-                .map( value -> URLEncoder.encode( entry.getKey(), StandardCharsets.UTF_8 ) + "=" + URLEncoder.encode( value, StandardCharsets.UTF_8 ) ) )
+                .map( value -> URLEncoder.encode( entry.getKey(), StandardCharsets.UTF_8 ) + "=" +
+                    URLEncoder.encode( value, StandardCharsets.UTF_8 ) ) )
             .collect( Collectors.joining( "&" ) );
     }
 
@@ -91,5 +92,9 @@ public final class RequestUtils
     public enum AcceptEncoding
     {
         GZIP, BROTLI, UNSPECIFIED
+    }
+
+    public record RequestUrl(String fullUrl, String domain, String path)
+    {
     }
 }

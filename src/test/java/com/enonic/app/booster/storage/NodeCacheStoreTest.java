@@ -117,7 +117,6 @@ class NodeCacheStoreTest
         assertEquals( "text/html", result.contentType() );
         assertEquals( 1234, result.contentLength() );
         assertEquals( "1234567890", result.etag() );
-        assertEquals( "https://example.com/", result.url() );
         assertNotNull( result.cachedTime() );
         assertNotNull( result.invalidatedTime() );
         assertNotNull( result.gzipData() );
@@ -156,7 +155,6 @@ class NodeCacheStoreTest
         assertEquals( "text/html", result.contentType() );
         assertEquals( 1234, result.contentLength() );
         assertEquals( "1234567890", result.etag() );
-        assertEquals( "https://example.com/", result.url() );
         assertNotNull( result.cachedTime() );
         assertNotNull( result.invalidatedTime() );
         assertNotNull( result.gzipData() );
@@ -169,10 +167,11 @@ class NodeCacheStoreTest
     {
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         final CacheItem cacheItem =
-            new CacheItem( "https://example.com/", 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null,
-                           1234, "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+            new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, 1234, "1234567890",
+                           ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
 
-        final CacheMeta cacheMeta = new CacheMeta( "project", "siteId", "contentId", "/contentpath" );
+        final CacheMeta cacheMeta =
+            new CacheMeta( "https://example.com/", "example.com", "/", "project", "siteId", "contentId", "/contentpath" );
 
         nodeCacheStore.put( "0f115db062b7c0dd030b16878c99dea5", cacheItem, cacheMeta );
 
@@ -195,8 +194,10 @@ class NodeCacheStoreTest
         assertNotNull( createNodeParams.getData().getInstant( "cachedTime" ) );
         assertNull( createNodeParams.getData().getInstant( "invalidatedTime" ) );
         assertEquals( Map.of( "header1", List.of( "value1" ) ), createNodeParams.getData().getSet( "headers" ).toMap() );
-        assertEquals( BinaryReference.from( "data.gzip" ), createNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.gzip" ) ).getReference() );
-        assertEquals( BinaryReference.from( "data.br" ), createNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.br" ) ).getReference() );
+        assertEquals( BinaryReference.from( "data.gzip" ),
+                      createNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.gzip" ) ).getReference() );
+        assertEquals( BinaryReference.from( "data.br" ),
+                      createNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.br" ) ).getReference() );
     }
 
     @Test
@@ -204,10 +205,11 @@ class NodeCacheStoreTest
     {
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         final CacheItem cacheItem =
-            new CacheItem( "https://example.com/", 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null,
-                           1234, "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+            new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, 1234, "1234567890",
+                           ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
 
-        final CacheMeta cacheMeta = new CacheMeta( "project", "siteId", "contentId", "/contentpath" );
+        final CacheMeta cacheMeta =
+            new CacheMeta( "https://example.com/", "example.com", "/", "project", "siteId", "contentId", "/contentpath" );
 
         when( nodeService.nodeExists( NodeId.from( "0f115db062b7c0dd030b16878c99dea5" ) ) ).thenReturn( true );
         nodeCacheStore.put( "0f115db062b7c0dd030b16878c99dea5", cacheItem, cacheMeta );
@@ -217,7 +219,9 @@ class NodeCacheStoreTest
 
         final UpdateNodeParams updateNodeParams = captor.getValue();
         assertEquals( NodeId.from( "0f115db062b7c0dd030b16878c99dea5" ), updateNodeParams.getId() );
-        assertEquals( BinaryReference.from( "data.gzip" ), updateNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.gzip" ) ).getReference() );
-        assertEquals( BinaryReference.from( "data.br" ), updateNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.br" ) ).getReference() );
+        assertEquals( BinaryReference.from( "data.gzip" ),
+                      updateNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.gzip" ) ).getReference() );
+        assertEquals( BinaryReference.from( "data.br" ),
+                      updateNodeParams.getBinaryAttachments().get( BinaryReference.from( "data.br" ) ).getReference() );
     }
 }

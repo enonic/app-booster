@@ -4,10 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletOutputStream;
@@ -140,8 +138,7 @@ class CachedResponseWriterTest
     {
         final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( boosterConfig.disableXBoosterCacheHeader() ).thenReturn( true );
-        final BoosterConfigParsed config =
-            BoosterConfigParsed.parse( boosterConfig );
+        final BoosterConfigParsed config = BoosterConfigParsed.parse( boosterConfig );
         final CachedResponseWriter writer;
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
@@ -277,7 +274,7 @@ class CachedResponseWriterTest
             Map.of( "x-booster-cache", List.of( "ignored" ), "vary", List.of( "Accept-Language" ), "cache-control",
                     List.of( "max-age=1" ) );
 
-        return new CacheItem( "https://example.com/", 200, "text/xhtml", headers, Instant.EPOCH, null, data.length(), "etag",
-                              ByteSupply.of( baosGzip ), ByteSupply.of( baosBrotli ) );
+        return new CacheItem( 200, "text/xhtml", headers, Instant.EPOCH, null, data.length(), "etag", ByteSupply.of( baosGzip ),
+                              ByteSupply.of( baosBrotli ) );
     }
 }

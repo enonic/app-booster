@@ -3,6 +3,8 @@ package com.enonic.app.booster.storage;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,13 +14,19 @@ import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.FindNodesByQueryResult;
 import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeHits;
+import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
+import com.enonic.xp.query.expr.CompareExpr;
+import com.enonic.xp.query.expr.FieldExpr;
 import com.enonic.xp.query.expr.FieldOrderExpr;
+import com.enonic.xp.query.expr.LogicalExpr;
 import com.enonic.xp.query.expr.OrderExpr;
+import com.enonic.xp.query.expr.QueryExpr;
+import com.enonic.xp.query.expr.ValueExpr;
 import com.enonic.xp.query.filter.BooleanFilter;
 import com.enonic.xp.query.filter.ExistsFilter;
 import com.enonic.xp.query.filter.RangeFilter;
@@ -39,218 +47,221 @@ public class NodeCleanerBean
         this.nodeService = beanContext.getService( NodeService.class ).get();
     }
 
-    public void invalidateProjects( List<String> projects )
+    public void invalidateProjects( final List<String> projects )
     {
-        Instant cutOffTime = Instant.now();
-        BoosterContext.runInContext( () -> {
-            LOG.debug( "Invalidating cache for projects {}", projects );
-            final NodeQuery query = queryNodesToInvalidate( projects, cutOffTime );
-
-            nodeService.refresh( RefreshMode.SEARCH );
-            FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
-
-            long hits = nodesToInvalidate.getHits();
-            LOG.debug( "Found {} nodes total to be invalidated", nodesToInvalidate.getTotalHits() );
-
-            while ( hits > 0 )
-            {
-                final NodeHits nodeHits = nodesToInvalidate.getNodeHits();
-                for ( NodeHit nodeHit : nodeHits )
-                {
-                    nodeService.update( UpdateNodeParams.create().id( nodeHit.getNodeId() ).editor( editor -> {
-                        editor.data.setInstant( "invalidatedTime", cutOffTime );
-                    } ).build() );
-                }
-                LOG.debug( "Invalidated nodes {}", nodeHits.getSize() );
-
-                nodeService.refresh( RefreshMode.SEARCH );
-                nodesToInvalidate = nodeService.findByQuery( query );
-
-                hits = nodesToInvalidate.getHits();
-            }
-            LOG.debug( "Done invalidating cache for projects {}", projects );
-        } );
+        if ( projects.isEmpty() )
+        {
+            return;
+        }
+        invalidateByQuery( Map.of( "project", Multiple.of( projects ) ) );
     }
 
-    public void invalidateContent( String project, String contentId )
+    public void invalidateContent( final String project, final String contentId )
     {
-        Instant cutOffTime = Instant.now();
-        BoosterContext.runInContext( () -> {
-            LOG.debug( "Invalidating cache for project {} and contentId {}", project, contentId );
-            final NodeQuery query = queryNodesToInvalidateContent( project, contentId, cutOffTime );
-
-            nodeService.refresh( RefreshMode.SEARCH );
-            FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
-
-            long hits = nodesToInvalidate.getHits();
-            LOG.debug( "Found {} nodes total to be invalidated", nodesToInvalidate.getTotalHits() );
-
-            while ( hits > 0 )
-            {
-                final NodeHits nodeHits = nodesToInvalidate.getNodeHits();
-                for ( NodeHit nodeHit : nodeHits )
-                {
-                    nodeService.update( UpdateNodeParams.create().id( nodeHit.getNodeId() ).editor( editor -> {
-                        editor.data.setInstant( "invalidatedTime", cutOffTime );
-                    } ).build() );
-                }
-                LOG.debug( "Invalidated nodes {}", nodeHits.getSize() );
-
-                nodeService.refresh( RefreshMode.SEARCH );
-                nodesToInvalidate = nodeService.findByQuery( query );
-
-                hits = nodesToInvalidate.getHits();
-            }
-            LOG.debug( "Done invalidating cache for project {} and contentId {}", project, contentId );
-        } );
+        invalidateByQuery( Map.of( "project", Single.of( project ), "contentId", Single.of( contentId ) ) );
     }
 
-    public void invalidateSite( String project, String siteId )
+    public void invalidateSite( final String project, final String siteId )
     {
-        Instant cutOffTime = Instant.now();
-        BoosterContext.runInContext( () -> {
-            LOG.debug( "Invalidating cache for project {} and siteId {}", project, siteId );
-            final NodeQuery query = queryNodesToInvalidateSite( project, siteId, cutOffTime );
+        invalidateByQuery( Map.of( "project", Single.of( project ), "siteId", Single.of( siteId ) ) );
+    }
 
-            nodeService.refresh( RefreshMode.SEARCH );
-            FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
+    public void invalidateDomain( final String domain )
+    {
+        invalidateByQuery( Map.of( "domain", Single.of( domain ) ) );
+    }
 
-            long hits = nodesToInvalidate.getHits();
-            LOG.debug( "Found {} nodes total to be invalidated", nodesToInvalidate.getTotalHits() );
+    public void invalidatePathPrefix( final String domain, final String path )
+    {
+        invalidateByQuery( Map.of( "domain", Single.of( domain ), "path", PathPrefix.of( path ) ) );
+    }
 
-            while ( hits > 0 )
-            {
-                final NodeHits nodeHits = nodesToInvalidate.getNodeHits();
-                for ( NodeHit nodeHit : nodeHits )
-                {
-                    nodeService.update( UpdateNodeParams.create().id( nodeHit.getNodeId() ).editor( editor -> {
-                        editor.data.setInstant( "invalidatedTime", cutOffTime );
-                    } ).build() );
-                }
-                LOG.debug( "Invalidated nodes {}", nodeHits.getSize() );
-
-                nodeService.refresh( RefreshMode.SEARCH );
-                nodesToInvalidate = nodeService.findByQuery( query );
-
-                hits = nodesToInvalidate.getHits();
-            }
-            LOG.debug( "Done invalidating cache for project {} and siteId {}", project, siteId );
-        } );
+    public void invalidateAll()
+    {
+        invalidateByQuery( Map.of() );
     }
 
     public void purgeAll()
     {
-        Instant cutOffTime = Instant.now();
+        final Instant now = Instant.now();
         BoosterContext.runInContext( () -> {
-            LOG.debug( "Invalidating all" );
-            final NodeQuery query = queryNodesToInvalidate( List.of(), cutOffTime );
+            final NodeQuery query = queryAllNodes( now );
 
-            nodeService.refresh( RefreshMode.SEARCH );
-            FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
-
-            long hits = nodesToDelete.getHits();
-            LOG.debug( "Found {} nodes total to be deleted", nodesToDelete.getTotalHits() );
-
-            while ( hits > 0 )
-            {
-                final NodeHits nodeHits = nodesToDelete.getNodeHits();
-                for ( NodeHit nodeHit : nodeHits )
-                {
-                    nodeService.delete( DeleteNodeParams.create().nodeId( nodeHit.getNodeId() ).build() );
-                }
-                LOG.debug( "Deleted nodes {}", nodeHits.getSize() );
-
-                nodeService.refresh( RefreshMode.SEARCH );
-                nodesToDelete = nodeService.findByQuery( query );
-
-                hits = nodesToDelete.getHits();
-            }
-            LOG.debug( "Done invalidating all" );
+            process( query, this::delete );
         } );
-
     }
 
-    public void deleteExcessNodes( int cacheSize )
+    public void deleteExcessNodes( final int cacheSize )
     {
+        final Instant now = Instant.now();
+
         BoosterContext.runInContext( () -> {
             LOG.debug( "Delete old nodes" );
-            final NodeQuery query = queryOldNodes();
+            final NodeQuery query = queryAllNodes( now );
             FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
 
-            final long diff = nodesToDelete.getTotalHits() - cacheSize;
-            if ( diff <= 0 )
+            long diff = nodesToDelete.getTotalHits() - cacheSize;
+
+            while ( diff > 0 )
             {
-                LOG.debug( "Found fewer nodes than maximum allowed. Don't delete" );
-                return;
+                final NodeHits nodeHits = nodesToDelete.getNodeHits();
+                for ( int i = 0; i < diff; i++ )
+                {
+                    delete( nodeHits.get( i ).getNodeId() );
+                }
+                nodeService.refresh( RefreshMode.SEARCH );
+                nodesToDelete = nodeService.findByQuery( query );
+                diff = nodesToDelete.getTotalHits() - cacheSize;
             }
 
-            final NodeHits nodeHits = nodesToDelete.getNodeHits();
-            for ( int i = 0; i < diff; i++ )
-            {
-                nodeService.delete( DeleteNodeParams.create().nodeId( nodeHits.get( i ).getNodeId() ).build() );
-            }
         } );
     }
 
-    private NodeQuery queryOldNodes()
+    private void invalidateByQuery( final Map<String, Value> fields )
     {
-        final NodeQuery.Builder builder = NodeQuery.create();
-
-        builder.parent( NodePath.ROOT )
-            .addOrderBy( FieldOrderExpr.create( "invalidatedTime", OrderExpr.Direction.ASC ) )
-            .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
-            .size( 10_000 );
-
-        return builder.build();
+        final Instant now = Instant.now();
+        BoosterContext.runInContext( () -> {
+            final NodeQuery query = queryNodes( fields, now, false );
+            process( query, ( n ) -> setInvalidatedTime( n, now ) );
+        } );
     }
 
-    private NodeQuery queryNodesToInvalidate( Collection<String> projects, Instant cutOffTime )
+    private void process( final NodeQuery query, final Consumer<NodeId> op )
+    {
+        FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
+
+        long hits = nodesToInvalidate.getHits();
+        LOG.debug( "Found {} nodes total to be processed", nodesToInvalidate.getTotalHits() );
+
+        while ( hits > 0 )
+        {
+            final NodeHits nodeHits = nodesToInvalidate.getNodeHits();
+            for ( NodeHit nodeHit : nodeHits )
+            {
+                op.accept( nodeHit.getNodeId() );
+            }
+            LOG.debug( "Processed nodes {}", nodeHits.getSize() );
+
+            nodeService.refresh( RefreshMode.SEARCH );
+            nodesToInvalidate = nodeService.findByQuery( query );
+
+            hits = nodesToInvalidate.getHits();
+        }
+    }
+
+    private void setInvalidatedTime( final NodeId nodeId, final Instant cutOffTime )
+    {
+        nodeService.update(
+            UpdateNodeParams.create().id( nodeId ).editor( editor -> editor.data.setInstant( "invalidatedTime", cutOffTime ) ).build() );
+    }
+
+    private void delete( final NodeId nodeId )
+    {
+        nodeService.delete( DeleteNodeParams.create().nodeId( nodeId ).build() );
+    }
+
+    private NodeQuery queryAllNodes( final Instant cutOffTime )
+    {
+        return queryNodes( Map.of(), cutOffTime, true );
+    }
+
+    private NodeQuery queryNodes( final Map<String, Value> fields, final Instant cutOffTime, final boolean includeInvalidated )
     {
         final NodeQuery.Builder builder = NodeQuery.create();
         builder.parent( NodePath.ROOT );
-        if ( !projects.isEmpty() )
+
+        for ( Map.Entry<String, Value> entry : fields.entrySet() )
         {
-            builder.addQueryFilter( ValueFilter.create().fieldName( "project" ).addValues( projects ).build() );
+            final Value value = entry.getValue();
+            if ( value instanceof Multiple multiple )
+            {
+                builder.addQueryFilter( ValueFilter.create().fieldName( entry.getKey() ).addValues( multiple.values ).build() );
+            }
+            else if ( value instanceof PathPrefix pathPrefix )
+            {
+                final QueryExpr queryExpr = QueryExpr.from(
+                    LogicalExpr.or( CompareExpr.eq( FieldExpr.from( entry.getKey() ), ValueExpr.string( pathPrefix.value ) ),
+                                    CompareExpr.like( FieldExpr.from( entry.getKey() ), ValueExpr.string( pathPrefix.value + "/*" ) ) ) );
+                builder.query( queryExpr );
+            }
+            else if ( value instanceof Single single )
+            {
+                builder.addQueryFilter(
+                    ValueFilter.create().fieldName( entry.getKey() ).addValue( ValueFactory.newString( single.value ) ).build() );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown value type: " + value );
+            }
+        }
+
+        if ( !includeInvalidated )
+        {
+            builder.addQueryFilter(
+                BooleanFilter.create().mustNot( ExistsFilter.create().fieldName( "invalidatedTime" ).build() ).build() );
+        }
+        else
+        {
+            builder.addOrderBy( FieldOrderExpr.create( "invalidatedTime", OrderExpr.Direction.ASC ) );
         }
 
         builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
-            .addQueryFilter( BooleanFilter.create().mustNot( ExistsFilter.create().fieldName( "invalidatedTime" ).build() ).build() )
             .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
             .size( 10_000 );
 
         return builder.build();
     }
 
-    private NodeQuery queryNodesToInvalidateContent( String project, String contentId, Instant cutOffTime )
+    sealed interface Value
+        permits Single, Multiple, PathPrefix
     {
-        final NodeQuery.Builder builder = NodeQuery.create();
-        builder.parent( NodePath.ROOT );
-
-        builder.addQueryFilter( ValueFilter.create().fieldName( "project" ).addValue( ValueFactory.newString( project ) ).build() );
-        builder.addQueryFilter( ValueFilter.create().fieldName( "contentId" ).addValue( ValueFactory.newString( contentId ) ).build() );
-
-        builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
-            .addQueryFilter( BooleanFilter.create().mustNot( ExistsFilter.create().fieldName( "invalidatedTime" ).build() ).build() )
-            .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
-            .size( 10_000 );
-
-        return builder.build();
     }
 
-    private NodeQuery queryNodesToInvalidateSite( String project, String siteId, Instant cutOffTime )
+    static final class Single
+        implements Value
     {
-        final NodeQuery.Builder builder = NodeQuery.create();
-        builder.parent( NodePath.ROOT );
+        String value;
 
-        builder.addQueryFilter( ValueFilter.create().fieldName( "project" ).addValue( ValueFactory.newString( project ) ).build() );
-        builder.addQueryFilter( ValueFilter.create().fieldName( "siteId" ).addValue( ValueFactory.newString( siteId ) ).build() );
+        Single( final String value )
+        {
+            this.value = value;
+        }
 
-        builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
-            .addQueryFilter( BooleanFilter.create().mustNot( ExistsFilter.create().fieldName( "invalidatedTime" ).build() ).build() )
-            .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
-            .size( 10_000 );
-
-        return builder.build();
+        static Single of( final String value )
+        {
+            return new Single( value );
+        }
     }
 
+    static final class Multiple
+        implements Value
+    {
+        Collection<String> values;
+
+        Multiple( final Collection<String> values )
+        {
+            this.values = values;
+        }
+
+        static Multiple of( final Collection<String> values )
+        {
+            return new Multiple( values );
+        }
+    }
+
+    static final class PathPrefix
+        implements Value
+    {
+        PathPrefix( final String value )
+        {
+            this.value = value;
+        }
+
+        String value;
+
+        static PathPrefix of( final String value )
+        {
+            return new PathPrefix( value );
+        }
+    }
 }
