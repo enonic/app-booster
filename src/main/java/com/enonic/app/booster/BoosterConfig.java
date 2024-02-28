@@ -15,4 +15,6 @@ public @interface BoosterConfig
     boolean disableAgeHeader() default false;
 
     String overrideHeaders() default "";
+
+    String cacheMimeTypes() default "text/html text/xhtml";
 }

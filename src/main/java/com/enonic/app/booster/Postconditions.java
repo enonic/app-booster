@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.RequestUtils;
+import com.enonic.app.booster.utils.MimeTypes;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.content.ContentPath;
@@ -60,15 +61,6 @@ public class Postconditions
         if ( responseStatus != 200 )
         {
             LOG.debug( "Not cacheable status code {}", responseStatus );
-            return false;
-        }
-
-        // only cache html responses. This is for the initial implementation
-        final String responseContentType = response.getContentType();
-        if ( responseContentType == null ||
-            !( responseContentType.contains( "text/html" ) || responseContentType.contains( "text/xhtml" ) ) )
-        {
-            LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
             return false;
         }
 
@@ -245,6 +237,26 @@ public class Postconditions
             {
                 return contentPath.toString().substring( site.getPath().toString().length() );
             }
+        }
+    }
+
+    public static class ContentTypePreconditions
+    {
+
+        private final BoosterConfigParsed config;
+
+        public ContentTypePreconditions( final BoosterConfigParsed config)
+        {
+            this.config = config;
+        }
+
+        public boolean check( HttpServletRequest request, CachingResponse response ) {
+            final String responseContentType = response.getContentType();
+            if (responseContentType == null || !MimeTypes.isContentTypeSupported(config.cacheMimeTypes(), responseContentType)) {
+                return false;
+            }
+            LOG.debug("Not cacheable because of incompatible content-type {}", responseContentType);
+            return true;
         }
     }
 }

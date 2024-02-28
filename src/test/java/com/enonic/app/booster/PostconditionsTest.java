@@ -2,7 +2,6 @@ package com.enonic.app.booster;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,7 +47,6 @@ class PostconditionsTest
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
         when( response.getCachedHeaders() ).thenReturn( Map.of() );
-        when( response.getContentType() ).thenReturn( "text/html" );
 
         Postconditions postconditions = new Postconditions( ( request, response ) -> true );
         assertTrue( postconditions.check( request, response ) );
@@ -84,17 +82,6 @@ class PostconditionsTest
         assertFalse( postconditions.check( request, response ) );
     }
 
-    @Test
-    public void postconditions_content_type_non_html()
-    {
-        when( request.getMethod() ).thenReturn( "GET" );
-        when( request.getSession( false ) ).thenReturn( null );
-        when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "application/octet-stream" );
-
-        Postconditions postconditions = new Postconditions();
-        assertFalse( postconditions.check( request, response ) );
-    }
 
     @Test
     public void postconditions_vary()
@@ -102,7 +89,6 @@ class PostconditionsTest
         when( request.getMethod() ).thenReturn( "GET" );
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "text/html" );
         when( response.getCachedHeaders() ).thenReturn( Map.of( "vary", List.of( "Accept" ) ) );
 
         Postconditions postconditions = new Postconditions();
@@ -115,7 +101,6 @@ class PostconditionsTest
         when( request.getMethod() ).thenReturn( "GET" );
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "text/html" );
         when( response.getCachedHeaders() ).thenReturn( Map.of( "content-encoding", List.of( "br" ) ) );
 
         Postconditions postconditions = new Postconditions();
@@ -129,7 +114,6 @@ class PostconditionsTest
         when( request.getMethod() ).thenReturn( "GET" );
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "text/html" );
         when( response.containsHeader( "Expires" ) ).thenReturn( true );
 
         Postconditions postconditions = new Postconditions( ( request, response ) -> true );
@@ -142,7 +126,6 @@ class PostconditionsTest
         when( request.getMethod() ).thenReturn( "GET" );
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "text/html" );
         when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of( "private" ) );
 
         Postconditions postconditions = new Postconditions();
@@ -155,7 +138,6 @@ class PostconditionsTest
         when( request.getMethod() ).thenReturn( "GET" );
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "text/html" );
         when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of( "no-store" ) );
 
         Postconditions postconditions = new Postconditions();
@@ -169,7 +151,6 @@ class PostconditionsTest
         when( request.getMethod() ).thenReturn( "GET" );
         when( request.getSession( false ) ).thenReturn( null );
         when( response.getStatus() ).thenReturn( 200 );
-        when( response.getContentType() ).thenReturn( "text/html" );
 
         final BiFunction<HttpServletRequest, CachingResponse, Boolean> custom = mock();
         when( custom.apply( any(), any() ) ).thenReturn( false );
@@ -224,7 +205,8 @@ class PostconditionsTest
         final SiteConfig siteConfig =
             SiteConfig.create().config( new PropertyTree() ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
@@ -232,8 +214,7 @@ class PostconditionsTest
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
         portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
 
-        final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config );
+        final Postconditions.SiteConfigConditions siteConfigConditions = new Postconditions.SiteConfigConditions( config );
         assertTrue( siteConfigConditions.check( request, response ) );
     }
 
@@ -245,7 +226,8 @@ class PostconditionsTest
         final SiteConfig siteConfig =
             SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
@@ -268,7 +250,8 @@ class PostconditionsTest
         final SiteConfig siteConfig =
             SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
@@ -276,8 +259,7 @@ class PostconditionsTest
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
         portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
         portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "b" ).build() );
-        final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config );
+        final Postconditions.SiteConfigConditions siteConfigConditions = new Postconditions.SiteConfigConditions( config );
         assertFalse( siteConfigConditions.check( request, response ) );
     }
 
@@ -292,7 +274,8 @@ class PostconditionsTest
         final SiteConfig siteConfig =
             SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
 
-        final BoosterConfigParsed config = new BoosterConfigParsed( 0, Set.of(), false, false, 1, Set.of(), null );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
@@ -300,8 +283,44 @@ class PostconditionsTest
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
         portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
         portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
-        final Postconditions.SiteConfigConditions siteConfigConditions =
-            new Postconditions.SiteConfigConditions( config );
+        final Postconditions.SiteConfigConditions siteConfigConditions = new Postconditions.SiteConfigConditions( config );
         assertTrue( siteConfigConditions.check( request, response ) );
     }
+
+    @Test
+    void postconditions_contentType_missing()
+    {
+        when( response.getContentType() ).thenReturn( null );
+
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+        final var postconditions = new Postconditions.ContentTypePreconditions( config );
+
+        assertFalse( postconditions.check( request, response ) );
+    }
+
+    @Test
+    void postconditions_contentType_unsupported()
+    {
+        when( response.getContentType() ).thenReturn( "application/octet-stream" );
+
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+        final var postconditions = new Postconditions.ContentTypePreconditions( config );
+
+        assertFalse( postconditions.check( request, response ) );
+    }
+
+    @Test
+    void postconditions_contentType_supported()
+    {
+        when( response.getContentType() ).thenReturn( "text/html" );
+
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+        final var postconditions = new Postconditions.ContentTypePreconditions( config );
+
+        assertTrue( postconditions.check( request, response ) );
+    }
+
 }

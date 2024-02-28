@@ -110,7 +110,8 @@ public class BoosterRequestFilter
             }
 
             final Postconditions postconditions = new Postconditions( new Postconditions.PortalRequestConditions()::check,
-                                                                      new Postconditions.SiteConfigConditions( config )::check );
+                                                                      new Postconditions.SiteConfigConditions( config )::check,
+                                                                      new Postconditions.ContentTypePreconditions( config )::check );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, postconditions::check, config );
             try (cachingResponse)
