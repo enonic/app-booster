@@ -21,12 +21,15 @@ class BoosterConfigParsedTest
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
         assertEquals( 3600, parse.cacheTtlSeconds() );
-        assertEquals( Set.of(), parse.excludeQueryParams() );
+        assertEquals(
+            Set.of( "fbclid", "twclid", "dclid", "gclid", "gclsrc", "wbraid", "gbraid", "msclkid", "yclid", "_ga", "_gl", "utm_source",
+                    "utm_medium", "utm_campaign", "utm_term", "utm_source_platform", "utm_creative_format", "utm_marketing_tactic",
+                    "_hsenc", "__hssc", "__hstc", "__hsfp", "hsCtaTracking" ), parse.excludeQueryParams() );
         assertEquals( Set.of(), parse.appList() );
         assertEquals( 10000, parse.cacheSize() );
         assertFalse( parse.disableXBoosterCacheHeader() );
         assertEquals( Map.of(), parse.overrideHeaders() );
-        assertEquals( Set.of("text/html", "text/xhtml"), parse.cacheMimeTypes() );
+        assertEquals( Set.of( "text/html", "text/xhtml" ), parse.cacheMimeTypes() );
     }
 
     @Test
@@ -43,6 +46,6 @@ class BoosterConfigParsedTest
         assertEquals( Set.of( "app1", "app2" ), parse.appList() );
         assertEquals( 86400, parse.cacheTtlSeconds() );
         assertEquals( Map.of( "Cache-Control", "private, no-store", "X-Instance", "\"jupiter\"" ), parse.overrideHeaders() );
-        assertEquals( Set.of("text/html", "text/xhtml"), parse.cacheMimeTypes() );
+        assertEquals( Set.of( "text/html", "text/xhtml", "application/json" ), parse.cacheMimeTypes() );
     }
 }
