@@ -15,7 +15,7 @@ const isAppEnabledOnSite = (contentId) => {
 
     let siteConfig;
     forceArray(site.data.siteConfig).forEach(config => {
-        if (config.applicationKey == app.name) {
+        if (config.applicationKey === app.name) {
             siteConfig = config
         }
     });
@@ -39,6 +39,18 @@ const renderWidgetView = (req) => {
         isContentSelected = !isSiteSelected;
     }
 
+    let nodeCleanerBean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
+    let size;
+    if (contentId) {
+        if (isSiteSelected) {
+            size = nodeCleanerBean.getSiteCacheSize(project, contentId);
+        } else {
+            size = nodeCleanerBean.getContentCacheSize(project, contentId);
+        }
+    } else {
+        size = nodeCleanerBean.getProjectCacheSize(project);
+    }
+
     const view = resolve('booster.html');
     const params = {
         contentId,
@@ -46,6 +58,8 @@ const renderWidgetView = (req) => {
         project,
         isContentSelected,
         isSiteSelected,
+        size,
+        isButtonDisabled: size === 0,
         isProjectSelected: !isContentSelected && !isSiteSelected,
         isEnabled: isAppEnabledOnSite(contentId),
         assetsUri: portal.assetUrl({

@@ -40,7 +40,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class NodeCleanerBeanTest
 {
-
     @Mock
     NodeService nodeService;
 
@@ -221,5 +220,85 @@ class NodeCleanerBeanTest
         verify( nodeService ).delete( captor.capture() );
         assertThat( captor.getValue().getNodeId() ).asString().isEqualTo( "node1" );
         verifyNoMoreInteractions( nodeService );
+    }
+
+    @Test
+    void getProjectCacheSize() {
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
+                                                                                  .hits( 2 )
+                                                                                  .totalHits( 2 )
+                                                                                  .build() );
+        final int projectCacheSize = nodeCleanerBean.getProjectCacheSize("project1");
+        verify( nodeService ).findByQuery( any( NodeQuery.class ) );
+
+        final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
+        verify( nodeService, times( 1 ) ).findByQuery( findByQueryCaptor.capture() );
+        final NodeQuery nodeQuery = findByQueryCaptor.getValue();
+        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( 0, nodeQuery.getSize() );
+
+        assertThat( nodeQuery.getQueryFilters().stream().filter( f -> f instanceof ValueFilter ) ).map( f -> (ValueFilter) f )
+            .anySatisfy( filter -> {
+                assertThat( filter.getFieldName() ).isEqualTo( "project" );
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1");
+            } );
+
+        assertEquals(2, projectCacheSize);
+    }
+
+    @Test
+    void getContentCacheSize() {
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
+                                                                                  .hits( 2 )
+                                                                                  .totalHits( 2 )
+                                                                                  .build() );
+        final int contentCacheSize = nodeCleanerBean.getContentCacheSize("project1", "content1");
+        verify( nodeService ).findByQuery( any( NodeQuery.class ) );
+
+        final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
+        verify( nodeService, times( 1 ) ).findByQuery( findByQueryCaptor.capture() );
+        final NodeQuery nodeQuery = findByQueryCaptor.getValue();
+        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( 0, nodeQuery.getSize() );
+
+        assertThat( nodeQuery.getQueryFilters().stream().filter( f -> f instanceof ValueFilter ) ).map( f -> (ValueFilter) f )
+            .anySatisfy( filter -> {
+                assertThat( filter.getFieldName() ).isEqualTo( "project" );
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1");
+            } )
+            .anySatisfy( filter -> {
+                assertThat( filter.getFieldName() ).isEqualTo( "contentId" );
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "content1");
+            } );
+
+        assertEquals(2, contentCacheSize);
+    }
+
+    @Test
+    void getSiteCacheSize() {
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
+                                                                                  .hits( 2 )
+                                                                                  .totalHits( 2 )
+                                                                                  .build() );
+        final int siteCacheSize = nodeCleanerBean.getSiteCacheSize("project1", "site1");
+        verify( nodeService ).findByQuery( any( NodeQuery.class ) );
+
+        final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
+        verify( nodeService, times( 1 ) ).findByQuery( findByQueryCaptor.capture() );
+        final NodeQuery nodeQuery = findByQueryCaptor.getValue();
+        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( 0, nodeQuery.getSize() );
+
+        assertThat( nodeQuery.getQueryFilters().stream().filter( f -> f instanceof ValueFilter ) ).map( f -> (ValueFilter) f )
+            .anySatisfy( filter -> {
+                assertThat( filter.getFieldName() ).isEqualTo( "project" );
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1");
+            } )
+            .anySatisfy( filter -> {
+                assertThat( filter.getFieldName() ).isEqualTo( "siteId" );
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "site1");
+            } );
+
+        assertEquals(2, siteCacheSize);
     }
 }

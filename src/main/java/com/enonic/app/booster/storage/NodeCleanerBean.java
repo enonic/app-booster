@@ -117,11 +117,36 @@ public class NodeCleanerBean
         } );
     }
 
+    public int getProjectCacheSize( final String project )
+    {
+        return getSize( Map.of( "project", Single.of( project ) ) );
+    }
+
+    public int getSiteCacheSize( final String project, final String siteId )
+    {
+        return getSize( Map.of( "project", Single.of( project ), "siteId", Single.of( siteId ) ) );
+    }
+
+    public int getContentCacheSize( final String project, final String contentId )
+    {
+        return getSize( Map.of( "project", Single.of( project ), "contentId", Single.of( contentId ) ) );
+    }
+
+    private int getSize( final Map<String, Value> fields ) {
+        final Instant now = Instant.now();
+        FindNodesByQueryResult nodesToInvalidate = BoosterContext.callInContext( () -> {
+
+            final NodeQuery query = queryNodes( fields, now, false, 0 );
+            return nodeService.findByQuery( query );
+        });
+        return (int) Math.max( 0, Math.min( nodesToInvalidate.getTotalHits(), Integer.MAX_VALUE ) );
+    }
+
     private void invalidateByQuery( final Map<String, Value> fields )
     {
         final Instant now = Instant.now();
         BoosterContext.runInContext( () -> {
-            final NodeQuery query = queryNodes( fields, now, false );
+            final NodeQuery query = queryNodes( fields, now, false, 10_000 );
             process( query, ( n ) -> setInvalidatedTime( n, now ) );
         } );
     }
@@ -162,10 +187,10 @@ public class NodeCleanerBean
 
     private NodeQuery queryAllNodes( final Instant cutOffTime )
     {
-        return queryNodes( Map.of(), cutOffTime, true );
+        return queryNodes( Map.of(), cutOffTime, true, 10_000 );
     }
 
-    private NodeQuery queryNodes( final Map<String, Value> fields, final Instant cutOffTime, final boolean includeInvalidated )
+    private NodeQuery queryNodes( final Map<String, Value> fields, final Instant cutOffTime, final boolean includeInvalidated, int size )
     {
         final NodeQuery.Builder builder = NodeQuery.create();
         builder.parent( NodePath.ROOT );
@@ -205,9 +230,11 @@ public class NodeCleanerBean
             builder.addOrderBy( FieldOrderExpr.create( "invalidatedTime", OrderExpr.Direction.ASC ) );
         }
 
-        builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() )
-            .addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) )
-            .size( 10_000 );
+        if ( cutOffTime != null )
+        {
+            builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() );
+        }
+        builder.addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) ).size( size );
 
         return builder.build();
     }

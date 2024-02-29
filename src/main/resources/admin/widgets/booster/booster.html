@@ -16,8 +16,10 @@
         <h6>Project: {{project}}</h6>
         {{/isProjectSelected}}
 
-        <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red">
-            <span>Purge cache</span>
+        <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red"
+                {{#isButtonDisabled}}disabled{{/isButtonDisabled}}
+        >
+            <span>Purge cache ({{size}})</span>
         </button>
         <p id="widget-booster-action-response"></p>
 
