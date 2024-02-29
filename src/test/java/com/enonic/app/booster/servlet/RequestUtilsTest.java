@@ -27,8 +27,8 @@ class RequestUtilsTest
         when( request.getParameterMap() ).thenReturn( Map.of( "a", new String[]{"v1", "v2"}, "b", new String[]{"v3", "v4"} ) );
         final RequestUtils.RequestUrl requestURL = RequestUtils.buildRequestURL( request, Set.of( "a" ) );
 
-        assertEquals( "https://example.com/path?b=v3&b=v4", requestURL.fullUrl() );
-        assertEquals( "example.com", requestURL.domain() );
+        assertEquals( "https://example.com./path?b=v3&b=v4", requestURL.fullUrl() );
+        assertEquals( "example.com.", requestURL.domain() );
         assertEquals( "/path", requestURL.path() );
     }
 
