@@ -20,9 +20,7 @@ public final class RequestUtils
     {
         // rebuild the URL from the request
         final String scheme = request.getScheme();
-        final String serverName = ( request.getServerName().endsWith( "." )
-            ? request.getServerName().substring( 0, request.getServerName().length() - 1 )
-            : request.getServerName() ).toLowerCase( Locale.ROOT );
+        final String serverName = request.getServerName().toLowerCase( Locale.ROOT );
         final int serverPort = request.getServerPort();
         final String path = request.getRequestURI().toLowerCase( Locale.ROOT );
 
