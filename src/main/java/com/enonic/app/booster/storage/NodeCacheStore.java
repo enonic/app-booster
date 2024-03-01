@@ -85,7 +85,6 @@ public class NodeCacheStore
 
                 final int contentLength = contentLengthLong.intValue();
                 final String etag = node.data().getString( "etag" );
-                final String url = node.data().getString( "url" );
                 final Instant cachedTime = node.data().getInstant( "cachedTime" );
                 final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
                 final ByteSource gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
@@ -150,7 +149,7 @@ public class NodeCacheStore
                 {
                     final CreateNodeParams.Builder createParams = CreateNodeParams.create()
                         .name( cacheKey )
-                        .parent( NodePath.ROOT )
+                        .parent( BoosterContext.CACHE_PARENT_NODE )
                         .setNodeId( nodeId )
                         .data( data )
                         .attachBinary( GZIP_DATA_BINARY_REFERENCE, gzipByteSource );
@@ -215,8 +214,7 @@ public class NodeCacheStore
     public String generateCacheKey( final String url )
     {
         final byte[] digest = MessageDigests.sha256().digest( ( url ).getBytes( StandardCharsets.ISO_8859_1 ) );
-        final byte[] truncated = Arrays.copyOf( digest, 16 );
-        return HexFormat.of().formatHex( truncated );
+        return HexFormat.of().formatHex( digest, 0, 16 );
     }
 
     private Map<String, List<String>> adaptHeaders( final PropertySet headers )

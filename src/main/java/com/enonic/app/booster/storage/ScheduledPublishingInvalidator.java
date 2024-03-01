@@ -1,15 +1,16 @@
 package com.enonic.app.booster.storage;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
-import java.util.Map;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Activate;
@@ -17,18 +18,28 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
+import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
+import com.enonic.xp.data.PropertyTree;
+import com.enonic.xp.node.CreateNodeParams;
+import com.enonic.xp.node.MultiRepoNodeHit;
 import com.enonic.xp.node.MultiRepoNodeQuery;
 import com.enonic.xp.node.Node;
+import com.enonic.xp.node.NodeId;
+import com.enonic.xp.node.NodeIdExistsException;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
+import com.enonic.xp.node.NodeVersionId;
 import com.enonic.xp.node.SearchTarget;
 import com.enonic.xp.node.SearchTargets;
+import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.project.Project;
 import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.project.ProjectService;
@@ -37,10 +48,13 @@ import com.enonic.xp.query.expr.FieldExpr;
 import com.enonic.xp.query.expr.LogicalExpr;
 import com.enonic.xp.query.expr.QueryExpr;
 import com.enonic.xp.query.expr.ValueExpr;
+import com.enonic.xp.repository.RepositoryId;
 
 @Component(immediate = true, configurationPid = "com.enonic.app.booster")
 public class ScheduledPublishingInvalidator
 {
+    private static final Logger LOG = LoggerFactory.getLogger( ScheduledPublishingInvalidator.class );
+
     private final ScheduledExecutorService executorService;
 
     private final BoosterTasksFacade boosterTasksFacade;
@@ -51,7 +65,6 @@ public class ScheduledPublishingInvalidator
 
     private volatile BoosterConfigParsed config;
 
-    private ConcurrentMap<Instant, Set<ProjectTime>> projectTimes = new ConcurrentHashMap<>();
 
     @Activate
     public ScheduledPublishingInvalidator( @Reference final ProjectService projectService, @Reference final NodeService nodeService,
@@ -68,6 +81,7 @@ public class ScheduledPublishingInvalidator
         this.boosterTasksFacade = boosterTasksFacade;
         this.executorService = executorService;
         this.executorService.scheduleWithFixedDelay( this::check, 10, 10, TimeUnit.SECONDS );
+        this.executorService.scheduleWithFixedDelay( this::act, 10, 10, TimeUnit.SECONDS );
     }
 
     @Deactivate
@@ -85,7 +99,7 @@ public class ScheduledPublishingInvalidator
 
     private void check()
     {
-        BoosterContext.runInContext( () -> {
+        logError( () -> BoosterContext.runInContext( () -> {
             final SearchTargets.Builder builder = SearchTargets.create();
             for ( Project p : projectService.list() )
             {
@@ -104,36 +118,131 @@ public class ScheduledPublishingInvalidator
                 .build();
 
             MultiRepoNodeQuery query = new MultiRepoNodeQuery( builder.build(), nodeQuery );
-            final var projectTimeStream = nodeService.findByQuery( query ).getNodeHits().stream().flatMap( hit -> {
-                final var instants = ContextBuilder.from( ContextAccessor.current() )
-                    .branch( hit.getBranch() )
-                    .repositoryId( hit.getRepositoryId() )
-                    .build()
-                    .callWith( () -> {
-                        final Node node = nodeService.getById( hit.getNodeId() );
-                        return Stream.of( node.data().getInstant( "publish.from" ), node.data().getInstant( "publish.to" ) );
-                    } );
-
-                return instants.filter( Objects::nonNull )
-                    .map( time -> new ProjectTime( ProjectName.from( hit.getRepositoryId() ), time ) );
-            } ).toList();
-
-            for ( ProjectTime projectTime : projectTimeStream )
-            {
-                projectTimes.compute( projectTime.time(), ( k, v ) -> {
-                    if ( v == null )
-                    {
-                        return Set.of( projectTime );
-                    }
-                    else
-                    {
-                        return Stream.concat( v.stream(), Stream.of( projectTime ) ).collect( Collectors.toSet() );
-                    }
-                } );
-            }
-        } );
-
+            nodeService.findByQuery( query )
+                .getNodeHits()
+                .stream()
+                .flatMap( this::hitToScheduledPublishingRecordStream )
+                .forEach(
+                    record -> record( record.repositoryId(), record.nodeVersionId(), record.time(), record.type(), record.nodeId() ) );
+        } ) );
     }
 
-    private record ProjectTime (ProjectName projectName, Instant time) {}
+    private Stream<ScheduledPublishingRecord> hitToScheduledPublishingRecordStream( final MultiRepoNodeHit hit )
+    {
+        final NodeId nodeId = hit.getNodeId();
+        final Node node = ContextBuilder.from( ContextAccessor.current() )
+            .branch( hit.getBranch() )
+            .repositoryId( hit.getRepositoryId() )
+            .build()
+            .callWith( () -> nodeService.getById( nodeId ) );
+        if ( node != null )
+        {
+
+            final Instant publishFrom = node.data().getInstant( "publish.from" );
+            final Instant publishTo = node.data().getInstant( "publish.to" );
+
+            final RepositoryId repositoryId = hit.getRepositoryId();
+            final NodeVersionId nodeVersionId = node.getNodeVersionId();
+            List<ScheduledPublishingRecord> records = new ArrayList<>();
+
+            if ( publishFrom != null )
+            {
+                records.add( new ScheduledPublishingRecord( repositoryId, nodeVersionId, publishFrom, "publish.from", nodeId ) );
+            }
+            if ( publishTo != null )
+            {
+                records.add( new ScheduledPublishingRecord( repositoryId, nodeVersionId, publishTo, "publish.to", nodeId ) );
+            }
+            return records.stream();
+        }
+        return Stream.of();
+    }
+
+    record ScheduledPublishingRecord(RepositoryId repositoryId, NodeVersionId nodeVersionId, Instant time, String type, NodeId nodeId)
+    {
+    }
+
+    private void record( final RepositoryId repositoryId, final NodeVersionId nodeVersionId, final Instant time, final String type,
+                         final NodeId nodeId )
+    {
+        final MessageDigest messageDigest = MessageDigests.sha256();
+        messageDigest.update( repositoryId.toString().getBytes( StandardCharsets.ISO_8859_1 ) );
+        messageDigest.update( nodeVersionId.toString().getBytes( StandardCharsets.ISO_8859_1 ) );
+        messageDigest.update( longToByteArray( time.toEpochMilli() ) );
+        final String key = HexFormat.of().formatHex( messageDigest.digest(), 0, 16 );
+
+        final PropertyTree data = new PropertyTree();
+        data.setInstant( "time", time );
+        data.setString( "type", type );
+        data.setString( "nodeId", nodeId.toString() );
+        data.setString( "nodeVersionId", nodeVersionId.toString() );
+        data.setString( "repositoryId", repositoryId.toString() );
+
+        try
+        {
+            nodeService.create( CreateNodeParams.create()
+                                    .name( key )
+                                    .parent( BoosterContext.SCHEDULED_PARENT_NODE )
+                                    .setNodeId( NodeId.from( key ) )
+                                    .data( data )
+                                    .build() );
+        }
+        catch ( NodeIdExistsException e )
+        {
+            // ignore
+        }
+    }
+
+    private void mark( final NodeId nodeId )
+    {
+        try
+        {
+            nodeService.update( UpdateNodeParams.create()
+                                    .id( nodeId )
+                                    .editor( editor -> editor.data.setInstant( "processedTime", Instant.now() ) )
+                                    .build() );
+        }
+        catch ( NodeIdExistsException e )
+        {
+            // ignore
+        }
+    }
+
+    public static byte[] longToByteArray( long value )
+    {
+        return new byte[]{(byte) ( value >> 56 ), (byte) ( value >> 48 ), (byte) ( value >> 40 ), (byte) ( value >> 32 ),
+            (byte) ( value >> 24 ), (byte) ( value >> 16 ), (byte) ( value >> 8 ), (byte) value};
+    }
+
+    private void act()
+    {
+        logError( () -> {
+            Set<ProjectName> projects = new HashSet<>();
+            BoosterContext.runInContext( () -> {
+                QueryExpr queryExpr = QueryExpr.from(
+                    LogicalExpr.and( CompareExpr.lte( FieldExpr.from( "time" ), ValueExpr.instant( Instant.now().toString() ) ),
+                                     CompareExpr.notLike( FieldExpr.from( "processedTime" ), ValueExpr.string( "*" ) ) ) );
+                final NodeQuery nodeQuery = NodeQuery.create().query( queryExpr ).size( NodeQuery.ALL_RESULTS_SIZE_FLAG ).build();
+                nodeService.findByQuery( nodeQuery ).getNodeHits().stream().forEach( hit -> {
+                    final RepositoryId repositoryId =
+                        RepositoryId.from( nodeService.getById( hit.getNodeId() ).data().getString( "repositoryId" ) );
+                    mark( hit.getNodeId() );
+                    projects.add( ProjectName.from( repositoryId ) );
+                } );
+            } );
+            boosterTasksFacade.invalidate( projects );
+        } );
+    }
+
+    private void logError( final Runnable runnable )
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch ( Exception e )
+        {
+            LOG.error( "Task could not be submitted ", e );
+        }
+    }
 }

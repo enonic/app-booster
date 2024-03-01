@@ -193,7 +193,7 @@ public class NodeCleanerBean
     private NodeQuery queryNodes( final Map<String, Value> fields, final Instant cutOffTime, final boolean includeInvalidated, int size )
     {
         final NodeQuery.Builder builder = NodeQuery.create();
-        builder.parent( NodePath.ROOT );
+        builder.parent( BoosterContext.CACHE_PARENT_NODE );
 
         for ( Map.Entry<String, Value> entry : fields.entrySet() )
         {
