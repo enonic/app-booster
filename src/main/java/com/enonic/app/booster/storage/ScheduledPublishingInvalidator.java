@@ -29,6 +29,7 @@ import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
+import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.MultiRepoNodeHit;
 import com.enonic.xp.node.MultiRepoNodeQuery;
 import com.enonic.xp.node.Node;
@@ -45,6 +46,7 @@ import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.project.ProjectService;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.FieldExpr;
+import com.enonic.xp.query.expr.FunctionExpr;
 import com.enonic.xp.query.expr.LogicalExpr;
 import com.enonic.xp.query.expr.QueryExpr;
 import com.enonic.xp.query.expr.ValueExpr;
@@ -81,7 +83,6 @@ public class ScheduledPublishingInvalidator
         this.boosterTasksFacade = boosterTasksFacade;
         this.executorService = executorService;
         this.executorService.scheduleWithFixedDelay( this::check, 10, 10, TimeUnit.SECONDS );
-        this.executorService.scheduleWithFixedDelay( this::act, 10, 10, TimeUnit.SECONDS );
     }
 
     @Deactivate
@@ -110,20 +111,39 @@ public class ScheduledPublishingInvalidator
                                  .build() );
             }
 
-            ValueExpr now = ValueExpr.instant( Instant.now().toString() );
-            NodeQuery nodeQuery = NodeQuery.create()
-                .query( QueryExpr.from( LogicalExpr.or( CompareExpr.gte( FieldExpr.from( "publish.to" ), now ),
-                                                        CompareExpr.gte( FieldExpr.from( "publish.from" ), now ) ) ) )
-                .size( NodeQuery.ALL_RESULTS_SIZE_FLAG )
-                .build();
+            final Node scheduledParentNode = nodeService.getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
+            final Instant lastChecked = scheduledParentNode.data().getInstant( "lastChecked" );
+            final Instant now = Instant.now().truncatedTo( java.time.temporal.ChronoUnit.SECONDS );
 
-            MultiRepoNodeQuery query = new MultiRepoNodeQuery( builder.build(), nodeQuery );
+            NodeQuery.Builder nodeQuery = NodeQuery.create().size( NodeQuery.ALL_RESULTS_SIZE_FLAG );
+
+            ValueExpr nowValue = ValueExpr.instant( now.toString() );
+            if (lastChecked == null)
+            {
+                nodeQuery.query( QueryExpr.from( LogicalExpr.or( CompareExpr.lte( FieldExpr.from( "publish.from" ), nowValue ),
+                                                                 CompareExpr.lte( FieldExpr.from( "publish.to" ), nowValue ) ) ) );
+            } else {
+                ValueExpr lastCheckedValue = ValueExpr.instant( lastChecked.toString() );
+
+                nodeQuery.query( QueryExpr.from( LogicalExpr.or( LogicalExpr.and( CompareExpr.gt( FieldExpr.from( "publish.from" ), lastCheckedValue ), CompareExpr.lte( FieldExpr.from( "publish.from" ), nowValue ) ),
+                                                                 LogicalExpr.and( CompareExpr.gt( FieldExpr.from( "publish.to" ), lastCheckedValue ), CompareExpr.lte( FieldExpr.from( "publish.to" ), nowValue ) ) )));
+            }
+
+            MultiRepoNodeQuery query = new MultiRepoNodeQuery( builder.build(), nodeQuery.build() );
+            Set<ProjectName> projects = new HashSet<>();
+
             nodeService.findByQuery( query )
                 .getNodeHits()
                 .stream()
                 .flatMap( this::hitToScheduledPublishingRecordStream )
                 .forEach(
-                    record -> record( record.repositoryId(), record.nodeVersionId(), record.time(), record.type(), record.nodeId() ) );
+                    record -> projects.add( ProjectName.from( record.repositoryId() ) ) );
+
+            boosterTasksFacade.invalidate( projects );
+
+            nodeService.update( UpdateNodeParams.create().id( scheduledParentNode.id() ).editor( editor -> {
+                editor.data.setInstant( "lastChecked", now );
+            } ).build() );
         } ) );
     }
 
@@ -160,78 +180,6 @@ public class ScheduledPublishingInvalidator
 
     record ScheduledPublishingRecord(RepositoryId repositoryId, NodeVersionId nodeVersionId, Instant time, String type, NodeId nodeId)
     {
-    }
-
-    private void record( final RepositoryId repositoryId, final NodeVersionId nodeVersionId, final Instant time, final String type,
-                         final NodeId nodeId )
-    {
-        final MessageDigest messageDigest = MessageDigests.sha256();
-        messageDigest.update( repositoryId.toString().getBytes( StandardCharsets.ISO_8859_1 ) );
-        messageDigest.update( nodeVersionId.toString().getBytes( StandardCharsets.ISO_8859_1 ) );
-        messageDigest.update( longToByteArray( time.toEpochMilli() ) );
-        final String key = HexFormat.of().formatHex( messageDigest.digest(), 0, 16 );
-
-        final PropertyTree data = new PropertyTree();
-        data.setInstant( "time", time );
-        data.setString( "type", type );
-        data.setString( "nodeId", nodeId.toString() );
-        data.setString( "nodeVersionId", nodeVersionId.toString() );
-        data.setString( "repositoryId", repositoryId.toString() );
-
-        try
-        {
-            nodeService.create( CreateNodeParams.create()
-                                    .name( key )
-                                    .parent( BoosterContext.SCHEDULED_PARENT_NODE )
-                                    .setNodeId( NodeId.from( key ) )
-                                    .data( data )
-                                    .build() );
-        }
-        catch ( NodeIdExistsException e )
-        {
-            // ignore
-        }
-    }
-
-    private void mark( final NodeId nodeId )
-    {
-        try
-        {
-            nodeService.update( UpdateNodeParams.create()
-                                    .id( nodeId )
-                                    .editor( editor -> editor.data.setInstant( "processedTime", Instant.now() ) )
-                                    .build() );
-        }
-        catch ( NodeIdExistsException e )
-        {
-            // ignore
-        }
-    }
-
-    public static byte[] longToByteArray( long value )
-    {
-        return new byte[]{(byte) ( value >> 56 ), (byte) ( value >> 48 ), (byte) ( value >> 40 ), (byte) ( value >> 32 ),
-            (byte) ( value >> 24 ), (byte) ( value >> 16 ), (byte) ( value >> 8 ), (byte) value};
-    }
-
-    private void act()
-    {
-        logError( () -> {
-            Set<ProjectName> projects = new HashSet<>();
-            BoosterContext.runInContext( () -> {
-                QueryExpr queryExpr = QueryExpr.from(
-                    LogicalExpr.and( CompareExpr.lte( FieldExpr.from( "time" ), ValueExpr.instant( Instant.now().toString() ) ),
-                                     CompareExpr.notLike( FieldExpr.from( "processedTime" ), ValueExpr.string( "*" ) ) ) );
-                final NodeQuery nodeQuery = NodeQuery.create().query( queryExpr ).size( NodeQuery.ALL_RESULTS_SIZE_FLAG ).build();
-                nodeService.findByQuery( nodeQuery ).getNodeHits().stream().forEach( hit -> {
-                    final RepositoryId repositoryId =
-                        RepositoryId.from( nodeService.getById( hit.getNodeId() ).data().getString( "repositoryId" ) );
-                    mark( hit.getNodeId() );
-                    projects.add( ProjectName.from( repositoryId ) );
-                } );
-            } );
-            boosterTasksFacade.invalidate( projects );
-        } );
     }
 
     private void logError( final Runnable runnable )
