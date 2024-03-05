@@ -15,7 +15,6 @@ import com.enonic.xp.node.FindNodesByQueryResult;
 import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeHits;
 import com.enonic.xp.node.NodeId;
-import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
@@ -132,13 +131,14 @@ public class NodeCleanerBean
         return getSize( Map.of( "project", Single.of( project ), "contentId", Single.of( contentId ) ) );
     }
 
-    private int getSize( final Map<String, Value> fields ) {
+    private int getSize( final Map<String, Value> fields )
+    {
         final Instant now = Instant.now();
         FindNodesByQueryResult nodesToInvalidate = BoosterContext.callInContext( () -> {
 
             final NodeQuery query = queryNodes( fields, now, false, 0 );
             return nodeService.findByQuery( query );
-        });
+        } );
         return (int) Math.max( 0, Math.min( nodesToInvalidate.getTotalHits(), Integer.MAX_VALUE ) );
     }
 
