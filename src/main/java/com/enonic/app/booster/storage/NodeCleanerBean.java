@@ -1,17 +1,24 @@
 package com.enonic.app.booster.storage;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.enonic.xp.branch.Branch;
+import com.enonic.xp.context.ContextAccessor;
+import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.ValueFactory;
 import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.FindNodesByQueryResult;
+import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeHits;
 import com.enonic.xp.node.NodeId;
@@ -19,6 +26,8 @@ import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
+import com.enonic.xp.project.Project;
+import com.enonic.xp.project.ProjectService;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.FieldExpr;
 import com.enonic.xp.query.expr.FieldOrderExpr;
@@ -40,10 +49,15 @@ public class NodeCleanerBean
 
     private NodeService nodeService;
 
+    private ProjectService projectService;
+
+    private static volatile Instant LAST_CACHED_CACHE;
+
     @Override
     public void initialize( final BeanContext beanContext )
     {
         this.nodeService = beanContext.getService( NodeService.class ).get();
+        this.projectService = beanContext.getService( ProjectService.class ).get();
     }
 
     public void invalidateProjects( final List<String> projects )
@@ -113,6 +127,54 @@ public class NodeCleanerBean
                 diff = nodesToDelete.getTotalHits() - cacheSize;
             }
 
+        } );
+    }
+
+    public void invalidateScheduled()
+    {
+        final Instant now = Instant.now().truncatedTo( ChronoUnit.SECONDS );
+
+        BoosterContext.runInContext( () -> {
+            final Node scheduledParentNode = nodeService.getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
+
+            final Instant lastCheckedStored =
+                Objects.requireNonNullElse( scheduledParentNode.data().getInstant( "lastChecked" ), Instant.EPOCH );
+
+            final Instant lastChecked = Objects.requireNonNullElse( LAST_CACHED_CACHE, lastCheckedStored );
+
+            final NodeQuery.Builder nodeQueryBuilder = NodeQuery.create().size( 0 );
+            final ValueExpr nowValue = ValueExpr.instant( now.toString() );
+            final ValueExpr lastCheckedValue = ValueExpr.instant( lastChecked.toString() );
+
+            nodeQueryBuilder.query( QueryExpr.from( LogicalExpr.or(
+                LogicalExpr.and( CompareExpr.gt( FieldExpr.from( "publish.from" ), lastCheckedValue ),
+                                 CompareExpr.lte( FieldExpr.from( "publish.from" ), nowValue ) ),
+                LogicalExpr.and( CompareExpr.gt( FieldExpr.from( "publish.to" ), lastCheckedValue ),
+                                 CompareExpr.lte( FieldExpr.from( "publish.to" ), nowValue ) ) ) ) );
+
+            final NodeQuery nodeQuery = nodeQueryBuilder.build();
+
+            final var projects = projectService.list()
+                .stream()
+                .map( Project::getName )
+                .filter( name -> ContextBuilder.from( ContextAccessor.current() )
+                    .branch( Branch.from( "master" ) )
+                    .repositoryId( name.getRepoId() )
+                    .build()
+                    .callWith( () -> nodeService.findByQuery( nodeQuery ).getTotalHits() > 0 ) )
+                .map( Objects::toString )
+                .toList();
+
+            invalidateProjects( projects );
+
+            LAST_CACHED_CACHE = now;
+            if (lastCheckedStored.plus( 1, ChronoUnit.HOURS ).isBefore( now ) )
+            {
+                nodeService.update( UpdateNodeParams.create()
+                                        .id( scheduledParentNode.id() )
+                                        .editor( editor -> editor.data.setInstant( "lastChecked", now ) )
+                                        .build() );
+            }
         } );
     }
 

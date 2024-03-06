@@ -1,35 +1,34 @@
-const schedulerLib = require('/lib/xp/scheduler');
+const cron = require('/lib/cron');
 const clusterLib = require('/lib/xp/cluster');
 
-
-if (clusterLib.isMaster()) {
-    let job = schedulerLib.get({name: 'booster-background-job'});
-    if (job) {
-        schedulerLib.modify({
-            name: 'booster-background-job',
-            editor: (edit) => {
-                edit.enabled = true;
-                return edit;
-            }
-        });
-    } else {
-        const job = schedulerLib.create({
-            name: 'booster-background-job',
-            descriptor: 'booster-background-task',
-            enabled: true,
-            schedule: {type: 'CRON', value: '0/10 * * * *', timeZone: 'UTC'},
-        });
+cron.schedule({
+    name: 'invalidate-scheduled',
+    delay: 1000,
+    fixedDelay: 10000,
+    callback: function () {
+        if (clusterLib.isMaster()) {
+            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').invalidateScheduled();
+        }
     }
-}
+});
+
+cron.schedule({
+    name: 'delete-excess-nodes',
+    cron: '* * * * *',
+    callback: function () {
+        if (clusterLib.isMaster()) {
+            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').deleteExcessNodes(app.config.cacheSize);
+        }
+    }
+});
+
 
 __.disposer(function () {
-    if (clusterLib.isMaster()) {
-        schedulerLib.modify({
-            name: 'booster-background-job',
-            editor: (edit) => {
-                edit.enabled = false;
-                return edit;
-            }
-        });
-    }
+    log.debug('Unscheduling invalidate-scheduled');
+    cron.unschedule({
+        name: 'invalidate-scheduled'
+    });
+    cron.unschedule({
+        name: 'delete-excess-nodes'
+    });
 });

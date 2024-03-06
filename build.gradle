@@ -40,6 +40,8 @@ dependencies {
 	include "com.enonic.lib:lib-mustache:2.1.1"
 	include "com.enonic.xp:lib-scheduler:${xpVersion}"
 	include "com.enonic.xp:lib-cluster:${xpVersion}"
+	include "com.enonic.xp:lib-context:${xpVersion}"
+	include 'com.enonic.lib:lib-cron:1.1.2'
 
 	testImplementation(platform('org.junit:junit-bom:5.10.2'))
     testImplementation(platform("org.mockito:mockito-bom:5.10.0"))
