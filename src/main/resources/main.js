@@ -4,7 +4,7 @@ const projectLib = require('/lib/xp/project');
 const cron = require('/lib/cron');
 
 cron.schedule({
-    name: 'invalidate-scheduled',
+    name: 'booster-invalidate-scheduled',
     delay: 1000,
     fixedDelay: 10000,
     callback: function () {
@@ -18,7 +18,7 @@ cron.schedule({
 });
 
 cron.schedule({
-    name: 'delete-excess-nodes',
+    name: 'booster-delete-excess-nodes',
     cron: '* * * * *',
     callback: function () {
         if (clusterLib.isMaster()) {
@@ -31,9 +31,9 @@ cron.schedule({
 __.disposer(function () {
     log.debug('Unscheduling invalidate-scheduled');
     cron.unschedule({
-        name: 'invalidate-scheduled'
+        name: 'booster-invalidate-scheduled'
     });
     cron.unschedule({
-        name: 'delete-excess-nodes'
+        name: 'booster-delete-excess-nodes'
     });
 });
