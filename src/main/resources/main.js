@@ -1,5 +1,7 @@
-const cron = require('/lib/cron');
+const contextLib = require('/lib/xp/context');
 const clusterLib = require('/lib/xp/cluster');
+const projectLib = require('/lib/xp/project');
+const cron = require('/lib/cron');
 
 cron.schedule({
     name: 'invalidate-scheduled',
@@ -7,7 +9,10 @@ cron.schedule({
     fixedDelay: 10000,
     callback: function () {
         if (clusterLib.isMaster()) {
-            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').invalidateScheduled();
+            const bean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
+            const allProjects = contextLib.run({principals: ['role:system.admin']}, () => projectLib.list()).map(project => project.id);
+            const projects = bean.findScheduledForInvalidation(allProjects);
+            bean.invalidateProjects(projects);
         }
     }
 });

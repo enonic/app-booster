@@ -2,7 +2,6 @@ package com.enonic.app.booster.storage;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -19,8 +18,8 @@ import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.CacheMeta;
-import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.app.booster.io.ByteSupply;
+import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
@@ -28,7 +27,6 @@ import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeNotFoundException;
-import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.util.BinaryReference;

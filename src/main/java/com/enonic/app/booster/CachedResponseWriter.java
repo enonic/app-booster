@@ -83,7 +83,6 @@ public final class CachedResponseWriter
                                                                        Integer.MAX_VALUE ) ) );
         }
 
-
         if ( notModified )
         {
             LOG.debug( "Returning 304 Not Modified" );

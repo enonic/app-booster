@@ -5,8 +5,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -26,8 +24,7 @@ import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
-import com.enonic.xp.project.Project;
-import com.enonic.xp.project.ProjectService;
+import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.FieldExpr;
 import com.enonic.xp.query.expr.FieldOrderExpr;
@@ -42,6 +39,8 @@ import com.enonic.xp.query.filter.ValueFilter;
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
 
+import static java.util.Objects.requireNonNullElse;
+
 public class NodeCleanerBean
     implements ScriptBean
 {
@@ -49,15 +48,13 @@ public class NodeCleanerBean
 
     private NodeService nodeService;
 
-    private ProjectService projectService;
 
-    private static volatile Instant LAST_CACHED_CACHE;
+    private static volatile Instant LAST_CHECKED_CACHE;
 
     @Override
     public void initialize( final BeanContext beanContext )
     {
         this.nodeService = beanContext.getService( NodeService.class ).get();
-        this.projectService = beanContext.getService( ProjectService.class ).get();
     }
 
     public void invalidateProjects( final List<String> projects )
@@ -130,17 +127,17 @@ public class NodeCleanerBean
         } );
     }
 
-    public void invalidateScheduled()
+    public List<String> findScheduledForInvalidation( final List<String> projects )
     {
         final Instant now = Instant.now().truncatedTo( ChronoUnit.SECONDS );
 
-        BoosterContext.runInContext( () -> {
+        return BoosterContext.callInContext( () -> {
             final Node scheduledParentNode = nodeService.getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
 
             final Instant lastCheckedStored =
-                Objects.requireNonNullElse( scheduledParentNode.data().getInstant( "lastChecked" ), Instant.EPOCH );
+                requireNonNullElse( scheduledParentNode.data().getInstant( "lastChecked" ), scheduledParentNode.getTimestamp() );
 
-            final Instant lastChecked = Objects.requireNonNullElse( LAST_CACHED_CACHE, lastCheckedStored );
+            final Instant lastChecked = requireNonNullElse( LAST_CHECKED_CACHE, lastCheckedStored );
 
             final NodeQuery.Builder nodeQueryBuilder = NodeQuery.create().size( 0 );
             final ValueExpr nowValue = ValueExpr.instant( now.toString() );
@@ -154,27 +151,23 @@ public class NodeCleanerBean
 
             final NodeQuery nodeQuery = nodeQueryBuilder.build();
 
-            final var projects = projectService.list()
-                .stream()
-                .map( Project::getName )
+            final List<String> filteredProjects = projects.stream()
                 .filter( name -> ContextBuilder.from( ContextAccessor.current() )
                     .branch( Branch.from( "master" ) )
-                    .repositoryId( name.getRepoId() )
+                    .repositoryId( ProjectName.from( name ).getRepoId() )
                     .build()
                     .callWith( () -> nodeService.findByQuery( nodeQuery ).getTotalHits() > 0 ) )
-                .map( Objects::toString )
                 .toList();
 
-            invalidateProjects( projects );
-
-            LAST_CACHED_CACHE = now;
-            if (lastCheckedStored.plus( 1, ChronoUnit.HOURS ).isBefore( now ) )
+            LAST_CHECKED_CACHE = now;
+            if ( lastCheckedStored.plus( 1, ChronoUnit.HOURS ).isBefore( now ) )
             {
                 nodeService.update( UpdateNodeParams.create()
                                         .id( scheduledParentNode.id() )
                                         .editor( editor -> editor.data.setInstant( "lastChecked", now ) )
                                         .build() );
             }
+            return filteredProjects;
         } );
     }
 

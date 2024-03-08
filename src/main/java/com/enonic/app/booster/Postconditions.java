@@ -245,17 +245,19 @@ public class Postconditions
 
         private final BoosterConfigParsed config;
 
-        public ContentTypePreconditions( final BoosterConfigParsed config)
+        public ContentTypePreconditions( final BoosterConfigParsed config )
         {
             this.config = config;
         }
 
-        public boolean check( HttpServletRequest request, CachingResponse response ) {
+        public boolean check( HttpServletRequest request, CachingResponse response )
+        {
             final String responseContentType = response.getContentType();
-            if (responseContentType == null || !MimeTypes.isContentTypeSupported(config.cacheMimeTypes(), responseContentType)) {
+            if ( responseContentType == null || !MimeTypes.isContentTypeSupported( config.cacheMimeTypes(), responseContentType ) )
+            {
                 return false;
             }
-            LOG.debug("Not cacheable because of incompatible content-type {}", responseContentType);
+            LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
             return true;
         }
     }
