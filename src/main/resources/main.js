@@ -22,7 +22,7 @@ cron.schedule({
     cron: '* * * * *',
     callback: function () {
         if (clusterLib.isMaster()) {
-            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').deleteExcessNodes(app.config.cacheSize);
+            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').deleteExcessNodes();
         }
     }
 });

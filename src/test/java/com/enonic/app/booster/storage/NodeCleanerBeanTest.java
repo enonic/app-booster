@@ -11,6 +11,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.enonic.app.booster.BoosterConfig;
+import com.enonic.app.booster.BoosterConfigParsed;
+import com.enonic.app.booster.BoosterConfigService;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.data.Value;
 import com.enonic.xp.node.DeleteNodeParams;
@@ -45,6 +48,9 @@ class NodeCleanerBeanTest
     @Mock
     NodeService nodeService;
 
+    @Mock
+    BoosterConfigService boosterConfigService;
+
     NodeCleanerBean nodeCleanerBean;
 
     @BeforeEach
@@ -52,6 +58,7 @@ class NodeCleanerBeanTest
     {
         final BeanContext beanContext = mock( BeanContext.class );
         when( beanContext.getService( NodeService.class ) ).thenReturn( () -> nodeService );
+        when( beanContext.getService( BoosterConfigService.class ) ).thenReturn( () -> boosterConfigService);
         nodeCleanerBean = new NodeCleanerBean();
         nodeCleanerBean.initialize( beanContext );
     }
@@ -198,6 +205,13 @@ class NodeCleanerBeanTest
     @Test
     void deleteExcessNodes()
     {
+        final BoosterConfig configMock = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( configMock.cacheSize() ).thenReturn( 1 );
+        final BoosterConfigParsed config =
+            BoosterConfigParsed.parse( configMock );
+
+        when( boosterConfigService.getConfig() ).thenReturn( config );
+
         when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
                                                                                   .addNodeHit( NodeHit.create()
                                                                                                    .nodeId( NodeId.from( "node1" ) )
@@ -214,7 +228,7 @@ class NodeCleanerBeanTest
                              .totalHits( 1 )
                              .build() );
 
-        nodeCleanerBean.deleteExcessNodes( 1 );
+        nodeCleanerBean.deleteExcessNodes();
 
         verify( nodeService, times( 2 ) ).findByQuery( any( NodeQuery.class ) );
         verify( nodeService ).refresh( RefreshMode.SEARCH );

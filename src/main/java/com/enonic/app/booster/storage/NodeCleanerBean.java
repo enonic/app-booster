@@ -6,10 +6,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.enonic.app.booster.BoosterConfigService;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
@@ -48,6 +50,7 @@ public class NodeCleanerBean
 
     private NodeService nodeService;
 
+    private Supplier<BoosterConfigService> configService;
 
     private static volatile Instant LAST_CHECKED_CACHE;
 
@@ -55,6 +58,7 @@ public class NodeCleanerBean
     public void initialize( final BeanContext beanContext )
     {
         this.nodeService = beanContext.getService( NodeService.class ).get();
+        this.configService = beanContext.getService( BoosterConfigService.class );
     }
 
     public void invalidateProjects( final List<String> projects )
@@ -101,8 +105,9 @@ public class NodeCleanerBean
         } );
     }
 
-    public void deleteExcessNodes( final int cacheSize )
+    public void deleteExcessNodes()
     {
+        final int cacheSize = configService.get().getConfig().cacheSize();
         final Instant now = Instant.now();
 
         BoosterContext.runInContext( () -> {

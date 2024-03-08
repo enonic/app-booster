@@ -36,10 +36,10 @@ class BoosterConfigParsedTest
     void parse()
     {
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
-        when( config.excludeQueryParams() ).thenReturn( "b a" );
-        when( config.appsInvalidateCacheOnStart() ).thenReturn( "app2 app1" );
+        when( config.excludeQueryParams() ).thenReturn( "b, a" );
+        when( config.appsInvalidateCacheOnStart() ).thenReturn( "app2, app1" );
         when( config.cacheTtl() ).thenReturn( "PT24H" );
-        when( config.cacheMimeTypes() ).thenReturn( "text/html text/xhtml application/json" );
+        when( config.cacheMimeTypes() ).thenReturn( "text/html, text/xhtml, application/json" );
         when( config.overrideHeaders() ).thenReturn( "\"Cache-Control: private, no-store\", \"X-Instance: \"\"jupiter\"\"\"" );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
         assertEquals( Set.of( "a", "b" ), parse.excludeQueryParams() );
