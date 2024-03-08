@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -248,7 +249,7 @@ class BoosterRequestFilterTest
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getServerName() ).thenReturn( "example.com" );
         when( request.getServerPort() ).thenReturn( 443 );
-        when( request.getRequestURI() ).thenReturn( "/site/repo/branch/s" );
+        when( request.getAttribute( RequestDispatcher.FORWARD_REQUEST_URI ) ).thenReturn( "/site/repo/branch/s" );
     }
 
 }
