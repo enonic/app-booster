@@ -1,5 +1,7 @@
 package com.enonic.app.booster.storage;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +79,7 @@ class NodeCleanerBeanTest
         final ArgumentCaptor<UpdateNodeParams> updateCaptor = captor();
         verify( nodeService, times( 2 ) ).findByQuery( findByQueryCaptor.capture() );
         final NodeQuery nodeQuery = findByQueryCaptor.getValue();
-        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( "/cache", nodeQuery.getParent().toString() );
         assertEquals( 10000, nodeQuery.getSize() );
 
         verify( nodeService ).update( updateCaptor.capture() );
@@ -223,82 +225,105 @@ class NodeCleanerBeanTest
     }
 
     @Test
-    void getProjectCacheSize() {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .hits( 2 )
-                                                                                  .totalHits( 2 )
-                                                                                  .build() );
-        final int projectCacheSize = nodeCleanerBean.getProjectCacheSize("project1");
+    void getProjectCacheSize()
+    {
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
+            FindNodesByQueryResult.create().hits( 2 ).totalHits( 2 ).build() );
+        final int projectCacheSize = nodeCleanerBean.getProjectCacheSize( "project1" );
         verify( nodeService ).findByQuery( any( NodeQuery.class ) );
 
         final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
         verify( nodeService, times( 1 ) ).findByQuery( findByQueryCaptor.capture() );
         final NodeQuery nodeQuery = findByQueryCaptor.getValue();
-        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( "/cache", nodeQuery.getParent().toString() );
         assertEquals( 0, nodeQuery.getSize() );
 
         assertThat( nodeQuery.getQueryFilters().stream().filter( f -> f instanceof ValueFilter ) ).map( f -> (ValueFilter) f )
             .anySatisfy( filter -> {
                 assertThat( filter.getFieldName() ).isEqualTo( "project" );
-                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1");
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1" );
             } );
 
-        assertEquals(2, projectCacheSize);
+        assertEquals( 2, projectCacheSize );
     }
 
     @Test
-    void getContentCacheSize() {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .hits( 2 )
-                                                                                  .totalHits( 2 )
-                                                                                  .build() );
-        final int contentCacheSize = nodeCleanerBean.getContentCacheSize("project1", "content1");
+    void getContentCacheSize()
+    {
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
+            FindNodesByQueryResult.create().hits( 2 ).totalHits( 2 ).build() );
+        final int contentCacheSize = nodeCleanerBean.getContentCacheSize( "project1", "content1" );
         verify( nodeService ).findByQuery( any( NodeQuery.class ) );
 
         final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
         verify( nodeService, times( 1 ) ).findByQuery( findByQueryCaptor.capture() );
         final NodeQuery nodeQuery = findByQueryCaptor.getValue();
-        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( "/cache", nodeQuery.getParent().toString() );
         assertEquals( 0, nodeQuery.getSize() );
 
         assertThat( nodeQuery.getQueryFilters().stream().filter( f -> f instanceof ValueFilter ) ).map( f -> (ValueFilter) f )
             .anySatisfy( filter -> {
                 assertThat( filter.getFieldName() ).isEqualTo( "project" );
-                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1");
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1" );
             } )
             .anySatisfy( filter -> {
                 assertThat( filter.getFieldName() ).isEqualTo( "contentId" );
-                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "content1");
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "content1" );
             } );
 
-        assertEquals(2, contentCacheSize);
+        assertEquals( 2, contentCacheSize );
     }
 
     @Test
-    void getSiteCacheSize() {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .hits( 2 )
-                                                                                  .totalHits( 2 )
-                                                                                  .build() );
-        final int siteCacheSize = nodeCleanerBean.getSiteCacheSize("project1", "site1");
+    void getSiteCacheSize()
+    {
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
+            FindNodesByQueryResult.create().hits( 2 ).totalHits( 2 ).build() );
+        final int siteCacheSize = nodeCleanerBean.getSiteCacheSize( "project1", "site1" );
         verify( nodeService ).findByQuery( any( NodeQuery.class ) );
 
         final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
         verify( nodeService, times( 1 ) ).findByQuery( findByQueryCaptor.capture() );
         final NodeQuery nodeQuery = findByQueryCaptor.getValue();
-        assertEquals( "/", nodeQuery.getParent().toString() );
+        assertEquals( "/cache", nodeQuery.getParent().toString() );
         assertEquals( 0, nodeQuery.getSize() );
 
         assertThat( nodeQuery.getQueryFilters().stream().filter( f -> f instanceof ValueFilter ) ).map( f -> (ValueFilter) f )
             .anySatisfy( filter -> {
                 assertThat( filter.getFieldName() ).isEqualTo( "project" );
-                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1");
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "project1" );
             } )
             .anySatisfy( filter -> {
                 assertThat( filter.getFieldName() ).isEqualTo( "siteId" );
-                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "site1");
+                assertThat( filter.getValues() ).map( Value::toString ).containsExactly( "site1" );
             } );
 
-        assertEquals(2, siteCacheSize);
+        assertEquals( 2, siteCacheSize );
     }
+
+    @Test
+    void findScheduledForInvalidation()
+    {
+        final PropertyTree data = new PropertyTree();
+        data.setInstant( "lastChecked", Instant.now().minus( 1, ChronoUnit.DAYS ) );
+        when( nodeService.getByPath( any() ) ).thenReturn(
+            Node.create().id( NodeId.from( "someId" ) ).parentPath( BoosterContext.SCHEDULED_PARENT_NODE ).data( data ).build() );
+
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
+                FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() )
+            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 2 ).build() );
+
+        final List<String> scheduled = nodeCleanerBean.findScheduledForInvalidation( List.of( "project1", "project2" ) );
+
+        assertThat( scheduled ).containsExactly( "project2" );
+
+        verify( nodeService ).getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
+
+        verify( nodeService, times( 2 ) ).findByQuery( any( NodeQuery.class ) );
+
+        final ArgumentCaptor<UpdateNodeParams> captor = captor();
+        verify( nodeService).update( captor.capture() );
+        assertEquals( "someId", captor.getValue().getId().toString() );
+    }
+
 }

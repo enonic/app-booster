@@ -130,7 +130,7 @@ class NodeCacheStoreTest
     {
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         NodeId nodeId = NodeId.from( "0f115db062b7c0dd030b16878c99dea5" );
-        Node.Builder nodeBuilder = Node.create().id( nodeId ).name( "0f115db062b7c0dd030b16878c99dea5" ).parentPath( NodePath.ROOT );
+        Node.Builder nodeBuilder = Node.create().id( nodeId ).name( "0f115db062b7c0dd030b16878c99dea5" ).parentPath( new NodePath("/cache") );
 
         PropertyTree data = new PropertyTree();
         data.addSet( "headers" ).addString( "header1", "value1" );
@@ -181,7 +181,7 @@ class NodeCacheStoreTest
         final CreateNodeParams createNodeParams = captor.getValue();
         assertEquals( NodeId.from( "0f115db062b7c0dd030b16878c99dea5" ), createNodeParams.getNodeId() );
         assertEquals( "0f115db062b7c0dd030b16878c99dea5", createNodeParams.getName() );
-        assertEquals( NodePath.ROOT, createNodeParams.getParent() );
+        assertEquals( new NodePath("/cache"), createNodeParams.getParent() );
         assertEquals( "https://example.com/", createNodeParams.getData().getString( "url" ) );
         assertEquals( "text/html", createNodeParams.getData().getString( "contentType" ) );
         assertEquals( 200L, createNodeParams.getData().getLong( "status" ) );

@@ -48,6 +48,7 @@ public class BoosterTasksFacade
         return logError( () -> {
             if ( projects.isEmpty() )
             {
+                LOG.debug( "No projects specified to invalidate" );
                 return null;
             }
             final PropertyTree data = new PropertyTree();

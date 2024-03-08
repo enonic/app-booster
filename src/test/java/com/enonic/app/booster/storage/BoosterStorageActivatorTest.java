@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import com.enonic.xp.index.IndexService;
+import com.enonic.xp.node.NodeService;
 import com.enonic.xp.repository.CreateRepositoryParams;
 import com.enonic.xp.repository.RepositoryService;
 
@@ -20,12 +21,15 @@ class BoosterStorageActivatorTest
     @Mock
     IndexService indexService;
 
+    @Mock
+    NodeService nodeService;
+
     @Test
     void testActivate()
     {
         when( indexService.isMaster() ).thenReturn( true );
         when( indexService.waitForYellowStatus() ).thenReturn( true );
-        new BoosterStorageActivator( indexService, repositoryService );
+        new BoosterStorageActivator( indexService, repositoryService, nodeService );
         verify( repositoryService ).createRepository(
             CreateRepositoryParams.create().repositoryId( BoosterContext.REPOSITORY_ID ).build() );
     }

@@ -1,6 +1,7 @@
 package com.enonic.app.booster.storage;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -9,17 +10,21 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.enonic.xp.branch.Branch;
+import com.enonic.xp.context.ContextAccessor;
+import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.ValueFactory;
 import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.FindNodesByQueryResult;
+import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeHits;
 import com.enonic.xp.node.NodeId;
-import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
+import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.FieldExpr;
 import com.enonic.xp.query.expr.FieldOrderExpr;
@@ -34,12 +39,17 @@ import com.enonic.xp.query.filter.ValueFilter;
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
 
+import static java.util.Objects.requireNonNullElse;
+
 public class NodeCleanerBean
     implements ScriptBean
 {
     private static final Logger LOG = LoggerFactory.getLogger( NodeCleanerBean.class );
 
     private NodeService nodeService;
+
+
+    private static volatile Instant LAST_CHECKED_CACHE;
 
     @Override
     public void initialize( final BeanContext beanContext )
@@ -117,6 +127,50 @@ public class NodeCleanerBean
         } );
     }
 
+    public List<String> findScheduledForInvalidation( final List<String> projects )
+    {
+        final Instant now = Instant.now().truncatedTo( ChronoUnit.SECONDS );
+
+        return BoosterContext.callInContext( () -> {
+            final Node scheduledParentNode = nodeService.getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
+
+            final Instant lastCheckedStored =
+                requireNonNullElse( scheduledParentNode.data().getInstant( "lastChecked" ), scheduledParentNode.getTimestamp() );
+
+            final Instant lastChecked = requireNonNullElse( LAST_CHECKED_CACHE, lastCheckedStored );
+
+            final NodeQuery.Builder nodeQueryBuilder = NodeQuery.create().size( 0 );
+            final ValueExpr nowValue = ValueExpr.instant( now.toString() );
+            final ValueExpr lastCheckedValue = ValueExpr.instant( lastChecked.toString() );
+
+            nodeQueryBuilder.query( QueryExpr.from( LogicalExpr.or(
+                LogicalExpr.and( CompareExpr.gt( FieldExpr.from( "publish.from" ), lastCheckedValue ),
+                                 CompareExpr.lte( FieldExpr.from( "publish.from" ), nowValue ) ),
+                LogicalExpr.and( CompareExpr.gt( FieldExpr.from( "publish.to" ), lastCheckedValue ),
+                                 CompareExpr.lte( FieldExpr.from( "publish.to" ), nowValue ) ) ) ) );
+
+            final NodeQuery nodeQuery = nodeQueryBuilder.build();
+
+            final List<String> filteredProjects = projects.stream()
+                .filter( name -> ContextBuilder.from( ContextAccessor.current() )
+                    .branch( Branch.from( "master" ) )
+                    .repositoryId( ProjectName.from( name ).getRepoId() )
+                    .build()
+                    .callWith( () -> nodeService.findByQuery( nodeQuery ).getTotalHits() > 0 ) )
+                .toList();
+
+            LAST_CHECKED_CACHE = now;
+            if ( lastCheckedStored.plus( 1, ChronoUnit.HOURS ).isBefore( now ) )
+            {
+                nodeService.update( UpdateNodeParams.create()
+                                        .id( scheduledParentNode.id() )
+                                        .editor( editor -> editor.data.setInstant( "lastChecked", now ) )
+                                        .build() );
+            }
+            return filteredProjects;
+        } );
+    }
+
     public int getProjectCacheSize( final String project )
     {
         return getSize( Map.of( "project", Single.of( project ) ) );
@@ -132,13 +186,14 @@ public class NodeCleanerBean
         return getSize( Map.of( "project", Single.of( project ), "contentId", Single.of( contentId ) ) );
     }
 
-    private int getSize( final Map<String, Value> fields ) {
+    private int getSize( final Map<String, Value> fields )
+    {
         final Instant now = Instant.now();
         FindNodesByQueryResult nodesToInvalidate = BoosterContext.callInContext( () -> {
 
             final NodeQuery query = queryNodes( fields, now, false, 0 );
             return nodeService.findByQuery( query );
-        });
+        } );
         return (int) Math.max( 0, Math.min( nodesToInvalidate.getTotalHits(), Integer.MAX_VALUE ) );
     }
 
@@ -193,7 +248,7 @@ public class NodeCleanerBean
     private NodeQuery queryNodes( final Map<String, Value> fields, final Instant cutOffTime, final boolean includeInvalidated, int size )
     {
         final NodeQuery.Builder builder = NodeQuery.create();
-        builder.parent( NodePath.ROOT );
+        builder.parent( BoosterContext.CACHE_PARENT_NODE );
 
         for ( Map.Entry<String, Value> entry : fields.entrySet() )
         {

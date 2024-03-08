@@ -11,7 +11,8 @@ import java.util.stream.Collectors;
 import com.enonic.app.booster.utils.SimpleCsvParser;
 
 public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableXBoosterCacheHeader,
-                                  boolean disableAgeHeader, int cacheSize, Set<String> appList, Map<String, String> overrideHeaders, Set<String> cacheMimeTypes)
+                                  boolean disableAgeHeader, int cacheSize, Set<String> appList, Map<String, String> overrideHeaders,
+                                  Set<String> cacheMimeTypes)
 {
 
     public static BoosterConfigParsed parse( BoosterConfig config )

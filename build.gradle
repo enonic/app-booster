@@ -1,69 +1,69 @@
 plugins {
-	id 'java'
-	id 'jacoco'
-	id 'maven-publish'
-	id 'com.enonic.defaults' version '2.1.5'
-	id 'com.enonic.xp.app' version '3.4.0'
+    id 'java'
+    id 'jacoco'
+    id 'maven-publish'
+    id 'com.enonic.defaults' version '2.1.5'
+    id 'com.enonic.xp.app' version '3.4.0'
 }
-
 
 repositories {
-	xp.enonicRepo()
-	mavenCentral()
+    xp.enonicRepo()
+    mavenCentral()
 }
-
 
 app {
-	name = project.appName
-	group = 'com.enonic.app'
-	displayName = 'Booster'
-	vendorName = 'Enonic AS'
-	vendorUrl = 'https://enonic.com'
-	systemVersion = "${xpVersion}"
+    name = project.appName
+    group = 'com.enonic.app'
+    displayName = 'Booster'
+    vendorName = 'Enonic AS'
+    vendorUrl = 'https://enonic.com'
+    systemVersion = "${xpVersion}"
 }
 
-
 dependencies {
-	implementation "com.enonic.xp:core-api:${xpVersion}"
-	implementation "com.enonic.xp:portal-api:${xpVersion}"
+    implementation "com.enonic.xp:core-api:${xpVersion}"
+    implementation "com.enonic.xp:portal-api:${xpVersion}"
 
-	include libs.brotli4j.brotli4j
-	include libs.brotli4j.native.windows.amd64
-	include libs.brotli4j.native.linux.amd64
-	include libs.brotli4j.native.linux.aarch64
-	include libs.brotli4j.native.osx.aarch64
-	include libs.brotli4j.native.osx.amd64
-	include "com.enonic.xp:lib-content:${xpVersion}"
-	include "com.enonic.xp:lib-task:${xpVersion}"
-	include "com.enonic.xp:lib-project:${xpVersion}"
-	include "com.enonic.xp:lib-portal:${xpVersion}"
-	include "com.enonic.lib:lib-mustache:2.1.1"
+    include libs.brotli4j.brotli4j
+    include libs.brotli4j.native.windows.amd64
+    include libs.brotli4j.native.linux.amd64
+    include libs.brotli4j.native.linux.aarch64
+    include libs.brotli4j.native.osx.aarch64
+    include libs.brotli4j.native.osx.amd64
+    include "com.enonic.xp:lib-content:${xpVersion}"
+    include "com.enonic.xp:lib-project:${xpVersion}"
+    include "com.enonic.xp:lib-portal:${xpVersion}"
+    include "com.enonic.xp:lib-cluster:${xpVersion}"
+    include "com.enonic.xp:lib-context:${xpVersion}"
+    include "com.enonic.xp:lib-project:${xpVersion}"
+    include "com.enonic.lib:lib-mustache:2.1.1"
+    include 'com.enonic.lib:lib-cron:1.1.2'
 
-	testImplementation(platform('org.junit:junit-bom:5.10.2'))
+    testImplementation(platform('org.junit:junit-bom:5.10.2'))
     testImplementation(platform("org.mockito:mockito-bom:5.11.0"))
 
-	testImplementation('org.junit.jupiter:junit-jupiter')
-	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
     testImplementation('org.mockito:mockito-core')
     testImplementation('org.mockito:mockito-junit-jupiter')
-	testImplementation libs.assertj.core
+    testImplementation libs.assertj.core
 }
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 test {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
 
 jacocoTestReport {
-	reports {
-		xml.required = true
-		html.required = true
-	}
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 check.dependsOn jacocoTestReport

@@ -2,7 +2,6 @@ package com.enonic.app.booster.storage;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -19,8 +18,8 @@ import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.CacheMeta;
-import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.app.booster.io.ByteSupply;
+import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
@@ -28,7 +27,6 @@ import com.enonic.xp.node.DeleteNodeParams;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeNotFoundException;
-import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.util.BinaryReference;
@@ -85,7 +83,6 @@ public class NodeCacheStore
 
                 final int contentLength = contentLengthLong.intValue();
                 final String etag = node.data().getString( "etag" );
-                final String url = node.data().getString( "url" );
                 final Instant cachedTime = node.data().getInstant( "cachedTime" );
                 final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
                 final ByteSource gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
@@ -150,7 +147,7 @@ public class NodeCacheStore
                 {
                     final CreateNodeParams.Builder createParams = CreateNodeParams.create()
                         .name( cacheKey )
-                        .parent( NodePath.ROOT )
+                        .parent( BoosterContext.CACHE_PARENT_NODE )
                         .setNodeId( nodeId )
                         .data( data )
                         .attachBinary( GZIP_DATA_BINARY_REFERENCE, gzipByteSource );
@@ -215,8 +212,7 @@ public class NodeCacheStore
     public String generateCacheKey( final String url )
     {
         final byte[] digest = MessageDigests.sha256().digest( ( url ).getBytes( StandardCharsets.ISO_8859_1 ) );
-        final byte[] truncated = Arrays.copyOf( digest, 16 );
-        return HexFormat.of().formatHex( truncated );
+        return HexFormat.of().formatHex( digest, 0, 16 );
     }
 
     private Map<String, List<String>> adaptHeaders( final PropertySet headers )

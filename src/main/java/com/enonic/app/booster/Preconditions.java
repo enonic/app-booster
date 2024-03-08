@@ -9,7 +9,8 @@ public class Preconditions
 {
     private static final Logger LOG = LoggerFactory.getLogger( Preconditions.class );
 
-    public boolean check(final HttpServletRequest request) {
+    public boolean check( final HttpServletRequest request )
+    {
         // Anything else except http and https (like ws, wss) we bypass.
         final String scheme = request.getScheme();
         if ( !scheme.equals( "http" ) && !scheme.equals( "https" ) )

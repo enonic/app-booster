@@ -35,9 +35,8 @@ import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 
 import com.enonic.app.booster.BoosterConfigParsed;
-import com.enonic.app.booster.utils.MessageDigests;
-import com.enonic.app.booster.Postconditions;
 import com.enonic.app.booster.io.ByteSupply;
+import com.enonic.app.booster.utils.MessageDigests;
 
 public final class CachingResponseWrapper
     extends HttpServletResponseWrapper
@@ -87,7 +86,8 @@ public final class CachingResponseWrapper
     }
 
     public CachingResponseWrapper( final HttpServletRequest request, final HttpServletResponse response,
-                                   final BiFunction<HttpServletRequest, CachingResponse, Boolean> postconditions, final BoosterConfigParsed config )
+                                   final BiFunction<HttpServletRequest, CachingResponse, Boolean> postconditions,
+                                   final BoosterConfigParsed config )
     {
         super( response );
         this.request = request;

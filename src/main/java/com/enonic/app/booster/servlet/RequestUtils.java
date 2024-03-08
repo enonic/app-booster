@@ -40,7 +40,7 @@ public final class RequestUtils
             urlBuilder.append( "?" ).append( queryString );
         }
 
-        return new RequestUrl(urlBuilder.toString(), serverName, path);
+        return new RequestUrl( urlBuilder.toString(), serverName, path );
     }
 
 
