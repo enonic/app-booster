@@ -36,6 +36,7 @@ dependencies {
     include "com.enonic.xp:lib-cluster:${xpVersion}"
     include "com.enonic.xp:lib-context:${xpVersion}"
     include "com.enonic.xp:lib-project:${xpVersion}"
+    include "com.enonic.xp:lib-task:${xpVersion}"
     include "com.enonic.lib:lib-mustache:2.1.1"
     include 'com.enonic.lib:lib-cron:1.1.2'
 
