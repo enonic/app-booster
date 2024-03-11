@@ -1,0 +1,146 @@
+= Project Documentation
+
+== Introduction
+
+This application caches rendered pages. It is useful for sites that have a lot of traffic and rendering is slow.
+
+Features:
+- Cache individual sites
+- Limit cache size and TTL
+- Control downstream cache via headers
+- Invalidate cache on applications start
+- Invalidate cache on content publish
+- Invalidate cache manually
+- Exclude specific query parameters from cache key
+- Cache only specific MIME types
+- Exclude specific paths from cache
+- Serve Brotli or Gzip compressed content
+- Request collapsing
+- Cluster shared cache
+- 304 Not Modified support
+
+== Configuration
+
+`com.enonic.app.booster.cfg` is the configuration file for the application. It includes the following properties:
+
+- `cacheTtl`: Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).
+- `cacheSize`: Total number of items in the cache. The default value is 10000.
+- `appsInvalidateCacheOnStart`: Comma-separated list of applications that should invalidate the cache on their start. By default, no applications are listed.
+- `excludeQueryParams`: Comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...)
+- `disableXBoosterCacheHeader`: If set to `true` X-Booster-Cache header is not sent in the response. The default value is `false`.
+- `disableAgeHeader`: If set to `true` Age header is not sent in the response. The default value is `false`.
+- `overrideHeaders`: Comma-separated list of instructions that override headers. By default, no instructions are listed.
+- `cacheMimeTypes`: Comma-separated list of MIME types that should be cached. The default value is `text/html, text/xhtml`.
+
+== Cache Request Conditions
+
+A request is considered cacheable if the following conditions are met:
+
+- It is an HTTP or HTTPS request.
+- It is a GET request. (Note, that HEAD requests can return cached response headers.)
+- It does not contain an Authorization header.
+- It does not correspond to a valid session.
+- It is a Site's Portal request. (VHost target starts with or equal to `/site`)
+- Its URI does not contain `/_/`. (This is a convention for service requests.)
+
+If the request not cacheable Booster application will not intercept the request.
+If the request is cacheable, Booster application will check if cached response is available and return it.
+
+== Cache Response Conditions
+
+A response is considered cacheable if the following conditions are met:
+
+- It is a 200 OK response.
+- The response does not contain a `Cache-Control` header with a `private`  or `no-store` directive.
+- The response does not contain a `Expires` header. (That includes all responses with `Set-Cookie` header.)
+- The response does not contain a `Content-Encoding` header.
+- The response does not contain a `Vary` header.
+- The response is processed by a Site
+    * Application is installed on a Site
+    * Application configuration allows request to be cached (`Disabled` is unchecked and request path matches configured cacheable `Patterns`)
+
+If the response is cacheable, Booster application stores the response in the cache.
+
+== Cache Invalidation
+
+=== Automatic Cache Invalidation
+
+The cache is automatically invalidated when the following events occur:
+- Application listed in `appsInvalidateCacheOnStart` starts. The entire cache is invalidated.
+- Content is published/unpublished. The cache is invalidated for the published Content's Project.
+- Content scheduled for publishing/unpublishing reaches its scheduled time. The cache invalidated for the scheduled Content's Project.
+- Project deleted. The cache invalidated for the deleted Project.
+- Cache item expired meaning Time to live (TTL) for the cache item is reached.
+
+=== Manual Cache Invalidation
+
+The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.
+
+=== Programmatic Cache Invalidation
+
+There are two tasks that can be used to invalidate the cache programmatically:
+- `com.enonic.app.booster:invalidate`
+- `com.enonic.app.booster:purge-all`
+
+== Control downstream cache
+
+Different CDN and proxy servers can cache the response. Booster application can help to control the downstream cache by using `overrideHeaders` configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.
+
+Disable caching in the downstream cache (CDN and browser):
+[source,properties]
+----
+overrideHeaders="Cache-Control: private, no-store"
+----
+
+Disable cache in Fastly CDN but leave browser caching instruction as is:
+[source,properties]
+----
+overrideHeaders="Surrogate-Control: private"
+----
+
+Disable cache in Cloudflare CDN but leave browser caching instruction as is:
+[source,properties]
+----
+overrideHeaders="Cloudflare-CDN-Cache-Control: private"
+----
+
+Allow Fastly CDN to cache the response for 24 hours, but browser should cache the response for 1 minute:
+[source,properties]
+----
+overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"
+----
+
+== Query Parameters
+
+By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The `excludeQueryParams` configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...).
+
+== MIME Types
+
+By default, Booster application caches only `text/html` and `text/xhtml` MIME types. The `cacheMimeTypes` configuration property is a comma-separated list of MIME types that should be cached.
+
+Allow caching of `text/plain` (such as robots.txt), `text/xml` (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:
+[source,properties]
+----
+cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json
+----
+
+NOTE: Booster does not cache responses with `Vary` header, including but not limited to `Vary: Accept`.
+
+== Exclude Paths
+
+By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The `Disabled` site configuration allows to disable caching for the entire Site. The `Patterns` site configuration property allows to cache only specific paths.
+
+== Compressed Content
+
+Booster application can serve Brotli or Gzip compressed content. The application checks if the client supports Brotli or Gzip compression and serves the compressed content if it is available.
+Application respects `Accept-Encoding` header and serves the compressed content if the client supports it. Brotli compression is preferred over Gzip compression. And Gzip compression is preferred over uncompressed content.
+
+== Request Collapsing
+
+Booster application supports request collapsing. It means that if there are multiple requests for the same resource, only one request is sent to the backend. The other requests are waiting for the response from the first request. When the first request is completed, the response is sent to all waiting requests. The request collapsing only happens if the request is cacheable and there is a stale or invalidated cache item for the request.
+
+=== 304 Not Modified
+
+
+Booster application supports 304 `Not Modified` responses.
+Cached response always contains an `ETag` header.If the request has `If-None-Match` header, the application checks if the cached `ETag` value matches the `If-None-Match` value. If the values match, the application returns 304 `Not Modified` response.

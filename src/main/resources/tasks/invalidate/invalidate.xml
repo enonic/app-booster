@@ -1,5 +1,5 @@
 <task>
-  <description>Background job</description>
+  <description>Invalidate Booster Cache</description>
   <form>
     <input type="TextLine" name="project">
       <label>Projects to clean</label>
