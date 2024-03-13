@@ -1,57 +1,78 @@
 <widget id="widget-booster">
     <link rel="stylesheet" href="{{assetsUri}}/styles/main.css" type="text/css" media="all"/>
     <script src="{{assetsUri}}/js/main.js" data-service-url="{{serviceUrl}}" data-project="{{project}}" data-content-id="{{contentId}}" data-content-path="{{contentPath}}" data-site-selected="{{isSiteSelected}}"></script>
-    <div id="widget-booster-container" class="widget-booster-container">
-        {{#isEnabled}}
-
-        {{#isContentSelected}}
-        <h6>Content: {{contentPath}}</h6>
-        {{/isContentSelected}}
-
-        {{#isSiteSelected}}
-        <h6>Site: {{contentPath}}</h6>
-        {{/isSiteSelected}}
-
-        {{#isProjectSelected}}
-        <h6>Project: {{project}}</h6>
-        {{/isProjectSelected}}
-
-        <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red"
-                {{#isButtonDisabled}}disabled{{/isButtonDisabled}}
-        >
-            <span>Purge cache ({{size}})</span>
-        </button>
-        <p id="widget-booster-action-response"></p>
-
-        <div id="widget-booster-confirmation-dialog" class="dialog-container confirmation-dialog-container">
-            <div class="xp-admin-common-modal-dialog confirmation-dialog">
-                <div id="widget-booster-modal-dialog-wrapper" class="modal-dialog-wrapper">
-                    <div id="cancel-button-top" class="cancel-button-top"></div>
-                    <div class="modal-dialog-header">
-                        <h2 class="title">Confirmation</h2>
+    {{^isLicenseValid}}
+    <script src="{{assetsUri}}/js/license.js" data-service-url="{{licenseUploadUrl}}"></script>
+    {{/isLicenseValid}}
+    <div id="widget-booster-container" class="widget-booster-container{{^isLicenseValid}} license-invalid{{/isLicenseValid}}">
+        {{^isLicenseValid}}
+        <div id="widget-booster-license-invalid">
+            <div id="license-upload">
+                <h6>Booster requires a valid Enonic license. Please contact your administrator</h6>
+                <form id="licenseForm" method="POST" action="" enctype="multipart/form-data">
+                    <div>
+                        <input id="booster-license-upload" autocomplete="off" name="licenseFile" type="file" style="display:none" accept=".lic"/>
+                        <label id="booster-license-upload-button" class="widget-booster-button" for="booster-license-upload">Upload license</label>
                     </div>
-                    <div class="modal-dialog-body">
-                        <div class="dialog-content">
-                            <h6 id="widget-booster-confirmation-text" class="question">Are you sure?</h6>
+                </form>
+            </div>
+            <div id="license-invalid-message">
+                <span>The uploaded license is invalid or expired</span>
+            </div>
+        </div>
+        {{/isLicenseValid}}
+        <div id="widget-booster-license-valid">
+            {{#isEnabled}}
+
+            {{#isContentSelected}}
+            <h6>Content: {{contentPath}}</h6>
+            {{/isContentSelected}}
+
+            {{#isSiteSelected}}
+            <h6>Site: {{contentPath}}</h6>
+            {{/isSiteSelected}}
+
+            {{#isProjectSelected}}
+            <h6>Project: {{project}}</h6>
+            {{/isProjectSelected}}
+
+            <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red"
+                    {{#isButtonDisabled}}disabled{{/isButtonDisabled}}
+            >
+                <span>Purge cache ({{size}})</span>
+            </button>
+            <p id="widget-booster-action-response"></p>
+
+            <div id="widget-booster-confirmation-dialog" class="dialog-container confirmation-dialog-container">
+                <div class="xp-admin-common-modal-dialog confirmation-dialog">
+                    <div id="widget-booster-modal-dialog-wrapper" class="modal-dialog-wrapper">
+                        <div id="cancel-button-top" class="cancel-button-top"></div>
+                        <div class="modal-dialog-header">
+                            <h2 class="title">Confirmation</h2>
                         </div>
-                    </div>
-                    <div class="modal-dialog-footer">
-                        <div class="dialog-buttons">
-                            <div class="button-container">
-                                <button id="widget-booster-confirmation-button-yes" class="xp-admin-common-button action-button dialog-button yes-button"><span><u>Y</u>es</span></button>
-                                <button id="widget-booster-confirmation-button-no" class="xp-admin-common-button action-button dialog-button no-button"><span><u>N</u>o</span></button>
+                        <div class="modal-dialog-body">
+                            <div class="dialog-content">
+                                <h6 id="widget-booster-confirmation-text" class="question">Are you sure?</h6>
+                            </div>
+                        </div>
+                        <div class="modal-dialog-footer">
+                            <div class="dialog-buttons">
+                                <div class="button-container">
+                                    <button id="widget-booster-confirmation-button-yes" class="xp-admin-common-button action-button dialog-button yes-button"><span><u>Y</u>es</span></button>
+                                    <button id="widget-booster-confirmation-button-no" class="xp-admin-common-button action-button dialog-button no-button"><span><u>N</u>o</span></button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+
+            {{/isEnabled}}
+
+            {{^isEnabled}}
+            <div class="error">Booster app is not added to the site</div>
+            {{/isEnabled}}
         </div>
-
-
-        {{/isEnabled}}
-
-        {{^isEnabled}}
-        <div class="error">Booster app is not added to the site</div>
-        {{/isEnabled}}
     </div>
 </widget>
