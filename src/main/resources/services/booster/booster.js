@@ -1,5 +1,6 @@
 const contentLib = require('/lib/xp/content');
 const taskLib = require('/lib/xp/task');
+const licenseManager = require("/lib/license-manager");
 
 const submitTask = function (descriptor, config) {
     return taskLib.submitTask({
@@ -26,6 +27,13 @@ const getTaskStatus = function (taskId) {
 exports.post = function (req) {
     const supportedActions = ['invalidate', 'purge-all', 'enforce-all', 'status'];
     const params = JSON.parse(req.body);
+
+    if (!licenseManager.isLicenseValid()) {
+        return {
+            status: 500,
+            body: 'Invalid license'
+        };
+    }
 
     if (!params.action || supportedActions.indexOf(params.action.trim()) === -1) {
         return {

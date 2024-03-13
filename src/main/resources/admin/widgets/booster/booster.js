@@ -1,6 +1,7 @@
 const portal = require('/lib/xp/portal');
 const contentLib = require('/lib/xp/content');
 const mustache = require('/lib/mustache');
+const licenseManager = require("/lib/license-manager");
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
 
@@ -62,10 +63,10 @@ const renderWidgetView = (req) => {
         isButtonDisabled: size === 0,
         isProjectSelected: !isContentSelected && !isSiteSelected,
         isEnabled: isAppEnabledOnSite(contentId),
-        assetsUri: portal.assetUrl({
-            path: ''
-        }),
-        serviceUrl: portal.serviceUrl({service: 'booster'})
+        assetsUri: portal.assetUrl({ path: ''}),
+        serviceUrl: portal.serviceUrl({ service: 'booster' }),
+        isLicenseValid: licenseManager.isLicenseValid(),
+        licenseUploadUrl: portal.serviceUrl({ service: 'license-upload' })
     };
 
     return {
