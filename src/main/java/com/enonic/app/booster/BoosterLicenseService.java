@@ -26,7 +26,7 @@ public class BoosterLicenseService
         {
             return true;
         }
-        final LicenseDetails licenseDetails = licenseManager.validateLicense( "com.enonic.app.booster" );
+        final LicenseDetails licenseDetails = licenseManager.validateLicense( "enonic.platform.subscription" );
         validLicense = licenseDetails != null && !licenseDetails.isExpired();
         return validLicense;
     }
