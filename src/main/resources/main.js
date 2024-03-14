@@ -9,10 +9,7 @@ cron.schedule({
     fixedDelay: 10000,
     callback: function () {
         if (clusterLib.isMaster()) {
-            const bean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
-            const allProjects = contextLib.run({principals: ['role:system.admin']}, () => projectLib.list()).map(project => project.id);
-            const projects = bean.findScheduledForInvalidation(allProjects);
-            bean.invalidateProjects(projects);
+            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').invalidateScheduled();
         }
     }
 });
@@ -22,7 +19,7 @@ cron.schedule({
     cron: '* * * * *',
     callback: function () {
         if (clusterLib.isMaster()) {
-            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').deleteExcessNodes();
+            __.newBean('com.enonic.app.booster.storage.NodeCleanerBean').scavenge();
         }
     }
 });

@@ -2,7 +2,7 @@ package com.enonic.app.booster;
 
 public @interface BoosterConfig
 {
-    String cacheTtl() default "PT1H";
+    long cacheTtl() default 3_600;
 
     int cacheSize() default 10_000;
 

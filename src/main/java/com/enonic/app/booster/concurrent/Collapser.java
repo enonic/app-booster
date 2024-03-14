@@ -1,6 +1,5 @@
 package com.enonic.app.booster.concurrent;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -8,6 +7,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static java.util.Objects.requireNonNullElse;
 
 public class Collapser<T>
 {
@@ -41,7 +42,7 @@ public class Collapser<T>
         @Override
         public T get()
         {
-            return Objects.requireNonNullElse( valueRef.get(), Optional.<T>empty() ).orElse( null );
+            return requireNonNullElse( valueRef.get(), Optional.<T>empty() ).orElse( null );
         }
 
         @Override

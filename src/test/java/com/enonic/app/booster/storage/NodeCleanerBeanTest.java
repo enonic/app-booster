@@ -26,6 +26,7 @@ import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
+import com.enonic.xp.project.ProjectService;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.LogicalExpr;
 import com.enonic.xp.query.filter.ValueFilter;
@@ -49,6 +50,9 @@ class NodeCleanerBeanTest
     NodeService nodeService;
 
     @Mock
+    ProjectService projectService;
+
+    @Mock
     BoosterConfigService boosterConfigService;
 
     NodeCleanerBean nodeCleanerBean;
@@ -58,6 +62,7 @@ class NodeCleanerBeanTest
     {
         final BeanContext beanContext = mock( BeanContext.class );
         when( beanContext.getService( NodeService.class ) ).thenReturn( () -> nodeService );
+        when( beanContext.getService( ProjectService.class ) ).thenReturn( () -> projectService );
         when( beanContext.getService( BoosterConfigService.class ) ).thenReturn( () -> boosterConfigService);
         nodeCleanerBean = new NodeCleanerBean();
         nodeCleanerBean.initialize( beanContext );
@@ -203,7 +208,7 @@ class NodeCleanerBeanTest
     }
 
     @Test
-    void deleteExcessNodes()
+    void scavenge()
     {
         final BoosterConfig configMock = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( configMock.cacheSize() ).thenReturn( 1 );
@@ -228,7 +233,7 @@ class NodeCleanerBeanTest
                              .totalHits( 1 )
                              .build() );
 
-        nodeCleanerBean.deleteExcessNodes();
+        nodeCleanerBean.scavenge();
 
         verify( nodeService, times( 2 ) ).findByQuery( any( NodeQuery.class ) );
         verify( nodeService ).refresh( RefreshMode.SEARCH );

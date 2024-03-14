@@ -38,13 +38,13 @@ class BoosterConfigParsedTest
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( config.excludeQueryParams() ).thenReturn( "b, a" );
         when( config.appsInvalidateCacheOnStart() ).thenReturn( "app2, app1" );
-        when( config.cacheTtl() ).thenReturn( "PT24H" );
+        when( config.cacheTtl() ).thenReturn( 86400L );
         when( config.cacheMimeTypes() ).thenReturn( "text/html, text/xhtml, application/json" );
         when( config.overrideHeaders() ).thenReturn( "\"Cache-Control: private, no-store\", \"X-Instance: \"\"jupiter\"\"\"" );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
         assertEquals( Set.of( "a", "b" ), parse.excludeQueryParams() );
         assertEquals( Set.of( "app1", "app2" ), parse.appList() );
-        assertEquals( 86400, parse.cacheTtlSeconds() );
+        assertEquals( 86400L, parse.cacheTtlSeconds() );
         assertEquals( Map.of( "Cache-Control", "private, no-store", "X-Instance", "\"jupiter\"" ), parse.overrideHeaders() );
         assertEquals( Set.of( "text/html", "text/xhtml", "application/json" ), parse.cacheMimeTypes() );
     }

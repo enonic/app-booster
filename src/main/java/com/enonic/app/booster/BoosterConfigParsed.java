@@ -15,8 +15,7 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
 {
     public static BoosterConfigParsed parse( BoosterConfig config )
     {
-        var cacheTtlSeconds =
-            ( config.cacheTtl() == null || config.cacheTtl().isBlank() ) ? Long.MAX_VALUE : Duration.parse( config.cacheTtl() ).toSeconds();
+        var cacheTtlSeconds = config.cacheTtl();
         var excludeQueryParams = SimpleCsvParser.parseLine( config.excludeQueryParams() )
             .stream()
             .map( String::trim )

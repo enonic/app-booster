@@ -26,7 +26,9 @@ import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
+import com.enonic.xp.project.Project;
 import com.enonic.xp.project.ProjectName;
+import com.enonic.xp.project.ProjectService;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.FieldExpr;
 import com.enonic.xp.query.expr.FieldOrderExpr;
@@ -40,6 +42,7 @@ import com.enonic.xp.query.filter.RangeFilter;
 import com.enonic.xp.query.filter.ValueFilter;
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
+import com.enonic.xp.trace.Tracer;
 
 import static java.util.Objects.requireNonNullElse;
 
@@ -50,6 +53,8 @@ public class NodeCleanerBean
 
     private NodeService nodeService;
 
+    private ProjectService projectService;
+
     private Supplier<BoosterConfigService> configService;
 
     private static volatile Instant LAST_CHECKED_CACHE;
@@ -58,6 +63,7 @@ public class NodeCleanerBean
     public void initialize( final BeanContext beanContext )
     {
         this.nodeService = beanContext.getService( NodeService.class ).get();
+        this.projectService = beanContext.getService( ProjectService.class ).get();
         this.configService = beanContext.getService( BoosterConfigService.class );
     }
 
@@ -105,13 +111,12 @@ public class NodeCleanerBean
         } );
     }
 
-    public void deleteExcessNodes()
+    public void scavenge()
     {
         final int cacheSize = configService.get().getConfig().cacheSize();
         final Instant now = Instant.now();
-
-        BoosterContext.runInContext( () -> {
-            LOG.debug( "Delete old nodes" );
+        Tracer.trace( "booster.scavenge", () -> BoosterContext.runInContext( () -> {
+            LOG.debug( "Scavenge" );
             final NodeQuery query = queryAllNodes( now );
             FindNodesByQueryResult nodesToDelete = nodeService.findByQuery( query );
 
@@ -128,8 +133,7 @@ public class NodeCleanerBean
                 nodesToDelete = nodeService.findByQuery( query );
                 diff = nodesToDelete.getTotalHits() - cacheSize;
             }
-
-        } );
+        } ) );
     }
 
     public List<String> findScheduledForInvalidation( final List<String> projects )
@@ -174,6 +178,15 @@ public class NodeCleanerBean
             }
             return filteredProjects;
         } );
+    }
+
+    public void invalidateScheduled()
+    {
+        Tracer.trace( "booster.invalidateScheduled", () -> BoosterContext.runInContext( () -> {
+            final List<String> projectNames = projectService.list().stream().map( Project::getName).map( Object::toString ).toList();
+            final List<String> toInvalidate = findScheduledForInvalidation( projectNames );
+            invalidateProjects( toInvalidate );
+        }) );
     }
 
     public int getProjectCacheSize( final String project )

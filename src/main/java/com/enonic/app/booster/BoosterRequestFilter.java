@@ -23,6 +23,8 @@ import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.project.ProjectName;
+import com.enonic.xp.trace.Trace;
+import com.enonic.xp.trace.Tracer;
 import com.enonic.xp.web.filter.OncePerRequestFilter;
 
 @Component(immediate = true, service = Filter.class, property = {"connector=xp"}, configurationPid = "com.enonic.app.booster")
@@ -69,20 +71,43 @@ public class BoosterRequestFilter
 
         final String fullUrl = requestUrl.fullUrl();
         final String cacheKey = cacheStore.generateCacheKey( fullUrl );
+        final Trace trace = Tracer.newTrace( "booster.fromCache" );
+        if ( trace != null )
+        {
+            trace.put( "cacheKey", cacheKey );
+            trace.put( "url", fullUrl );
+        }
 
         LOG.debug( "Normalized URL of request {} with key {}", fullUrl, cacheKey );
 
-        final CacheItem stored = cacheStore.get( cacheKey );
-        final CacheItem cached = getCached( stored );
-        if ( stored != null && cached == null )
-        {
-            LOG.debug( "Cached response is stale {}", cacheKey );
-        }
+        final String[] cacheStatus = new String[1];
+        final CacheItem stored = Tracer.traceEx( trace, () -> {
+            final CacheItem inCache = cacheStore.get( cacheKey );
+            if ( inCache == null )
+            {
+                LOG.debug( "No cached response found {}", cacheKey );
+                cacheStatus[0] = "MISS";
+                traceStatus( trace, "MISS" );
+                return null;
+            }
+            final CacheItem valid = getCached( inCache );
+            if ( valid != null )
+            {
+                LOG.debug( "Writing directly from cache {}", cacheKey );
+                new CachedResponseWriter( request, config ).write( response, valid );
+                cacheStatus[0] = "HIT";
+                traceStatus( trace, "HIT" );
+                return null;
+            }
 
-        if ( cached != null )
+            LOG.debug( "Cached response is stale {}", cacheKey );
+            cacheStatus[0] = "STALE";
+            traceStatus( trace, "STALE" );
+            return inCache;
+        } );
+
+        if ( "HIT".equals( cacheStatus[0] ) )
         {
-            LOG.debug( "Writing directly from cache {}", cacheKey );
-            new CachedResponseWriter( request, config ).write( response, cached );
             return;
         }
 
@@ -197,5 +222,12 @@ public class BoosterRequestFilter
             contentPath = null;
         }
         return new CacheMeta( requestUrl.fullUrl(), requestUrl.domain(), requestUrl.path(), project, siteId, contentId, contentPath );
+    }
+
+    private static void traceStatus(final Trace trace, final String status) {
+        if ( trace != null )
+        {
+            trace.put( "status", status );
+        }
     }
 }
