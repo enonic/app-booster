@@ -1,6 +1,4 @@
-const contextLib = require('/lib/xp/context');
 const clusterLib = require('/lib/xp/cluster');
-const projectLib = require('/lib/xp/project');
 const cron = require('/lib/cron');
 
 cron.schedule({

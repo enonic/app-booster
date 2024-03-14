@@ -50,11 +50,33 @@ class BoosterRequestFilterTest
     @Mock
     FilterChain filterChain;
 
+    @Mock
+    BoosterLicenseService licenseService;
+
+    @Test
+    void notLicensed()
+        throws Exception
+    {
+        when( licenseService.isValidLicense() ).thenReturn( false );
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
+        filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+
+        var preconditionsConstruction =
+            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( true ) );
+        try (preconditionsConstruction)
+        {
+            filter.doHandle( request, response, filterChain );
+        }
+
+        verify( filterChain ).doFilter( request, response );
+        verifyNoMoreInteractions( filterChain );
+    }
+
     @Test
     void preconditionsFail()
         throws Exception
     {
-        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore );
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =
@@ -72,8 +94,9 @@ class BoosterRequestFilterTest
     void cached()
         throws Exception
     {
+        when( licenseService.isValidLicense() ).thenReturn( true );
         mockRequest();
-        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore );
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         final CacheItem cacheItem = freshCacheItem();
@@ -113,7 +136,7 @@ class BoosterRequestFilterTest
     void doTestCollapsed( final CacheItem cacheItemFromStore )
         throws Exception
     {
-
+        when( licenseService.isValidLicense() ).thenReturn( true );
         final CacheItem collapsedItem = freshCacheItem();
 
         mockRequest();
@@ -125,7 +148,7 @@ class BoosterRequestFilterTest
         final BoosterRequestFilter filter;
         try (collapserConstruction)
         {
-            filter = new BoosterRequestFilter( cacheStore );
+            filter = new BoosterRequestFilter( cacheStore, licenseService );
         }
 
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
@@ -153,12 +176,13 @@ class BoosterRequestFilterTest
     void notCached()
         throws Exception
     {
+        when( licenseService.isValidLicense() ).thenReturn( true );
         mockRequest();
         final PortalRequest portalRequest = mock( PortalRequest.class );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
         when( portalRequest.getRepositoryId() ).thenReturn( RepositoryId.from( "com.enonic.cms.repo1" ) );
 
-        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore );
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =
@@ -199,9 +223,10 @@ class BoosterRequestFilterTest
     void expired_no_longer_cacheable()
         throws Exception
     {
+        when( licenseService.isValidLicense() ).thenReturn( true );
         mockRequest();
 
-        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore );
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =

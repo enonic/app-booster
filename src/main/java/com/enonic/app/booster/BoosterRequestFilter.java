@@ -41,10 +41,13 @@ public class BoosterRequestFilter
 
     private final Collapser<CacheItem> requestCollapser = new Collapser<>();
 
+    private final BoosterLicenseService licenseService;
+
     @Activate
-    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore )
+    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore, @Reference final BoosterLicenseService licenseService)
     {
         this.cacheStore = cacheStore;
+        this.licenseService = licenseService;
     }
 
     @Activate
@@ -59,7 +62,7 @@ public class BoosterRequestFilter
         throws Exception
     {
         final Preconditions preconditions = new Preconditions();
-        if ( !preconditions.check( request ) )
+        if ( !preconditions.check( request ) || !licenseService.isValidLicense() )
         {
             chain.doFilter( request, response );
             return;
