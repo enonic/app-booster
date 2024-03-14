@@ -148,27 +148,30 @@ public class BoosterRequestFilter
             }
 
             LOG.debug( "Response received for cache key {}. Can be stored: {}", cacheKey, cachingResponse.isCached() );
-            Tracer.trace( "booster.updateCache", () -> {
-                if ( cachingResponse.isCached() )
-                {
-                    final CacheMeta cacheMeta = createCacheMeta( request, requestUrl );
-
-                    newCached[0] =
-                        new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
-                                       Instant.now(), null, cachingResponse.getSize(), cachingResponse.getEtag(),
-                                       cachingResponse.getCachedGzipBody(), cachingResponse.getCachedBrBody().orElse( null ) );
-                    cacheStore.put( cacheKey, newCached[0], cacheMeta );
-                }
-                else
-                {
-                    if ( stored != null )
+            if ( cachingResponse.isCached() || stored != null )
+            {
+                Tracer.trace( "booster.updateCache", () -> {
+                    if ( cachingResponse.isCached() )
                     {
-                        // Evacuate item from cache immediately if it is no longer cacheable
-                        // to prevent needless request collapsing
-                        cacheStore.remove( cacheKey );
+                        final CacheMeta cacheMeta = createCacheMeta( request, requestUrl );
+
+                        newCached[0] = new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(),
+                                                      cachingResponse.getCachedHeaders(), Instant.now(), null, cachingResponse.getSize(),
+                                                      cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
+                                                      cachingResponse.getCachedBrBody().orElse( null ) );
+                        cacheStore.put( cacheKey, newCached[0], cacheMeta );
                     }
-                }
-            });
+                    else
+                    {
+                        if ( stored != null )
+                        {
+                            // Evacuate item from cache immediately if it is no longer cacheable
+                            // to prevent needless request collapsing
+                            cacheStore.remove( cacheKey );
+                        }
+                    }
+                } );
+            }
         }
         finally
         {
