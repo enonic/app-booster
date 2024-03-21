@@ -1,6 +1,6 @@
 <widget id="widget-booster">
     <link rel="stylesheet" href="{{assetsUri}}/styles/main.css" type="text/css" media="all"/>
-    <script src="{{assetsUri}}/js/main.js" data-service-url="{{serviceUrl}}" data-project="{{project}}" data-content-id="{{contentId}}" data-content-path="{{contentPath}}" data-site-selected="{{isSiteSelected}}"></script>
+    <script src="{{assetsUri}}/js/main.js" data-service-url="{{serviceUrl}}" data-project="{{project}}"></script>
     {{^isLicenseValid}}
     <script src="{{assetsUri}}/js/license.js" data-service-url="{{licenseUploadUrl}}"></script>
     {{/isLicenseValid}}
@@ -24,18 +24,7 @@
         <div id="widget-booster-license-valid">
             {{#isEnabled}}
 
-            {{#isContentSelected}}
-            <h6>Content: {{contentPath}}</h6>
-            {{/isContentSelected}}
-
-            {{#isSiteSelected}}
-            <h6>Site: {{contentPath}}</h6>
-            {{/isSiteSelected}}
-
-            {{#isProjectSelected}}
-            <h6>Project: {{project}}</h6>
-            {{/isProjectSelected}}
-
+            {{#hint}}<p id="widget-booster-hint">Hint: {{hint}}</p>{{/hint}}
             {{#isButtonDisabled}}
             <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button" disabled>
                 <span>No cache to purge</span>
@@ -76,7 +65,7 @@
             {{/isEnabled}}
 
             {{^isEnabled}}
-            <div class="error">{{errorMessage}}</div>
+            <div class="error">{{error}}</div>
             {{/isEnabled}}
         </div>
     </div>
