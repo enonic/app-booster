@@ -4,5 +4,6 @@
   <description>Manage Booster cache</description>
   <allow>
     <principal>role:system.admin</principal>
+    <principal>role:cms.admin</principal>
   </allow>
 </tool>

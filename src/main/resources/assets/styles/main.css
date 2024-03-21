@@ -1,74 +1,88 @@
-#widget-booster .widget-booster-container {
-    text-align: center;
-    margin: 10px 0;
-}
+#widget-booster {
+    .widget-booster-container {
+        text-align: center;
+    }
 
-#widget-booster .widget-booster-button {
-    margin: 20px auto;
-    display: inline-block;
-    padding: 8px 20px;
-}
+    .widget-booster-button {
+        margin: 20px auto;
+        display: inline-block;
+        padding: 8px 20px;
+    }
 
-#widget-booster #widget-booster-action-response {
-    display: none;
-    text-align: center;
-    font-size: 14px;
-}
+    .widget-booster-button:not(.red):disabled {
+        opacity: 1;
+    }
 
-#widget-booster #widget-booster-action-response.visible {
-    display: block;
-}
+    #widget-booster-action-response {
+        display: none;
+        text-align: center;
+        font-size: 14px;
+    }
 
-#widget-booster #widget-booster-action-response.success {
-    display: block;
-    color: green;
-}
+    #widget-booster-action-response.visible {
+        display: block;
+    }
 
-#widget-booster #widget-booster-action-response.failure {
-    display: block;
-    color: red;
-}
+    #widget-booster-action-response.success {
+        display: block;
+        color: green;
+    }
 
-#widget-booster-confirmation-dialog {
-    display: none;
-    text-align: left;
-}
+    #widget-booster-action-response.failure {
+        display: block;
+        color: red;
+    }
 
-#widget-booster-confirmation-dialog.visible {
-    display: flex;
-    background-color: rgb(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-}
+    #widget-booster-confirmation-dialog {
+        display: none;
+        text-align: left;
+    }
 
-#widget-booster-confirmation-dialog.visible .confirmation-dialog {
-    display: block;
-}
+    #widget-booster-confirmation-dialog.visible {
+        display: flex;
+        background-color: rgb(0, 0, 0, 0.5);
+        backdrop-filter: blur(2px);
 
-#widget-booster .widget-booster-container.license-valid {
-    #widget-booster-license-invalid {
+        .confirmation-dialog {
+            display: block;
+        }
+    }
+
+    .widget-booster-container.license-valid {
+        #widget-booster-license-invalid {
+            display: none;
+        }
+    }
+
+    .widget-booster-container.license-invalid {
+        h6 {
+            margin-top: 10px;
+        }
+        #widget-booster-license-valid {
+            display: none;
+        }
+    }
+
+    #booster-license-upload-button {
+        text-align: center;
+        font-size: 12px;
+        background-color: #2c76e9;
+        color: white;
+        cursor: pointer;
+    }
+
+    #license-invalid-message {
         display: none;
     }
-}
 
-#widget-booster .widget-booster-container.license-invalid {
-    #widget-booster-license-valid {
-        display: none;
+    #license-invalid-message.visible {
+        display: block;
+        color: red;
+        font-size: 13px;
     }
-}
 
-#widget-booster #booster-license-upload-button {
-    text-align: center;
-    font-size: 12px;
-    background-color: #2c76e9;
-    color: white;
-    cursor: pointer;
-}
-
-#license-invalid-message {
-    display: none;
-}
-
-#license-invalid-message.visible {
-    display: block;
-    color: red;
+    #widget-booster-hint {
+        font-style: italic;
+        margin-top: 10px;
+    }
 }

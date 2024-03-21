@@ -104,9 +104,10 @@
             }
         }
 
-        submitButton.removeAttribute('disabled');
         setTimeout(() => {
+            submitButton.removeAttribute('disabled');
             hideNotification();
+            window.dispatchEvent(new CustomEvent('ReloadActiveWidgetEvent'));
         }, 3000);
     }
 
@@ -134,19 +135,7 @@
     }
 
     const getConfirmationQuestion = () => {
-        const basePart = 'Purge cache for';
-        let customPart;
-        if (contentPath) {
-            if (isSiteSelected) {
-                customPart = `all content in site "<b>${contentPath}</b>"?`;
-            } else {
-                customPart = `content "<b>${contentPath}</b>"?`;
-            }
-        } else {
-            customPart = `all content in project "<b>${project}</b>"?`;
-        }
-
-        return `${basePart} ${customPart}`;
+        return `Purge cache for all content in project "<b>${project}</b>"?`;
     };
 
     const initEventListeners = () => {
@@ -154,10 +143,7 @@
             confirmationCallback = () => {
                 showNotification('Initiated cache purge...');
                 submitButton.setAttribute('disabled', 'disabled');
-                sendRequest(serviceUrl, actions.INVALIDATE, {
-                    project,
-                    contentId
-                }, (req, action) => handleResponse(req, action));
+                sendRequest(serviceUrl, actions.INVALIDATE, { project }, (req, action) => handleResponse(req, action));
             }
             showConfirmation(getConfirmationQuestion());
         });
@@ -178,9 +164,6 @@
     }
 
     const project = document.currentScript.getAttribute('data-project');
-    const contentId = document.currentScript.getAttribute('data-content-id');
-    const contentPath = document.currentScript.getAttribute('data-content-path');
-    const isSiteSelected = document.currentScript.getAttribute('data-site-selected') === 'true';
 
     const confirmationContainer = document.getElementById('widget-booster-confirmation-dialog');
     const modalDialogWrapper = document.getElementById('widget-booster-modal-dialog-wrapper');

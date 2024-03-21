@@ -1,16 +1,41 @@
 const portal = require('/lib/xp/portal');
 const contentLib = require('/lib/xp/content');
+const authLib = require('/lib/xp/auth');
 const mustache = require('/lib/mustache');
 const licenseManager = require("/lib/license-manager");
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
+
+const allowedRoles = ['role:system.admin', 'role:cms.admin'];
+
+const hasAllowedRole = (project) => {
+    let hasAllowedRole = false;
+    allowedRoles.concat(getProjectOwnerRole(project)).forEach(role => {
+        if (authLib.hasRole(role)) {
+            log.info('Current user has role: ' + role);
+            hasAllowedRole = true;
+        }
+    });
+    return hasAllowedRole;
+}
+
+const getProjectOwnerRole = (project) => {
+    if (!project) {
+        return null;
+    }
+    return `role:cms.project.${project}.owner`;
+}
 
 const isAppEnabledOnSite = (contentId) => {
     if (!contentId) {
         return true;
     }
     const site = contentLib.getSite({ key: contentId });
-    if (!site || !site.data || !site.data.siteConfig) {
+    if (!site) {
+        return true;
+    }
+
+    if (!site.data || !site.data.siteConfig) {
         return false;
     }
 
@@ -25,48 +50,39 @@ const isAppEnabledOnSite = (contentId) => {
 }
 
 const renderWidgetView = (req) => {
+    let error, hint;
+    let size;
+
     const contentId = req.params.contentId || '';
     const project = req.params.repository.replace('com.enonic.cms.', '') || '';
-    let contentPath = '';
-    let isSiteSelected = false;
-    let isContentSelected = false;
 
-    if (contentId) {
-        const content = contentLib.get({
-            key: contentId
-        });
-        contentPath = content._name;
-        isSiteSelected = content.type === 'portal:site';
-        isContentSelected = !isSiteSelected;
+    if (!project) {
+        error = 'Project not found';
+    } else if (!hasAllowedRole(project)) {
+        error = 'You do not have permission to access this application';
     }
 
-    let nodeCleanerBean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
-    let size;
-    if (contentId) {
-        if (isSiteSelected) {
-            size = nodeCleanerBean.getSiteCacheSize(project, contentId);
-        } else {
-            size = nodeCleanerBean.getContentCacheSize(project, contentId);
-        }
-    } else {
+    if (!error) {
+        const nodeCleanerBean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
         size = nodeCleanerBean.getProjectCacheSize(project);
+
+        if (contentId && !isAppEnabledOnSite(contentId)) {
+            hint = 'Booster app is not added to this site. Responses will not be cached';
+        }
     }
 
     const view = resolve('booster.html');
     const params = {
-        contentId,
-        contentPath,
         project,
-        isContentSelected,
-        isSiteSelected,
         size,
         isButtonDisabled: size === 0,
-        isProjectSelected: !isContentSelected && !isSiteSelected,
-        isEnabled: isAppEnabledOnSite(contentId),
+        isEnabled: !error,
         assetsUri: portal.assetUrl({ path: ''}),
         serviceUrl: portal.serviceUrl({ service: 'booster' }),
         isLicenseValid: licenseManager.isLicenseValid(),
-        licenseUploadUrl: portal.serviceUrl({ service: 'license-upload' })
+        licenseUploadUrl: portal.serviceUrl({ service: 'license-upload' }),
+        error,
+        hint
     };
 
     return {
