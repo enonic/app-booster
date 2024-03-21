@@ -30,14 +30,15 @@ dependencies {
     include libs.brotli4j.native.linux.aarch64
     include libs.brotli4j.native.osx.aarch64
     include libs.brotli4j.native.osx.amd64
+    include "com.enonic.xp:lib-auth:${xpVersion}"
+    include "com.enonic.xp:lib-cluster:${xpVersion}"
     include "com.enonic.xp:lib-content:${xpVersion}"
+    include "com.enonic.xp:lib-context:${xpVersion}"
+    include "com.enonic.xp:lib-io:${xpVersion}"
     include "com.enonic.xp:lib-project:${xpVersion}"
     include "com.enonic.xp:lib-portal:${xpVersion}"
-    include "com.enonic.xp:lib-cluster:${xpVersion}"
-    include "com.enonic.xp:lib-context:${xpVersion}"
     include "com.enonic.xp:lib-project:${xpVersion}"
     include "com.enonic.xp:lib-task:${xpVersion}"
-    include "com.enonic.xp:lib-io:${xpVersion}"
     include "com.enonic.lib:lib-mustache:2.1.1"
     include 'com.enonic.lib:lib-cron:1.1.2'
     include 'com.enonic.lib:lib-license:3.1.0'

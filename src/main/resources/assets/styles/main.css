@@ -9,6 +9,10 @@
     padding: 8px 20px;
 }
 
+#widget-booster .widget-booster-button:disabled {
+    opacity: 1;
+}
+
 #widget-booster #widget-booster-action-response {
     display: none;
     text-align: center;
@@ -64,11 +68,11 @@
     cursor: pointer;
 }
 
-#license-invalid-message {
+#widget-booster #license-invalid-message {
     display: none;
 }
 
-#license-invalid-message.visible {
+#widget-booster #license-invalid-message.visible {
     display: block;
     color: red;
 }

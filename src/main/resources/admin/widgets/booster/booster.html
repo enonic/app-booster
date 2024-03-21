@@ -36,11 +36,16 @@
             <h6>Project: {{project}}</h6>
             {{/isProjectSelected}}
 
-            <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red"
-                    {{#isButtonDisabled}}disabled{{/isButtonDisabled}}
-            >
+            {{#isButtonDisabled}}
+            <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button" disabled>
+                <span>No cache to purge</span>
+            </button>
+            {{/isButtonDisabled}}
+            {{^isButtonDisabled}}
+            <button id="widget-booster-container-action" class="xp-admin-common-button widget-booster-button red">
                 <span>Purge cache ({{size}})</span>
             </button>
+            {{/isButtonDisabled}}
             <p id="widget-booster-action-response"></p>
 
             <div id="widget-booster-confirmation-dialog" class="dialog-container confirmation-dialog-container">
@@ -71,7 +76,7 @@
             {{/isEnabled}}
 
             {{^isEnabled}}
-            <div class="error">Booster app is not added to the site</div>
+            <div class="error">{{errorMessage}}</div>
             {{/isEnabled}}
         </div>
     </div>
