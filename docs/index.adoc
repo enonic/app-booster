@@ -132,6 +132,14 @@ NOTE: Booster does not cache responses with `Vary` header, including but not lim
 
 By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The `Disabled` site configuration allows to disable caching for the entire Site. The `Patterns` site configuration property allows to cache only specific paths.
 
+If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.
+
+A pattern is a regular expression that is used to match the request path.
+A pattern element may also contain an `invert` attribute to indicate that the result of evaluating the regular expression should be negated.
+
+
+The syntax of the pattern is the same as https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings[XP Framework pattern mappings].
+
 == Compressed Content
 
 Booster application can serve Brotli or Gzip compressed content. The application checks if the client supports Brotli or Gzip compression and serves the compressed content if it is available.

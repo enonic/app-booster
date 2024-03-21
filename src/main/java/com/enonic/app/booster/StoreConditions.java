@@ -1,5 +1,6 @@
 package com.enonic.app.booster;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -169,20 +170,38 @@ public class StoreConditions
 
             final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
 
-            final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
+            final List<PropertySet> patterns = iterableToList( boosterConfig.getSets( "patterns" ) );
 
-            for ( PropertySet patternNode : boosterConfig.getSets( "patterns" ) )
-            {
-                String pattern = patternNode.getString( "pattern" );
-                boolean invert = Boolean.TRUE.equals( patternNode.getBoolean( "invert" ) );
-
-                if ( !matchesUrlPattern( pattern, invert, siteRelativePath, request.getParameterMap() ) )
+            if (!patterns.isEmpty()) {
+                final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
+                for ( PropertySet patternNode : patterns )
                 {
-                    LOG.debug( "Not cacheable because of pattern {}, invert {}", pattern, invert );
-                    return false;
+                    String pattern = patternNode.getString( "pattern" );
+                    boolean invert = Boolean.TRUE.equals( patternNode.getBoolean( "invert" ) );
+
+                    if ( !matchesUrlPattern( pattern, invert, siteRelativePath, request.getParameterMap() ) )
+                    {
+                        LOG.debug( "Not cacheable because of pattern {}, invert {}", pattern, invert );
+                        return false;
+                    }
                 }
             }
             return true;
+        }
+
+        private static <T> List<T> iterableToList( Iterable<T> iterable )
+        {
+            if ( iterable == null )
+            {
+                return List.of();
+            }
+            if ( iterable instanceof List )
+            {
+                return (List<T>) iterable;
+            }
+            List<T> list = new ArrayList<>();
+            iterable.forEach( list::add );
+            return list;
         }
 
         public SiteConfig getSiteConfig( final HttpServletRequest request )
@@ -212,8 +231,9 @@ public class StoreConditions
         {
             final boolean patternHasQueryParameters = pattern.contains( "\\?" );
             final boolean patternMatches = PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile )
-                .matcher( patternHasQueryParameters ? relativePath + "?" +
-                    RequestUtils.normalizedQueryParams( params, excludeQueryParams ) : relativePath )
+                .matcher( patternHasQueryParameters
+                              ? relativePath + "?" + RequestUtils.normalizedQueryParams( params, excludeQueryParams )
+                              : relativePath )
                 .matches();
             return invert != patternMatches;
         }
