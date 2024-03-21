@@ -67,7 +67,7 @@ public class Preconditions
         for ( var extraCondition : extraConditions )
         {
             final Result result = extraCondition.apply( request );
-            if ( !result.bypass )
+            if ( result.bypass )
             {
                 return result;
             }

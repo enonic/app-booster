@@ -34,7 +34,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@Disabled
 class CachedResponseWriterTest
 {
     @Mock
@@ -56,7 +55,6 @@ class CachedResponseWriterTest
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
-            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             when( request.getHeader( "If-None-Match" ) ).thenReturn( "\"etag\"" );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, r -> {} );
@@ -64,7 +62,8 @@ class CachedResponseWriterTest
 
         writer.write( response, newCacheItem() );
         verify( response ).setHeader( "ETag", "\"etag\"" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
+        verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setStatus( 304 );
         verify( response ).flushBuffer();
@@ -79,14 +78,14 @@ class CachedResponseWriterTest
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "HEAD" );
-            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, r -> {} );
         }
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
+        verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
@@ -104,7 +103,6 @@ class CachedResponseWriterTest
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
-            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, r -> response.setHeader( "Cache-Status", "Booster; hit" ) );
         }
@@ -113,7 +111,8 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "Cache-Status", "Booster; hit" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
+        verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
@@ -129,7 +128,6 @@ class CachedResponseWriterTest
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
-            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
             writer = new CachedResponseWriter( request, r -> {});
         }
@@ -137,7 +135,8 @@ class CachedResponseWriterTest
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "ETag", "\"etag\"" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
+        verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
@@ -163,7 +162,7 @@ class CachedResponseWriterTest
         verify( response ).setHeader( "ETag", "\"etag-br\"" );
         verify( response ).setHeader( "Content-Encoding", "br" );
         verify( response ).addHeader( "vary", "Accept-Language" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
+        verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 16 );
         verify( response ).setStatus( 200 );
@@ -179,7 +178,6 @@ class CachedResponseWriterTest
         try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
         {
             when( request.getMethod() ).thenReturn( "GET" );
-            when( response.getHeaders( "Vary" ) ).thenReturn( List.of() );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.GZIP );
             writer = new CachedResponseWriter( request, r -> {} );
         }
@@ -188,34 +186,10 @@ class CachedResponseWriterTest
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "ETag", "\"etag-gzip\"" );
                 verify( response ).setHeader( "Content-Encoding", "gzip" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
+        verify( response ).addHeader( "vary", "Accept-Language" );
+        verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
         verify( response ).setContentLength( 32 );
-        verify( response ).setStatus( 200 );
-        verify( response ).getOutputStream();
-        verifyNoMoreInteractions( response );
-    }
-
-    @Test
-    void no_cache_control_override()
-        throws Exception
-    {
-        final CachedResponseWriter writer;
-        try (MockedStatic<RequestUtils> requestUtils = mockStatic( RequestUtils.class ))
-        {
-            when( request.getMethod() ).thenReturn( "GET" );
-            requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
-            writer = new CachedResponseWriter( request, r -> response.setHeader( "Cache-Status", "Booster; hit" ) );
-        }
-        when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
-        writer.write( response, newCacheItem() );
-        verify( response ).setContentType( "text/xhtml" );
-        verify( response ).setHeader( "Cache-Status", "Booster; hit" );
-        verify( response ).setHeader( "ETag", "\"etag\"" );
-        verify( response ).addHeader( "vary", "Accept-Language" );
-        verify( response ).addHeader( "cache-control", "max-age=1" );
-        verify( response ).setIntHeader( eq( "Age" ), anyInt() );
-        verify( response ).setContentLength( 12 );
         verify( response ).setStatus( 200 );
         verify( response ).getOutputStream();
         verifyNoMoreInteractions( response );
@@ -240,7 +214,7 @@ class CachedResponseWriterTest
 
         final Map<String, List<String>> headers =
             Map.of( "x-booster-cache", List.of( "ignored" ), "vary", List.of( "Accept-Language" ), "cache-control",
-                    List.of( "max-age=1" ) );
+                    List.of( "max-age=60" ) );
 
         return new CacheItem( 200, "text/xhtml", headers, Instant.EPOCH, null, null, null, data.length(), "etag", ByteSupply.of( baosGzip ),
                               ByteSupply.of( baosBrotli ) );
