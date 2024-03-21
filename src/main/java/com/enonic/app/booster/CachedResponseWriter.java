@@ -5,9 +5,9 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.servlet.RequestUtils;
+
+import static java.util.Objects.requireNonNullElse;
 
 
 public final class CachedResponseWriter
@@ -29,14 +31,14 @@ public final class CachedResponseWriter
 
     final boolean writeBody;
 
-    final BoosterConfigParsed config;
+    final Consumer<HttpServletResponse> beforeWrite;
 
-    public CachedResponseWriter( final HttpServletRequest request, final BoosterConfigParsed config )
+    public CachedResponseWriter( final HttpServletRequest request, final Consumer<HttpServletResponse> beforeWrite )
     {
         this.acceptEncoding = RequestUtils.acceptEncoding( request );
         this.expectEtag = request.getHeader( "If-None-Match" );
         this.writeBody = request.getMethod().equalsIgnoreCase( "GET" );
-        this.config = config;
+        this.beforeWrite = beforeWrite;
     }
 
     /**
@@ -47,41 +49,30 @@ public final class CachedResponseWriter
     /**
      * Headers that are controlled by the cache writer and should not be copied from the cached response.
      */
-    private static final Set<String> OVERRIDE_HEADERS = Set.of( "age", "x-booster-cache", "etag", "content-type", "content-length" );
+    private static final Set<String> DON_NOT_COPY_HEADERS =
+        Set.of( "age", "x-booster-cache", "etag", "content-type", "content-length", "connection" );
 
     public void write( final HttpServletResponse response, final CacheItem cached )
         throws IOException
     {
-        final String eTagValue = switch ( acceptEncoding )
+        String etagSuffix = switch ( acceptEncoding )
         {
-            case BROTLI -> "\"" + cached.etag() + "-br" + "\"";
-            case GZIP -> "\"" + cached.etag() + "-gzip" + "\"";
-            default -> "\"" + cached.etag() + "\"";
+            case BROTLI -> "-br";
+            case GZIP -> "-gzip";
+            case UNSPECIFIED -> "";
         };
+        final String eTag = "\"" + cached.etag() + etagSuffix + "\"";
 
-        final boolean notModified = eTagValue.equals( expectEtag );
+        final boolean notModified = eTag.equals( expectEtag );
 
         copyHeaders( response, cached.headers(), notModified );
 
-        response.setHeader( "ETag", eTagValue );
+        beforeWrite.accept( response );
 
-        if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
-        {
-            response.addHeader( "Vary", "Accept-Encoding" );
-        }
+        response.setHeader( "ETag", eTag );
 
-        config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
-
-        if ( !config.disableXBoosterCacheHeader() )
-        {
-            response.setHeader( "X-Booster-Cache", "HIT" );
-        }
-
-        if ( !config.disableAgeHeader() )
-        {
-            response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
-                                                                       Integer.MAX_VALUE ) ) );
-        }
+        response.setIntHeader( "Age", (int) Math.max( 0, Math.min( ChronoUnit.SECONDS.between( cached.cachedTime(), Instant.now() ),
+                                                                   Integer.MAX_VALUE ) ) + requireNonNullElse( cached.age(), 0 ) );
 
         if ( notModified )
         {
@@ -90,11 +81,9 @@ public final class CachedResponseWriter
             response.flushBuffer();
             return;
         }
-        else
-        {
-            response.setContentType( cached.contentType() );
-            response.setStatus( 200 );
-        }
+
+        response.setContentType( cached.contentType() );
+        response.setStatus( cached.status() );
 
         switch ( acceptEncoding )
         {
@@ -150,8 +139,7 @@ public final class CachedResponseWriter
         headers.entrySet()
             .stream()
             .filter( entry -> !notModified || NOT_MODIFIED_HEADERS.contains( entry.getKey() ) )
-            .filter( entry -> !OVERRIDE_HEADERS.contains( entry.getKey() ) )
-            .filter( entry -> config.overrideHeaders().keySet().stream().noneMatch( h -> h.equalsIgnoreCase( entry.getKey() ) ) )
+            .filter( entry -> !DON_NOT_COPY_HEADERS.contains( entry.getKey() ) )
             .forEach( entry -> entry.getValue().forEach( value -> response.addHeader( entry.getKey(), value ) ) );
     }
 }

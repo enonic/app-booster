@@ -1,7 +1,9 @@
 package com.enonic.app.booster;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -18,7 +20,10 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.concurrent.Collapser;
 import com.enonic.app.booster.servlet.CachingResponseWrapper;
+import com.enonic.app.booster.servlet.RequestAttributes;
+import com.enonic.app.booster.servlet.RequestURL;
 import com.enonic.app.booster.servlet.RequestUtils;
+import com.enonic.app.booster.servlet.ResponseFreshness;
 import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.portal.PortalRequest;
@@ -44,7 +49,7 @@ public class BoosterRequestFilter
     private final BoosterLicenseService licenseService;
 
     @Activate
-    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore, @Reference final BoosterLicenseService licenseService)
+    public BoosterRequestFilter( @Reference final NodeCacheStore cacheStore, @Reference final BoosterLicenseService licenseService )
     {
         this.cacheStore = cacheStore;
         this.licenseService = licenseService;
@@ -61,135 +66,189 @@ public class BoosterRequestFilter
     protected void doHandle( final HttpServletRequest request, final HttpServletResponse response, final FilterChain chain )
         throws Exception
     {
-        final Preconditions preconditions = new Preconditions();
-        if ( !preconditions.check( request ) || !licenseService.isValidLicense() )
+        final Preconditions preconditions =
+            new Preconditions( new Preconditions.LicensePrecondition( licenseService::isValidLicense )::check );
+        final Preconditions.Result preconditionResult = preconditions.check( request );
+        if ( preconditionResult.bypass() )
         {
+            if ( preconditionResult.detail() != null )
+            {
+                writeCacheStatusHeader( response, BoosterCacheStatus.bypass( preconditionResult.detail() ) );
+            }
             chain.doFilter( request, response );
             return;
         }
 
         // Full URL is used, so scheme, domain and port are included.
         // Query String is also included with all parameters (there is an option to exclude some of them in config)
-        final RequestUtils.RequestUrl requestUrl = RequestUtils.buildRequestURL( request, config.excludeQueryParams() );
+        final RequestURL requestUrl = RequestUtils.buildRequestURL( request, config.excludeQueryParams() );
 
-        final String fullUrl = requestUrl.fullUrl();
+        final String fullUrl = requestUrl.url();
         final String cacheKey = cacheStore.generateCacheKey( fullUrl );
+
+        LOG.debug( "Normalized URL of request {} with key {}", fullUrl, cacheKey );
+
         final Trace trace = Tracer.newTrace( "booster.fromCache" );
         if ( trace != null )
         {
             trace.put( "cacheKey", cacheKey );
             trace.put( "url", fullUrl );
         }
-
-        LOG.debug( "Normalized URL of request {} with key {}", fullUrl, cacheKey );
-
-        final String[] cacheStatus = new String[1];
-        final CacheItem stored = Tracer.traceEx( trace, () -> {
-            final CacheItem inCache = cacheStore.get( cacheKey );
-            if ( inCache == null )
-            {
-                LOG.debug( "No cached response found {}", cacheKey );
-                cacheStatus[0] = "MISS";
-                traceStatus( trace, "MISS" );
-                return null;
-            }
-            final CacheItem valid = getCached( inCache );
-            if ( valid != null )
-            {
-                LOG.debug( "Writing directly from cache {}", cacheKey );
-                new CachedResponseWriter( request, config ).write( response, valid );
-                cacheStatus[0] = "HIT";
-                traceStatus( trace, "HIT" );
-                return null;
-            }
-
-            LOG.debug( "Cached response is stale {}", cacheKey );
-            cacheStatus[0] = "STALE";
-            traceStatus( trace, "STALE" );
-            return inCache;
+        final CacheStatusCode cacheStatusCode = Tracer.traceEx( trace, () -> {
+            final CacheStatusCode statusCode = tryWriteFromCache( request, response, cacheKey );
+            traceStatus( trace, statusCode.name() );
+            return statusCode;
         } );
 
-        if ( "HIT".equals( cacheStatus[0] ) )
+        if ( cacheStatusCode == CacheStatusCode.HIT )
         {
             return;
         }
 
-        // response is very likely cacheable if stored value exists, we can collapse requests (wait for one request to do rendering)
-        final Collapser.Latch<CacheItem> latch = stored != null ? requestCollapser.latch( cacheKey ) : null;
+        final boolean stale = cacheStatusCode == CacheStatusCode.STALE;
 
-        final CacheItem[] newCached = new CacheItem[1];
+        // response is very likely cacheable if stored value exists, we can collapse requests (wait for one request to do rendering)
+        final Collapser.Latch<CacheItem> latch = stale ? requestCollapser.latch( cacheKey ) : null;
+
+        final CacheItem[] cacheHolder = new CacheItem[1];
         try
         {
             if ( latch != null )
             {
-                newCached[0] = latch.get();
-                if ( newCached[0] != null )
+                cacheHolder[0] = latch.get();
+                if ( cacheHolder[0] != null )
                 {
                     LOG.debug( "Cached response generated by another request. Use collapsed request result {}", cacheKey );
-                    new CachedResponseWriter( request, config ).write( response, newCached[0] );
+
+                    new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.collapsed() ) ).write( response,
+                                                                                                                               cacheHolder[0] );
                     return;
                 }
             }
 
             LOG.debug( "Processing request with cache key {}", cacheKey );
-            if ( !config.disableXBoosterCacheHeader() )
-            {
-                response.setHeader( "X-Booster-Cache", "MISS" );
-            }
 
-            final Postconditions postconditions = new Postconditions( new Postconditions.PortalRequestConditions()::check,
-                                                                      new Postconditions.SiteConfigConditions( config )::check,
-                                                                      new Postconditions.ContentTypePreconditions( config )::check );
+            final StoreConditions storeConditions = new StoreConditions( new StoreConditions.PortalRequestConditions()::check,
+                                                                         new StoreConditions.SiteConfigConditions(
+                                                                             config.excludeQueryParams() )::check,
+                                                                         new StoreConditions.ContentTypePreconditions(
+                                                                             config.cacheMimeTypes() )::check );
 
-            final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, postconditions::check, config );
+            final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, storeConditions::check,
+                                                                                       res -> writeHeaders( res, stale
+                                                                                           ? BoosterCacheStatus.stale()
+                                                                                           : BoosterCacheStatus.miss() ) );
             try (cachingResponse)
             {
                 chain.doFilter( request, cachingResponse );
             }
 
-            LOG.debug( "Response received for cache key {}. Can be stored: {}", cacheKey, cachingResponse.isCached() );
-            if ( cachingResponse.isCached() || stored != null )
+            LOG.debug( "Response received for cache key {}. Can be stored: {}", cacheKey, cachingResponse.isStore() );
+
+            if ( cachingResponse.isStore() )
             {
                 Tracer.trace( "booster.updateCache", () -> {
-                    if ( cachingResponse.isCached() )
-                    {
-                        final CacheMeta cacheMeta = createCacheMeta( request, requestUrl );
 
-                        newCached[0] = new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(),
-                                                      cachingResponse.getCachedHeaders(), Instant.now(), null, cachingResponse.getSize(),
-                                                      cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
-                                                      cachingResponse.getCachedBrBody().orElse( null ) );
-                        cacheStore.put( cacheKey, newCached[0], cacheMeta );
-                    }
-                    else
-                    {
-                        if ( stored != null )
-                        {
-                            // Evacuate item from cache immediately if it is no longer cacheable
-                            // to prevent needless request collapsing
-                            cacheStore.remove( cacheKey );
-                        }
-                    }
+                    final CacheMeta cacheMeta = createCacheMeta( request, requestUrl );
+                    final ResponseFreshness freshness = cachingResponse.getFreshness();
+                    cacheHolder[0] =
+                        new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
+                                       freshness.time(), freshness.expiresTime(), freshness.age(), null, cachingResponse.getSize(),
+                                       cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
+                                       cachingResponse.getCachedBrBody().orElse( null ) );
+                    cacheStore.put( cacheKey, cacheHolder[0], cacheMeta );
+                } );
+            }
+            else if ( stale )
+            {
+                Tracer.trace( "booster.updateCache", () -> {
+                    // Evacuate item from cache immediately if it is no longer cacheable
+                    // to prevent needless request collapsing
+                    cacheStore.remove( cacheKey );
                 } );
             }
         }
         finally
+
         {
             if ( latch != null )
             {
-                latch.unlock( newCached[0] );
+                latch.unlock( cacheHolder[0] );
             }
         }
     }
 
-    private CacheItem getCached( final CacheItem stored )
+    private CacheStatusCode tryWriteFromCache( final HttpServletRequest request, final HttpServletResponse response, final String cacheKey )
+        throws IOException
+    {
+        final CacheItem inCache = cacheStore.get( cacheKey );
+        if ( inCache == null )
+        {
+            LOG.debug( "No cached response found {}", cacheKey );
+            return CacheStatusCode.MISS;
+        }
+        final CacheItem valid = checkStale( inCache );
+        if ( valid != null )
+        {
+            LOG.debug( "Writing directly from cache {}", cacheKey );
+
+            new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.hit() ) ).write( response, valid );
+            return CacheStatusCode.HIT;
+        }
+        else
+        {
+            LOG.debug( "Cached response is stale {}", cacheKey );
+            return CacheStatusCode.STALE;
+        }
+    }
+
+    private void writeHeaders( final HttpServletResponse response, final BoosterCacheStatus cacheStatus )
+    {
+        writeCacheStatusHeader( response, cacheStatus );
+        writeVaryContentEncodingHeader( response );
+        writeOverrideHeaders( response );
+    }
+
+    private void writeCacheStatusHeader( final HttpServletResponse response, final BoosterCacheStatus cacheStatus )
+    {
+        if ( !config.disableCacheStatusHeader() && cacheStatus != null )
+        {
+            response.setHeader( "Cache-Status", cacheStatus.toString() );
+        }
+    }
+
+    private void writeVaryContentEncodingHeader( final HttpServletResponse response )
+    {
+        // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
+        // Make sure we don't set the header twice - Jetty also can set this header sometimes
+
+        if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
+        {
+            response.addHeader( "Vary", "Accept-Encoding" );
+        }
+    }
+
+    private void writeOverrideHeaders( final HttpServletResponse response )
+    {
+        config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
+    }
+
+    private CacheItem checkStale( final CacheItem stored )
     {
         if ( stored == null )
         {
             return null;
         }
-        if ( stored.invalidatedTime() != null ||
-            stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( Instant.now() ) )
+        if ( stored.invalidatedTime() != null )
+        {
+            return null;
+        }
+        final Instant now = Instant.now();
+        if ( stored.expireTime() != null && stored.expireTime().isBefore( now ) )
+        {
+            return null;
+        }
+        if ( stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ).isBefore( now ) )
         {
             return null;
         }
@@ -199,9 +258,9 @@ public class BoosterRequestFilter
         }
     }
 
-    private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestUtils.RequestUrl requestUrl )
+    private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestURL requestUrl )
     {
-        final PortalRequest portalRequest = (PortalRequest) request.getAttribute( PortalRequest.class.getName() );
+        final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
 
         final String project;
         if ( portalRequest.getRepositoryId() != null )
@@ -227,13 +286,19 @@ public class BoosterRequestFilter
             contentId = null;
             contentPath = null;
         }
-        return new CacheMeta( requestUrl.fullUrl(), requestUrl.domain(), requestUrl.path(), project, siteId, contentId, contentPath );
+        return new CacheMeta( requestUrl.url(), requestUrl.domain(), requestUrl.path(), project, siteId, contentId, contentPath );
     }
 
-    private static void traceStatus(final Trace trace, final String status) {
+    private static void traceStatus( final Trace trace, final String status )
+    {
         if ( trace != null )
         {
             trace.put( "status", status );
         }
+    }
+
+    enum CacheStatusCode
+    {
+        MISS, HIT, STALE
     }
 }

@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.enonic.app.booster.StoreConditions;
 import com.enonic.app.booster.io.ByteSupply;
 
 public interface CachingResponse
@@ -21,5 +22,7 @@ public interface CachingResponse
 
     Map<String, List<String>> getCachedHeaders();
 
-    boolean isCached();
+    boolean isStore();
+
+    ResponseFreshness getFreshness();
 }

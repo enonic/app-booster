@@ -48,7 +48,7 @@ class CachingResponseWrapperTest
 
         when( response.getOutputStream() ).thenReturn( servletOutputStream );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
         try (wrapper)
         {
             wrapper.getOutputStream().write( "Hello, World".getBytes( StandardCharsets.UTF_8 ) );
@@ -73,7 +73,7 @@ class CachingResponseWrapperTest
     {
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
@@ -91,7 +91,7 @@ class CachingResponseWrapperTest
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
@@ -110,7 +110,7 @@ class CachingResponseWrapperTest
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, config );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );

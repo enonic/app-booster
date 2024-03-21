@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.enonic.app.booster.concurrent.Collapser;
 import com.enonic.app.booster.io.ByteSupply;
+import com.enonic.app.booster.servlet.RequestAttributes;
 import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.repository.RepositoryId;
@@ -54,25 +55,6 @@ class BoosterRequestFilterTest
     BoosterLicenseService licenseService;
 
     @Test
-    void notLicensed()
-        throws Exception
-    {
-        when( licenseService.isValidLicense() ).thenReturn( false );
-        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
-        filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
-
-        var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( true ) );
-        try (preconditionsConstruction)
-        {
-            filter.doHandle( request, response, filterChain );
-        }
-
-        verify( filterChain ).doFilter( request, response );
-        verifyNoMoreInteractions( filterChain );
-    }
-
-    @Test
     void preconditionsFail()
         throws Exception
     {
@@ -80,7 +62,7 @@ class BoosterRequestFilterTest
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( false ) );
+            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.SILENT_BYPASS ) );
         try (preconditionsConstruction)
         {
             filter.doHandle( request, response, filterChain );
@@ -94,7 +76,6 @@ class BoosterRequestFilterTest
     void cached()
         throws Exception
     {
-        when( licenseService.isValidLicense() ).thenReturn( true );
         mockRequest();
         final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
@@ -102,7 +83,7 @@ class BoosterRequestFilterTest
         final CacheItem cacheItem = freshCacheItem();
 
         var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( true ) );
+            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
 
         var cachedResponseWriterConstruction = mockConstruction( CachedResponseWriter.class );
 
@@ -136,7 +117,6 @@ class BoosterRequestFilterTest
     void doTestCollapsed( final CacheItem cacheItemFromStore )
         throws Exception
     {
-        when( licenseService.isValidLicense() ).thenReturn( true );
         final CacheItem collapsedItem = freshCacheItem();
 
         mockRequest();
@@ -154,7 +134,7 @@ class BoosterRequestFilterTest
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( true ) );
+            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
 
         var cachedResponseWriterConstruction = mockConstruction( CachedResponseWriter.class );
 
@@ -176,7 +156,6 @@ class BoosterRequestFilterTest
     void notCached()
         throws Exception
     {
-        when( licenseService.isValidLicense() ).thenReturn( true );
         mockRequest();
         final PortalRequest portalRequest = mock( PortalRequest.class );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
@@ -186,27 +165,27 @@ class BoosterRequestFilterTest
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( true ) );
+            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
 
-        var postconditionsConstruction =
-            mockConstruction( Postconditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( true ) );
+        var storeConditionsConstruction =
+            mockConstruction( StoreConditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( true ) );
 
-        try (preconditionsConstruction; postconditionsConstruction)
+        try (preconditionsConstruction; storeConditionsConstruction)
         {
             when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
             when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( null );
 
-            doAnswer(invocation -> {
-                HttpServletResponse response = invocation.getArgument(1, HttpServletResponse.class);
+            doAnswer( invocation -> {
+                HttpServletResponse response = invocation.getArgument( 1, HttpServletResponse.class );
                 response.getOutputStream(); // simulate call, otherwise response won't be cacheable
 
                 return null;
-            }).when(filterChain).doFilter(any(), any());
+            } ).when( filterChain ).doFilter( any(), any() );
 
             filter.doHandle( request, response, filterChain );
 
             verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
-            verify( response ).setHeader( "X-Booster-Cache", "MISS" );
+            verify( response ).setHeader( "Cache-Status","Booster; fwd=miss" );
             verify( filterChain ).doFilter( same( request ), any() );
             final ArgumentCaptor<CacheItem> cacheCaptor = captor();
             final ArgumentCaptor<CacheMeta> metaCaptor = captor();
@@ -223,19 +202,18 @@ class BoosterRequestFilterTest
     void expired_no_longer_cacheable()
         throws Exception
     {
-        when( licenseService.isValidLicense() ).thenReturn( true );
         mockRequest();
 
         final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
         var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( true ) );
+            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
 
-        var postconditionsConstruction =
-            mockConstruction( Postconditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( false ) );
+        var storeConditionsConstruction =
+            mockConstruction( StoreConditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( false ) );
 
-        try (preconditionsConstruction; postconditionsConstruction)
+        try (preconditionsConstruction; storeConditionsConstruction)
         {
             when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
             when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( expiredCacheITem() );
@@ -243,7 +221,6 @@ class BoosterRequestFilterTest
             filter.doHandle( request, response, filterChain );
 
             verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
-            verify( response ).setHeader( "X-Booster-Cache", "MISS" );
             verify( filterChain ).doFilter( same( request ), any() );
             verify( cacheStore ).remove( eq( "1ddd92089d02d31e68f1c6db45db255c" ) );
         }
@@ -251,20 +228,19 @@ class BoosterRequestFilterTest
 
     static CacheItem invalidatedCacheItem()
     {
-        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH,
-                              Instant.EPOCH, 1234, "1234567890", ByteSupply.of( new ByteArrayOutputStream() ),
-                              ByteSupply.of( new ByteArrayOutputStream() ) );
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, Instant.EPOCH, null, null, 1234,
+                              "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
     static CacheItem expiredCacheITem()
     {
-        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, null, 1234,
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, null, null, null, 1234,
                               "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
     static CacheItem freshCacheItem()
     {
-        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, 1234,
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234,
                               "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 

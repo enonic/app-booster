@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
@@ -23,12 +24,12 @@ class PreconditionsTest
 
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getMethod() ).thenReturn( "GET" );
-        when( request.isRequestedSessionIdValid() ).thenReturn( false );
-        when( request.getHeader( "Authorization" ) ).thenReturn( null );
         when( request.getRequestURI() ).thenReturn( "/site/repo/master" );
+        when( request.getHeader( "Authorization" ) ).thenReturn( null );
+        when( request.isRequestedSessionIdValid() ).thenReturn( false );
 
         Preconditions preconditions = new Preconditions();
-        assertTrue( preconditions.check( request ) );
+        assertFalse( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -36,12 +37,12 @@ class PreconditionsTest
     {
         when( request.getScheme() ).thenReturn( "http" );
         when( request.getMethod() ).thenReturn( "GET" );
-        when( request.isRequestedSessionIdValid() ).thenReturn( false );
-        when( request.getHeader( "Authorization" ) ).thenReturn( null );
         when( request.getRequestURI() ).thenReturn( "/site/repo/master" );
+        when( request.getHeader( "Authorization" ) ).thenReturn( null );
+        when( request.isRequestedSessionIdValid() ).thenReturn( false );
 
         Preconditions preconditions = new Preconditions();
-        assertTrue( preconditions.check( request ) );
+        assertFalse( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -49,12 +50,12 @@ class PreconditionsTest
     {
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getMethod() ).thenReturn( "HEAD" );
-        when( request.isRequestedSessionIdValid() ).thenReturn( false );
-        when( request.getHeader( "Authorization" ) ).thenReturn( null );
         when( request.getRequestURI() ).thenReturn( "/site/repo/master" );
+        when( request.getHeader( "Authorization" ) ).thenReturn( null );
+        when( request.isRequestedSessionIdValid() ).thenReturn( false );
 
         Preconditions preconditions = new Preconditions();
-        assertTrue( preconditions.check( request ) );
+        assertFalse( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -63,7 +64,7 @@ class PreconditionsTest
         when( request.getScheme() ).thenReturn( "wss" );
 
         Preconditions preconditions = new Preconditions();
-        assertFalse( preconditions.check( request ) );
+        assertTrue( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -73,7 +74,7 @@ class PreconditionsTest
         when( request.getMethod() ).thenReturn( "POST" );
 
         Preconditions preconditions = new Preconditions();
-        assertFalse( preconditions.check( request ) );
+        assertTrue( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -81,11 +82,12 @@ class PreconditionsTest
     {
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getMethod() ).thenReturn( "GET" );
-        when( request.isRequestedSessionIdValid() ).thenReturn( true );
+        when( request.getRequestURI() ).thenReturn( "/site/repo/master" );
         when( request.getHeader( "Authorization" ) ).thenReturn( null );
+        when( request.isRequestedSessionIdValid() ).thenReturn( true );
 
         Preconditions preconditions = new Preconditions();
-        assertFalse( preconditions.check( request ) );
+        assertTrue( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -93,10 +95,11 @@ class PreconditionsTest
     {
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getMethod() ).thenReturn( "GET" );
+        when( request.getRequestURI() ).thenReturn( "/site/repo/master" );
         when( request.getHeader( "Authorization" ) ).thenReturn( "Bearer: ..." );
 
         Preconditions preconditions = new Preconditions();
-        assertFalse( preconditions.check( request ) );
+        assertTrue( preconditions.check( request ).bypass() );
     }
 
     @Test
@@ -104,11 +107,9 @@ class PreconditionsTest
     {
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getMethod() ).thenReturn( "GET" );
-        when( request.isRequestedSessionIdValid() ).thenReturn( false );
-        when( request.getHeader( "Authorization" ) ).thenReturn( null );
         when( request.getRequestURI() ).thenReturn( "/site/repo/master/_/image" );
 
         Preconditions preconditions = new Preconditions();
-        assertFalse( preconditions.check( request ) );
+        assertTrue( preconditions.check( request ).bypass() );
     }
 }

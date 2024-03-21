@@ -27,7 +27,7 @@ class BoosterConfigParsedTest
                     "_hsenc", "__hssc", "__hstc", "__hsfp", "hsCtaTracking" ), parse.excludeQueryParams() );
         assertEquals( Set.of(), parse.appList() );
         assertEquals( 10000, parse.cacheSize() );
-        assertFalse( parse.disableXBoosterCacheHeader() );
+        assertFalse( parse.disableCacheStatusHeader() );
         assertEquals( Map.of(), parse.overrideHeaders() );
         assertEquals( Set.of( "text/html", "text/xhtml" ), parse.cacheMimeTypes() );
     }

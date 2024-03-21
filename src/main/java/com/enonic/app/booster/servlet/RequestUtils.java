@@ -19,7 +19,7 @@ public final class RequestUtils
     {
     }
 
-    public static RequestUrl buildRequestURL( final HttpServletRequest request, Set<String> excludeQueryParams )
+    public static RequestURL buildRequestURL( final HttpServletRequest request, final Set<String> excludeQueryParams )
     {
         // rebuild the URL from the request
         final String scheme = request.getScheme();
@@ -45,7 +45,7 @@ public final class RequestUtils
             urlBuilder.append( "?" ).append( queryString );
         }
 
-        return new RequestUrl( urlBuilder.toString(), serverName, path );
+        return new RequestURL( urlBuilder.toString(), serverName, path );
     }
 
 
@@ -95,9 +95,5 @@ public final class RequestUtils
     public enum AcceptEncoding
     {
         GZIP, BROTLI, UNSPECIFIED
-    }
-
-    public record RequestUrl(String fullUrl, String domain, String path)
-    {
     }
 }

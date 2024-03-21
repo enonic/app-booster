@@ -25,9 +25,9 @@ class RequestUtilsTest
         when( request.getServerPort() ).thenReturn( 443 );
         when( request.getRequestURI() ).thenReturn( "/Path" );
         when( request.getParameterMap() ).thenReturn( Map.of( "a", new String[]{"v1", "v2"}, "b", new String[]{"v3", "v4"} ) );
-        final RequestUtils.RequestUrl requestURL = RequestUtils.buildRequestURL( request, Set.of( "a" ) );
+        final RequestURL requestURL = RequestUtils.buildRequestURL( request, Set.of( "a" ) );
 
-        assertEquals( "https://example.com./path?b=v3&b=v4", requestURL.fullUrl() );
+        assertEquals( "https://example.com./path?b=v3&b=v4", requestURL.url() );
         assertEquals( "example.com.", requestURL.domain() );
         assertEquals( "/path", requestURL.path() );
     }
@@ -41,9 +41,9 @@ class RequestUtilsTest
         when( request.getServerPort() ).thenReturn( 8080 );
         when( request.getRequestURI() ).thenReturn( "/" );
         when( request.getParameterMap() ).thenReturn( Map.of() );
-        final RequestUtils.RequestUrl requestURL = RequestUtils.buildRequestURL( request, Set.of() );
+        final RequestURL requestURL = RequestUtils.buildRequestURL( request, Set.of() );
 
-        assertEquals( "http://example.com:8080/", requestURL.fullUrl() );
+        assertEquals( "http://example.com:8080/", requestURL.url() );
         assertEquals( "example.com", requestURL.domain() );
         assertEquals( "/", requestURL.path() );
     }
@@ -57,9 +57,9 @@ class RequestUtilsTest
         when( request.getServerPort() ).thenReturn( 8443 );
         when( request.getRequestURI() ).thenReturn( "/" );
         when( request.getParameterMap() ).thenReturn( Map.of() );
-        final RequestUtils.RequestUrl requestURL = RequestUtils.buildRequestURL( request, Set.of() );
+        final RequestURL requestURL = RequestUtils.buildRequestURL( request, Set.of() );
 
-        assertEquals( "http://example.com:8443/", requestURL.fullUrl() );
+        assertEquals( "http://example.com:8443/", requestURL.url() );
         assertEquals( "example.com", requestURL.domain() );
         assertEquals( "/", requestURL.path() );
     }

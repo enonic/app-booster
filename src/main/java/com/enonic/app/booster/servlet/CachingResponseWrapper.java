@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletOutputStream;
@@ -34,7 +35,6 @@ import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 
-import com.enonic.app.booster.BoosterConfigParsed;
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.utils.MessageDigests;
 
@@ -62,13 +62,15 @@ public final class CachingResponseWrapper
 
     final HttpServletResponse response;
 
-    final BiFunction<HttpServletRequest, CachingResponse, Boolean> postconditions;
+    final BiFunction<HttpServletRequest, CachingResponse, Boolean> storeConditions;
 
-    final AtomicReference<ServletOutputStream> outputStream = new AtomicReference<>();
+    final AtomicReference<ServletOutputStream> outputStreamHolder = new AtomicReference<>();
 
-    Boolean cached;
+    Boolean store;
 
-    final BoosterConfigParsed config;
+    ResponseFreshness freshness;
+
+    final Consumer<HttpServletResponse> beforeWrite;
 
     static boolean BROTLI_SUPPORTED;
 
@@ -86,14 +88,14 @@ public final class CachingResponseWrapper
     }
 
     public CachingResponseWrapper( final HttpServletRequest request, final HttpServletResponse response,
-                                   final BiFunction<HttpServletRequest, CachingResponse, Boolean> postconditions,
-                                   final BoosterConfigParsed config )
+                                   final BiFunction<HttpServletRequest, CachingResponse, Boolean> storeConditions,
+                                   final Consumer<HttpServletResponse> beforeWrite )
     {
         super( response );
         this.request = request;
         this.response = response;
-        this.postconditions = postconditions;
-        this.config = config;
+        this.storeConditions = storeConditions;
+        this.beforeWrite = beforeWrite;
         try
         {
             this.brotliData = BROTLI_SUPPORTED ? new ByteArrayOutputStream() : null;
@@ -108,9 +110,9 @@ public final class CachingResponseWrapper
     }
 
     @Override
-    public boolean isCached()
+    public boolean isStore()
     {
-        return Boolean.TRUE.equals( cached );
+        return Boolean.TRUE.equals( store );
     }
 
     @Override
@@ -134,6 +136,17 @@ public final class CachingResponseWrapper
         }
 
         return etag;
+    }
+
+    @Override
+    public ResponseFreshness getFreshness()
+    {
+        if (freshness == null)
+        {
+            freshness = ResponseFreshness.build( response );
+        }
+
+        return freshness;
     }
 
     @Override
@@ -226,39 +239,29 @@ public final class CachingResponseWrapper
     public ServletOutputStream getOutputStream()
         throws IOException
     {
-        final ServletOutputStream delegateCached = outputStream.get();
-        if ( delegateCached != null )
+        final ServletOutputStream outputStreamCached = outputStreamHolder.get();
+        if ( outputStreamCached != null )
         {
-            return delegateCached;
+            return outputStreamCached;
         }
 
-        final ServletOutputStream delegate = super.getOutputStream();
-        if ( cached == null && postconditions.apply( request, this ) )
+        final ServletOutputStream delegateStream = super.getOutputStream();
+
+        if ( store == null )
         {
-            cached = true;
-
-            // We may send compressed and uncompressed response, so we need to Vary on Accept-Encoding
-            // Make sure we don't set the header twice - Jetty also can set this header sometimes
-            if ( response.getHeaders( "Vary" ).stream().noneMatch( s -> s.toLowerCase( Locale.ROOT ).contains( "accept-encoding" ) ) )
-            {
-                response.addHeader( "Vary", "Accept-Encoding" );
-            }
-
-            config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
-
-            outputStream.set( new CachingOutputStream( delegate ) );
+            store = storeConditions.apply( request, this );
+            beforeWrite.accept( response );
         }
-        else
-        {
-            outputStream.set( delegate );
-        }
-        return outputStream.get();
+
+        final ServletOutputStream outputStream = store ? new CachingOutputStream( delegateStream ) : delegateStream;
+        outputStreamHolder.set( outputStream );
+        return outputStream;
     }
 
     @Override
     public void addCookie( final Cookie cookie )
     {
-        cached = false;
+        store = false;
         super.addCookie( cookie );
     }
 
@@ -266,7 +269,7 @@ public final class CachingResponseWrapper
     public void sendError( final int sc, final String msg )
         throws IOException
     {
-        cached = false;
+        store = false;
         super.sendError( sc, msg );
     }
 
@@ -274,7 +277,7 @@ public final class CachingResponseWrapper
     public void sendError( final int sc )
         throws IOException
     {
-        cached = false;
+        store = false;
         super.sendError( sc );
     }
 
@@ -282,7 +285,7 @@ public final class CachingResponseWrapper
     public void sendRedirect( final String location )
         throws IOException
     {
-        cached = false;
+        store = false;
         super.sendRedirect( location );
     }
 
@@ -290,22 +293,22 @@ public final class CachingResponseWrapper
     public PrintWriter getWriter()
         throws IOException
     {
-        cached = false;
+        store = false;
         return super.getWriter();
     }
 
     @Override
     public void reset()
     {
-        cached = false;
-        outputStream.set( null );
+        store = false;
+        outputStreamHolder.set( null );
         super.reset();
     }
 
     @Override
     public void resetBuffer()
     {
-        cached = false;
+        store = false;
         super.resetBuffer();
     }
 

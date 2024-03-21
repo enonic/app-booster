@@ -18,6 +18,7 @@ Features:
 - Request collapsing
 - Cluster shared cache
 - 304 Not Modified support
+- max-age and s-maxage support
 
 == Configuration
 
@@ -28,7 +29,6 @@ Features:
 - `appsInvalidateCacheOnStart`: Comma-separated list of applications that should invalidate the cache on their start. By default, no applications are listed.
 - `excludeQueryParams`: Comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...)
 - `disableXBoosterCacheHeader`: If set to `true` X-Booster-Cache header is not sent in the response. The default value is `false`.
-- `disableAgeHeader`: If set to `true` Age header is not sent in the response. The default value is `false`.
 - `overrideHeaders`: Comma-separated list of instructions that override headers. By default, no instructions are listed.
 - `cacheMimeTypes`: Comma-separated list of MIME types that should be cached. The default value is `text/html, text/xhtml`.
 
@@ -44,17 +44,19 @@ A request is considered cacheable if the following conditions are met:
 - Its URI does not contain `/_/`. (This is a convention for service requests.)
 
 If the request not cacheable Booster application will not intercept the request.
-If the request is cacheable, Booster application will check if cached response is available and return it.
+If the request is cacheable, Booster application will check if cached response is available, not stale, not invalidated and return it.
 
 == Cache Response Conditions
 
 A response is considered cacheable if the following conditions are met:
 
 - It is a 200 OK response.
-- The response does not contain a `Cache-Control` header with a `private`  or `no-store` directive.
-- The response does not contain a `Expires` header. (That includes all responses with `Set-Cookie` header.)
+- The response does not contain a `Cache-Control` header with a `private`, `no-cache` or `no-store` directive.
+- The response does not contain a `Expires` header. (And value of `Expires` header, even in future)
+- The response does not contain a `Set-Cookie` header.
 - The response does not contain a `Content-Encoding` header.
 - The response does not contain a `Vary` header.
+- The response MIME type (from `Cache-Control` header) is in the `cacheMimeTypes` configuration property.
 - The response is processed by a Site
     * Application is installed on a Site
     * Application configuration allows request to be cached (`Disabled` is unchecked and request path matches configured cacheable `Patterns`)
@@ -141,6 +143,10 @@ Booster application supports request collapsing. It means that if there are mult
 
 === 304 Not Modified
 
-
 Booster application supports 304 `Not Modified` responses.
 Cached response always contains an `ETag` header.If the request has `If-None-Match` header, the application checks if the cached `ETag` value matches the `If-None-Match` value. If the values match, the application returns 304 `Not Modified` response.
+
+=== max-age, s-maxage and Age
+
+Booster application supports `max-age` and `s-maxage` cache directives in response `Cahe-Control` headers. The `max-age` directive is used to specify the maximum amount of time that a response can be cached. The `s-maxage` directive is used to specify the maximum amount of time that a shared cache can cache the response. The `s-maxage` directive is preferred over the `max-age` directive.
+Application adds `Age` header to the response. The `Age` header is the time in seconds since the response was cached plus the value of the `Age` header in the response from the upstream.

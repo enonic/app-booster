@@ -20,6 +20,7 @@ import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.CacheMeta;
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.utils.MessageDigests;
+import com.enonic.app.booster.utils.Numbers;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
@@ -60,49 +61,40 @@ public class NodeCacheStore
             try
             {
                 node = nodeService.getById( nodeId );
-
-                final var headers = adaptHeaders( node.data().getSet( "headers" ) );
-
-                final String contentType = node.data().getString( "contentType" );
-                final Long contentLengthLong = node.data().getLong( "contentLength" );
-                if ( contentLengthLong == null )
+                final Integer contentLength = Numbers.safeLongToInteger(node.data().getLong( "contentLength" ), null);
+                if ( contentLength == null )
                 {
-                    LOG.warn( "Cached node does not have content length {}", nodeId );
+                    LOG.warn( "Cached response does not have valid content length {}", nodeId );
                     return null;
                 }
-                int status;
-                final Long statusLong = node.data().getLong( "status" );
-                if ( statusLong == null )
-                {
-                    status = 200;
-                }
-                else
-                {
-                    status = statusLong.intValue();
-                }
 
-                final int contentLength = contentLengthLong.intValue();
+                final var headers = adaptHeaders( node.data().getSet( "headers" ) );
+                final String contentType = node.data().getString( "contentType" );
+                final int status = Numbers.safeLongToInteger( node.data().getLong( "status" ), 200 );
                 final String etag = node.data().getString( "etag" );
                 final Instant cachedTime = node.data().getInstant( "cachedTime" );
                 final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
+                final Instant expireTime = node.data().getInstant( "expireTime" );
+                final Integer age = Numbers.safeLongToInteger( node.data().getLong( "age" ), null );
+
                 final ByteSource gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
                 if ( gzipBody == null )
                 {
-                    LOG.warn( "Cached node does not have response body attachment {}", nodeId );
+                    LOG.warn( "Cached response does not have response body attachment {}", nodeId );
                     return null;
                 }
 
                 // Might want to move brotli compression in background process. In this case brotli-compressed body would be optional
                 final ByteSource brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
 
-                return new CacheItem( status, contentType, headers, cachedTime, invalidatedTime, contentLength, etag,
+                return new CacheItem( status, contentType, headers, cachedTime, expireTime, age, invalidatedTime, contentLength, etag,
                                       ByteSupply.of( gzipBody ), brotliBody == null ? null : ByteSupply.of( brotliBody ) );
             }
             catch ( NodeNotFoundException e )
             {
                 // without extra query to Node API we cannot distinguish between not found and deleted node
                 // exception also can be caught in case of concurrent delete when we try to fetch binaries
-                LOG.debug( "Cached node not found {}", nodeId );
+                LOG.debug( "Cached response not found {}", nodeId );
                 return null;
             }
         } );
@@ -172,7 +164,8 @@ public class NodeCacheStore
         data.setLong( "status", (long) cacheItem.status() );
 
         data.setString( "contentType", cacheItem.contentType() );
-        data.setLong( "contentLength", (long) cacheItem.contentLength() );
+        data.setLong( "contentLength", Numbers.longValue( cacheItem.contentLength() ) );
+        data.setLong( "age", Numbers.longValue( cacheItem.age() ) );
         data.setString( "etag", cacheItem.etag() );
         data.setBinaryReference( "gzipData", GZIP_DATA_BINARY_REFERENCE );
         if ( withBrotli )
@@ -187,6 +180,7 @@ public class NodeCacheStore
         data.setString( "contentId", cacheMeta.contentId() );
         data.setString( "contentPath", cacheMeta.contentPath() );
         data.setInstant( "cachedTime", cacheItem.cachedTime() );
+        data.setInstant( "expireTime", cacheItem.expireTime() );
         final PropertySet headersPropertyTree = data.newSet();
         cacheItem.headers().forEach( headersPropertyTree::addStrings );
         data.setSet( "headers", headersPropertyTree );

@@ -1,6 +1,5 @@
 package com.enonic.app.booster;
 
-import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -9,9 +8,8 @@ import java.util.stream.Collectors;
 
 import com.enonic.app.booster.utils.SimpleCsvParser;
 
-public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableXBoosterCacheHeader,
-                                  boolean disableAgeHeader, int cacheSize, Set<String> appList, Map<String, String> overrideHeaders,
-                                  Set<String> cacheMimeTypes)
+public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableCacheStatusHeader, int cacheSize,
+                                  Set<String> appList, Map<String, String> overrideHeaders, Set<String> cacheMimeTypes)
 {
     public static BoosterConfigParsed parse( BoosterConfig config )
     {
@@ -21,7 +19,7 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
             .map( String::trim )
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
-        var disableXBoosterCacheHeader = config.disableXBoosterCacheHeader();
+        var disableCacheStatusHeader = config.disableCacheStatusHeader();
         var cacheSize = config.cacheSize();
         var appList = SimpleCsvParser.parseLine( config.appsInvalidateCacheOnStart() )
             .stream()
@@ -35,15 +33,13 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
                 .map( s -> s.split( ":", 2 ) )
                 .filter( a -> a.length == 2 )
                 .collect( Collectors.toUnmodifiableMap( a -> a[0].trim(), a -> a[1].trim() ) );
-        var disableAgeHeader = config.disableAgeHeader();
         var cacheMimeTypes = SimpleCsvParser.parseLine( config.cacheMimeTypes() )
             .stream()
             .map( String::trim )
             .map( s -> s.toLowerCase( Locale.ROOT ) )
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
-        return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableXBoosterCacheHeader, disableAgeHeader, cacheSize,
-                                        appList, overrideHeaders, cacheMimeTypes );
+        return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableCacheStatusHeader, cacheSize, appList, overrideHeaders,
+                                        cacheMimeTypes );
     }
-
 }
