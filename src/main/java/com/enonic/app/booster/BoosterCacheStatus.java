@@ -46,7 +46,7 @@ public record BoosterCacheStatus(String fwd, boolean isCollapsed, String detail)
 
     public static BoosterCacheStatus collapsed()
     {
-        return new BoosterCacheStatus( null, true, null );
+        return new BoosterCacheStatus( "miss", true, null );
     }
 
     public static BoosterCacheStatus hit()

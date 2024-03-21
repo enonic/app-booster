@@ -235,10 +235,6 @@ public class BoosterRequestFilter
 
     private CacheItem checkStale( final CacheItem stored )
     {
-        if ( stored == null )
-        {
-            return null;
-        }
         if ( stored.invalidatedTime() != null )
         {
             return null;

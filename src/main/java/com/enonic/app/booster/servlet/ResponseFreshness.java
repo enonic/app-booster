@@ -2,6 +2,7 @@ package com.enonic.app.booster.servlet;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -9,9 +10,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.enonic.app.booster.utils.Numbers;
 
-import static java.util.Objects.requireNonNullElseGet;
-
-public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore, boolean privateCache, boolean noCache, Instant time, Integer age)
+public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore, boolean privateCache, boolean noCache, Instant time,
+                                Integer age)
 {
     public Instant expiresTime()
     {
@@ -41,9 +41,16 @@ public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore
 
     public static ResponseFreshness build( final HttpServletResponse response )
     {
-        final Instant time = Optional.ofNullable( response.getHeader( "Date" ) )
-            .map( s -> DateTimeFormatter.RFC_1123_DATE_TIME.parse( s, Instant::from ) )
-            .orElseGet( Instant::now );
+        final Instant time = Optional.ofNullable( response.getHeader( "Date" ) ).map( s -> {
+            try
+            {
+                return DateTimeFormatter.RFC_1123_DATE_TIME.parse( s, Instant::from );
+            }
+            catch ( DateTimeParseException e )
+            {
+                return null;
+            }
+        } ).orElseGet( Instant::now );
 
         final Collection<String> cacheControls = response.getHeaders( "Cache-Control" );
         Integer maxAge = null;
@@ -52,7 +59,6 @@ public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore
         boolean noStore = false;
         boolean noCache = false;
         boolean privateCache = false;
-
 
         for ( String cacheControl : cacheControls )
         {
@@ -74,7 +80,7 @@ public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore
 
                     switch ( name )
                     {
-                        case "max-age" -> maxAge =  maxAge != null ? maxAge : Numbers.safeParseInteger( value );
+                        case "max-age" -> maxAge = maxAge != null ? maxAge : Numbers.safeParseInteger( value );
                         case "s-maxage" -> sMaxAge = sMaxAge != null ? sMaxAge : Numbers.safeParseInteger( value );
                     }
                 }
@@ -90,11 +96,11 @@ public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore
             }
         }
 
-            final Integer safe = Numbers.safeParseInteger( response.getHeader( "Age" ) );
-            if ( safe != null && safe > 0 )
-            {
-                age = safe;
-            }
+        final Integer safe = Numbers.safeParseInteger( response.getHeader( "Age" ) );
+        if ( safe != null && safe > 0 )
+        {
+            age = safe;
+        }
 
         return new ResponseFreshness( maxAge, sMaxAge, noStore, privateCache, noCache, time, age );
     }

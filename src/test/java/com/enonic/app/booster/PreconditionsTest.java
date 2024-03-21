@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
@@ -138,5 +139,19 @@ class PreconditionsTest
         assertTrue( preconditions.check( request ).bypass() );
     }
 
+    @Test
+    void no_license()
+    {
+        final Preconditions.LicensePrecondition noLicense = new Preconditions.LicensePrecondition( () -> false );
+        final Preconditions.Result result = noLicense.check( null );
+        assertTrue( result.bypass() );
+        assertEquals( "LICENSE",result.detail() );
+    }
 
+    @Test
+    void with_license()
+    {
+        final Preconditions.LicensePrecondition noLicense = new Preconditions.LicensePrecondition( () -> true );
+        assertFalse( noLicense.check( null ).bypass() );
+    }
 }
