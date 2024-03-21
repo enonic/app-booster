@@ -5,6 +5,7 @@
 This application caches rendered pages. It is useful for sites that have a lot of traffic and rendering is slow.
 
 Features:
+
 - Cache individual sites
 - Limit cache size and TTL
 - Control downstream cache via headers
@@ -154,7 +155,7 @@ Booster application supports request collapsing. It means that if there are mult
 Booster application supports 304 `Not Modified` responses.
 Cached response always contains an `ETag` header.If the request has `If-None-Match` header, the application checks if the cached `ETag` value matches the `If-None-Match` value. If the values match, the application returns 304 `Not Modified` response.
 
-=== max-age, s-maxage and Age
+=== Age, max-age and s-maxage
 
 Booster application supports `max-age` and `s-maxage` cache directives in upstream response `Cahe-Control` headers. The `max-age` directive is used to specify the maximum amount of time that a response can be cached. The `s-maxage` directive is used to specify the maximum amount of time that a shared cache can cache the response. The `s-maxage` directive is preferred over the `max-age` directive.
 Booster Application adds `Age` header to the response. The `Age` header is the time in seconds since the response was cached plus the value of the `Age` header in the response from the upstream.
