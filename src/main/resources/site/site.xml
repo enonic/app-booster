@@ -8,9 +8,11 @@
     <item-set name="patterns">
       <label>Patterns</label>
       <occurrences minimum="0" maximum="0"/>
+      <help-text>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</help-text>
       <items>
         <input name="pattern" type="TextLine">
           <label>Pattern</label>
+          <help-text>For example, "/section/.*" or "/api/.*\.json"</help-text>
         </input>
         <input name="invert" type="Checkbox">
           <label>Invert</label>
