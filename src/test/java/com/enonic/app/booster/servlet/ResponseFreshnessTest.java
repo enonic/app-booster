@@ -1,5 +1,6 @@
 package com.enonic.app.booster.servlet;
 
+import java.time.Instant;
 import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
@@ -23,8 +24,9 @@ class ResponseFreshnessTest
         when( response.getHeader( "Age" ) ).thenReturn( "10" );
         when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of( "max-age=3600" ) );
         final ResponseFreshness freshness = ResponseFreshness.build( response );
-        assertNotNull( freshness.expiresTime() );
-        assertEquals( 3591, freshness.expiresTime().getEpochSecond() );
+        final Instant expiresTime = freshness.expiresTime( null );
+        assertNotNull( expiresTime );
+        assertEquals( 3591, expiresTime.getEpochSecond() );
     }
 
     @Test
@@ -34,8 +36,21 @@ class ResponseFreshnessTest
         when( response.getHeader( "Date" ) ).thenReturn( "Thu, 01 Jan 1970 00:00:01 GMT" );
         when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of( "max-age=3600", "s-maxage=10" ) );
         final ResponseFreshness freshness = ResponseFreshness.build( response );
-        assertNotNull( freshness.expiresTime() );
-        assertEquals( 11, freshness.expiresTime().getEpochSecond() );
+        final Instant expiresTime = freshness.expiresTime( null );
+        assertNotNull( expiresTime );
+        assertEquals( 11, expiresTime.getEpochSecond() );
+    }
+
+    @Test
+    void expiresTime_fallback()
+    {
+        final HttpServletResponse response = mock( HttpServletResponse.class );
+        when( response.getHeader( "Date" ) ).thenReturn( "Thu, 01 Jan 1970 00:00:01 GMT" );
+        when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of(  ) );
+        final ResponseFreshness freshness = ResponseFreshness.build( response );
+        final Instant expiresTime = freshness.expiresTime( 10 );
+        assertNotNull( expiresTime );
+        assertEquals( 11, expiresTime.getEpochSecond() );
     }
 
     @Test

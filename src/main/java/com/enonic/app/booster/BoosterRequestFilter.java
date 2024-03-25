@@ -151,10 +151,13 @@ public class BoosterRequestFilter
 
                     final CacheMeta cacheMeta = createCacheMeta( request, requestUrl );
                     final ResponseFreshness freshness = cachingResponse.getFreshness();
+
+                    final BoosterSiteConfig config = BoosterSiteConfig.getSiteConfig( RequestAttributes.getPortalRequest( request ) );
+
                     cacheHolder[0] =
                         new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
-                                       freshness.time(), freshness.expiresTime(), freshness.age(), null, cachingResponse.getSize(),
-                                       cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
+                                       freshness.time(), freshness.expiresTime( config.defaultTTL ), freshness.age(), null,
+                                       cachingResponse.getSize(), cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
                                        cachingResponse.getCachedBrBody().orElse( null ) );
                     cacheStore.put( cacheKey, cacheHolder[0], cacheMeta );
                 } );

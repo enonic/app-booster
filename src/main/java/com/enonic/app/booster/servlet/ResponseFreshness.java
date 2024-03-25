@@ -13,7 +13,7 @@ import com.enonic.app.booster.utils.Numbers;
 public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore, boolean privateCache, boolean noCache, Instant time,
                                 Integer age)
 {
-    public Instant expiresTime()
+    public Instant expiresTime( final Integer fallbackTTL )
     {
         Integer effectiveMaxAge = null;
         if ( sMaxAge != null )
@@ -24,6 +24,11 @@ public record ResponseFreshness(Integer maxAge, Integer sMaxAge, boolean noStore
         {
             effectiveMaxAge = maxAge;
         }
+        else if ( fallbackTTL != null )
+        {
+            effectiveMaxAge = fallbackTTL;
+        }
+
         if ( effectiveMaxAge != null )
         {
             return time.plusSeconds( effectiveMaxAge - ( age == null ? 0 : age ) );
