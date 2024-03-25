@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -170,11 +171,12 @@ class BoosterRequestFilterTest
         var storeConditionsConstruction =
             mockConstruction( StoreConditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( true ) );
 
-        try (preconditionsConstruction; storeConditionsConstruction)
+        var siteConfigStatic = mockStatic( BoosterSiteConfig.class);
+        try (preconditionsConstruction; storeConditionsConstruction; siteConfigStatic)
         {
             when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
             when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( null );
-
+            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn( new BoosterSiteConfig( null, List.of() ) );
             doAnswer( invocation -> {
                 HttpServletResponse response = invocation.getArgument( 1, HttpServletResponse.class );
                 response.getOutputStream(); // simulate call, otherwise response won't be cacheable

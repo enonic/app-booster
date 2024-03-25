@@ -1,11 +1,8 @@
 package com.enonic.app.booster;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
@@ -18,22 +15,15 @@ import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.RequestAttributes;
 import com.enonic.app.booster.servlet.RequestUtils;
 import com.enonic.app.booster.utils.MimeTypes;
-import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.content.ContentPath;
-import com.enonic.xp.data.PropertySet;
-import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.site.Site;
-import com.enonic.xp.site.SiteConfig;
-import com.enonic.xp.site.SiteConfigs;
 
 public class StoreConditions
 {
     private static final Logger LOG = LoggerFactory.getLogger( StoreConditions.class );
-
-    private static final ApplicationKey APPLICATION_KEY = ApplicationKey.from( "com.enonic.app.booster" );
 
     List<BiFunction<HttpServletRequest, CachingResponse, Boolean>> extraStoreConditions;
 
@@ -148,40 +138,27 @@ public class StoreConditions
             this.excludeQueryParams = excludeQueryParams;
         }
 
-        private static final ConcurrentMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
-
         public boolean check( HttpServletRequest request, CachingResponse response )
         {
-            final SiteConfig siteConfig = getSiteConfig( request );
+            final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
+            final BoosterSiteConfig boosterSiteConfig = BoosterSiteConfig.getSiteConfig( portalRequest );
 
             // site must have booster application
-            if ( siteConfig == null )
+            if ( boosterSiteConfig == null )
             {
-                LOG.debug( "Not cacheable because site does not have site with booster application" );
+                LOG.debug( "Not cacheable because site booster app is not enabled for this site" );
                 return false;
             }
 
-            final PropertyTree boosterConfig = siteConfig.getConfig();
-            if ( Boolean.TRUE.equals( boosterConfig.getBoolean( "disable" ) ) )
-            {
-                LOG.debug( "Not cacheable because booster is disabled for the site" );
-                return false;
-            }
-
-            final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
-
-            final List<PropertySet> patterns = iterableToList( boosterConfig.getSets( "patterns" ) );
-
+            final List<BoosterSiteConfig.PathPattern> patterns = boosterSiteConfig.patterns;
             if (!patterns.isEmpty()) {
                 final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
-                for ( PropertySet patternNode : patterns )
+                for ( var pattern : patterns )
                 {
-                    String pattern = patternNode.getString( "pattern" );
-                    boolean invert = Boolean.TRUE.equals( patternNode.getBoolean( "invert" ) );
 
-                    if ( !matchesUrlPattern( pattern, invert, siteRelativePath, request.getParameterMap() ) )
+                    if ( !matchesUrlPattern( pattern.pattern, pattern.invert, siteRelativePath, request.getParameterMap() ) )
                     {
-                        LOG.debug( "Not cacheable because of pattern {}, invert {}", pattern, invert );
+                        LOG.debug( "Not cacheable because of pattern {}, invert {}", pattern.pattern, pattern.invert );
                         return false;
                     }
                 }
@@ -189,48 +166,11 @@ public class StoreConditions
             return true;
         }
 
-        private static <T> List<T> iterableToList( Iterable<T> iterable )
-        {
-            if ( iterable == null )
-            {
-                return List.of();
-            }
-            if ( iterable instanceof List )
-            {
-                return (List<T>) iterable;
-            }
-            List<T> list = new ArrayList<>();
-            iterable.forEach( list::add );
-            return list;
-        }
-
-        public SiteConfig getSiteConfig( final HttpServletRequest request )
-        {
-            final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
-
-            if ( portalRequest == null )
-            {
-                return null;
-            }
-            final Site site = portalRequest.getSite();
-            final SiteConfigs siteConfigs;
-            if ( site != null )
-            {
-                siteConfigs = site.getSiteConfigs();
-            }
-            else
-            {
-                return null;
-            }
-
-            return siteConfigs.get( APPLICATION_KEY );
-        }
-
-        private boolean matchesUrlPattern( final String pattern, boolean invert, final String relativePath,
+        private boolean matchesUrlPattern( final Pattern pattern, boolean invert, final String relativePath,
                                            final Map<String, String[]> params )
         {
-            final boolean patternHasQueryParameters = pattern.contains( "\\?" );
-            final boolean patternMatches = PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile )
+            final boolean patternHasQueryParameters = pattern.pattern().contains( "\\?" );
+            final boolean patternMatches = pattern
                 .matcher( patternHasQueryParameters
                               ? relativePath + "?" + RequestUtils.normalizedQueryParams( params, excludeQueryParams )
                               : relativePath )

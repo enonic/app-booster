@@ -4,7 +4,13 @@
       <label>Disable Booster</label>
       <default>false</default>
     </input>
-
+    <input name="defaultTTL" type="TextLine">
+          <label>Default TTL in seconds</label>
+      <help-text>Default TTL when max-age is not specified.</help-text>
+      <config>
+        <regexp>\b\d{1,8}\b</regexp>
+      </config>
+    </input>
     <item-set name="patterns">
       <label>Patterns</label>
       <occurrences minimum="0" maximum="0"/>
