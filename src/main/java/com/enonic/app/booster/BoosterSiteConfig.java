@@ -11,6 +11,7 @@ import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.site.Site;
+import com.enonic.xp.site.SiteConfig;
 import com.enonic.xp.site.SiteConfigs;
 
 public final class BoosterSiteConfig
@@ -46,7 +47,13 @@ public final class BoosterSiteConfig
             return null;
         }
 
-        final PropertyTree boosterConfig = siteConfigs.get( APPLICATION_KEY ).getConfig();
+        final SiteConfig siteConfig = siteConfigs.get( APPLICATION_KEY );
+        if ( siteConfig == null )
+        {
+            return null;
+        }
+
+        final PropertyTree boosterConfig = siteConfig.getConfig();
 
         final Boolean disabled = boosterConfig.getBoolean( "disable" );
         if ( Boolean.TRUE.equals( disabled ) )
