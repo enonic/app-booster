@@ -67,7 +67,7 @@ const renderWidgetView = (req) => {
         size = nodeCleanerBean.getProjectCacheSize(project);
 
         if (contentId && !isAppEnabledOnSite(contentId)) {
-            hint = 'Booster app is not added to this site. Responses will not be cached';
+            hint = 'Booster app is not added to this site';
         }
     }
 
