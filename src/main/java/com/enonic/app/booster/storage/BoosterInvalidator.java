@@ -22,6 +22,7 @@ import com.enonic.app.booster.BoosterConfigParsed;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
+import com.enonic.xp.index.IndexService;
 import com.enonic.xp.project.ProjectConstants;
 import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.repository.RepositoryId;
@@ -34,6 +35,8 @@ public class BoosterInvalidator
 
     private final ScheduledExecutorService executorService;
 
+    private final IndexService indexService;
+
     private final BoosterTasksFacade boosterTasksFacade;
 
     private volatile BoosterConfigParsed config;
@@ -41,15 +44,17 @@ public class BoosterInvalidator
     private volatile Set<ProjectName> projects = new HashSet<>();
 
     @Activate
-    public BoosterInvalidator( @Reference final BoosterTasksFacade boosterTasksFacade )
+    public BoosterInvalidator( @Reference final BoosterTasksFacade boosterTasksFacade, @Reference final IndexService indexService )
     {
-        this( boosterTasksFacade, Executors.newSingleThreadScheduledExecutor() );
+        this( boosterTasksFacade, indexService, Executors.newSingleThreadScheduledExecutor() );
     }
 
-    BoosterInvalidator( final BoosterTasksFacade boosterTasksFacade, final ScheduledExecutorService executorService )
+    BoosterInvalidator( final BoosterTasksFacade boosterTasksFacade, final IndexService indexService,
+                        final ScheduledExecutorService executorService )
     {
         this.boosterTasksFacade = boosterTasksFacade;
         this.executorService = executorService;
+        this.indexService = indexService;
         this.executorService.scheduleWithFixedDelay( () -> boosterTasksFacade.invalidateProjects( exchange() ), 10, 10, TimeUnit.SECONDS );
     }
 
@@ -73,13 +78,16 @@ public class BoosterInvalidator
 
         if ( type.equals( "application.cluster" ) && event.getData().get( "eventType" ).equals( "installed" ) )
         {
-            if ( config.appsForceInvalidateOnInstall().contains( event.getData().get( "key" ) ) )
+            if ( indexService.isMaster() )
             {
-                boosterTasksFacade.invalidateAll();
-            }
-            else
-            {
-                boosterTasksFacade.invalidateApp( ApplicationKey.from( (String) event.getData().get( "key" ) ) );
+                if ( config.appsForceInvalidateOnInstall().contains( event.getData().get( "key" ) ) )
+                {
+                    boosterTasksFacade.invalidateAll();
+                }
+                else
+                {
+                    boosterTasksFacade.invalidateApp( ApplicationKey.from( (String) event.getData().get( "key" ) ) );
+                }
             }
             return;
         }

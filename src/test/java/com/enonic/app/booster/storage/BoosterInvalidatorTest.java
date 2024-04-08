@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.event.Event;
+import com.enonic.xp.index.IndexService;
 import com.enonic.xp.project.ProjectName;
 
 import static org.mockito.ArgumentCaptor.captor;
@@ -31,13 +32,17 @@ class BoosterInvalidatorTest
     BoosterTasksFacade boosterTasksFacade;
 
     @Mock
+    IndexService indexService;
+
+    @Mock
     ScheduledExecutorService scheduledExecutorService;
 
 
     @Test
     void application_installed_event_invalidate_all()
     {
-        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade );
+        when( indexService.isMaster() ).thenReturn( true );
+        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, indexService );
         final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( boosterConfig.appsForceInvalidateOnInstall() ).thenReturn( "somekey" );
         boosterInvalidator.activate( boosterConfig );
@@ -49,9 +54,24 @@ class BoosterInvalidatorTest
     }
 
     @Test
+    void application_installed_not_master()
+    {
+        when( indexService.isMaster() ).thenReturn( false );
+        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, indexService );
+        final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( boosterConfig.appsForceInvalidateOnInstall() ).thenReturn( "somekey" );
+        boosterInvalidator.activate( boosterConfig );
+
+        boosterInvalidator.onEvent(
+            Event.create( "application.cluster" ).value( "eventType", "installed" ).value( "key", "somekey" ).build() );
+
+        verifyNoInteractions( boosterTasksFacade );
+    }
+    @Test
     void application_installed_event_invalidate_app()
     {
-        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade );
+        when( indexService.isMaster() ).thenReturn( true );
+        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, indexService );
         final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( boosterConfig.appsForceInvalidateOnInstall() ).thenReturn( "someotherkey" );
         boosterInvalidator.activate( boosterConfig );
@@ -63,22 +83,9 @@ class BoosterInvalidatorTest
     }
 
     @Test
-    void application_started_event_not_configured()
-    {
-        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade );
-        final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
-        boosterInvalidator.activate( boosterConfig );
-
-        boosterInvalidator.onEvent(
-            Event.create( "application" ).value( "eventType", "STARTED" ).value( "applicationKey", "somekey" ).build() );
-
-        verifyNoInteractions( boosterTasksFacade );
-    }
-
-    @Test
     void repository_events_invalidate_projects()
     {
-        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, scheduledExecutorService );
+        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, indexService, scheduledExecutorService );
         final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         boosterInvalidator.activate( boosterConfig );
 
@@ -96,7 +103,7 @@ class BoosterInvalidatorTest
     @Test
     void node_events_invalidate_projects()
     {
-        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, scheduledExecutorService );
+        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade, indexService, scheduledExecutorService );
         final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         boosterInvalidator.activate( boosterConfig );
 
