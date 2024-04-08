@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -34,6 +35,7 @@ public class BoosterProjectMatchers
 
     private final ProjectService projectService;
 
+    @Activate
     public BoosterProjectMatchers( @Reference final NodeService nodeService, @Reference final ProjectService projectService )
     {
         this.nodeService = nodeService;
