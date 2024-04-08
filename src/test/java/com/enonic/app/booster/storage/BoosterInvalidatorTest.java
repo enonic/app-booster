@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.enonic.app.booster.BoosterConfig;
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.project.ProjectName;
 
@@ -34,18 +35,31 @@ class BoosterInvalidatorTest
 
 
     @Test
-    void application_started_event_purge_all()
+    void application_installed_event_invalidate_all()
     {
         BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade );
         final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
-        when( boosterConfig.appsInvalidateCacheOnStart() ).thenReturn( "somekey" );
+        when( boosterConfig.appsForceInvalidateOnInstall() ).thenReturn( "somekey" );
         boosterInvalidator.activate( boosterConfig );
 
         boosterInvalidator.onEvent(
-            Event.create( "application" ).value( "eventType", "STARTED" ).value( "applicationKey", "somekey" ).build() );
+            Event.create( "application.cluster" ).value( "eventType", "installed" ).value( "key", "somekey" ).build() );
 
+        verify( boosterTasksFacade ).invalidateAll();
+    }
 
-        verify( boosterTasksFacade ).purgeAll();
+    @Test
+    void application_installed_event_invalidate_app()
+    {
+        BoosterInvalidator boosterInvalidator = new BoosterInvalidator( boosterTasksFacade );
+        final BoosterConfig boosterConfig = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( boosterConfig.appsForceInvalidateOnInstall() ).thenReturn( "someotherkey" );
+        boosterInvalidator.activate( boosterConfig );
+
+        boosterInvalidator.onEvent(
+            Event.create( "application.cluster" ).value( "eventType", "installed" ).value( "key", "somekey" ).build() );
+
+        verify( boosterTasksFacade ).invalidateApp( ApplicationKey.from( "somekey" ));
     }
 
     @Test
@@ -76,7 +90,7 @@ class BoosterInvalidatorTest
         verify( scheduledExecutorService ).scheduleWithFixedDelay( captor.capture(), eq( 10L ), eq( 10L ), eq( TimeUnit.SECONDS ) );
 
         captor.getValue().run();
-        verify( boosterTasksFacade ).invalidate( eq( Set.of( ProjectName.from( "repo1" ), ProjectName.from( "repo2" ) ) ) );
+        verify( boosterTasksFacade ).invalidateProjects( eq( Set.of( ProjectName.from( "repo1" ), ProjectName.from( "repo2" ) ) ) );
     }
 
     @Test
@@ -97,6 +111,6 @@ class BoosterInvalidatorTest
         verify( scheduledExecutorService ).scheduleWithFixedDelay( captor.capture(), eq( 10L ), eq( 10L ), eq( TimeUnit.SECONDS ) );
 
         captor.getValue().run();
-        verify( boosterTasksFacade ).invalidate( eq( Set.of( ProjectName.from( "repo1" ), ProjectName.from( "repo2" ) ) ) );
+        verify( boosterTasksFacade ).invalidateProjects( eq( Set.of( ProjectName.from( "repo1" ), ProjectName.from( "repo2" ) ) ) );
     }
 }

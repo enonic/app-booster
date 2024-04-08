@@ -27,9 +27,10 @@ Features:
 
 - `cacheTtl`: Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).
 - `cacheSize`: Total number of items in the cache. The default value is 10000.
-- `appsInvalidateCacheOnStart`: Comma-separated list of applications that should invalidate the cache on their start. By default, no applications are listed.
+- `appsForceInvalidateOnInstall`: Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.
 - `excludeQueryParams`: Comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...)
-- `disableXBoosterCacheHeader`: If set to `true` X-Booster-Cache header is not sent in the response. The default value is `false`.
+- `excludeQueryParamsExtra`: Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default `excludeQueryParams`. By default, no extra query parameters are listed.
+- `disableCacheStatusHeader`: If set to `true` `Cache-Status` header is not sent in the response. The default value is `false`.
 - `overrideHeaders`: Comma-separated list of instructions that override headers. By default, no instructions are listed.
 - `cacheMimeTypes`: Comma-separated list of MIME types that should be cached. The default value is `text/html, text/xhtml`.
 

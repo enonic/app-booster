@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
 import com.enonic.xp.project.ProjectConstants;
@@ -49,7 +50,7 @@ public class BoosterInvalidator
     {
         this.boosterTasksFacade = boosterTasksFacade;
         this.executorService = executorService;
-        this.executorService.scheduleWithFixedDelay( () -> boosterTasksFacade.invalidate( exchange() ), 10, 10, TimeUnit.SECONDS );
+        this.executorService.scheduleWithFixedDelay( () -> boosterTasksFacade.invalidateProjects( exchange() ), 10, 10, TimeUnit.SECONDS );
     }
 
     @Deactivate
@@ -68,17 +69,23 @@ public class BoosterInvalidator
     @Override
     public void onEvent( final Event event )
     {
-        if ( !event.isLocalOrigin() )
+        final String type = event.getType();
+
+        if ( type.equals( "application.cluster" ) && event.getData().get( "eventType" ).equals( "installed" ) )
         {
+            if ( config.appsForceInvalidateOnInstall().contains( event.getData().get( "key" ) ) )
+            {
+                boosterTasksFacade.invalidateAll();
+            }
+            else
+            {
+                boosterTasksFacade.invalidateApp( ApplicationKey.from( (String) event.getData().get( "key" ) ) );
+            }
             return;
         }
 
-        final String type = event.getType();
-
-        if ( type.equals( "application" ) && event.getData().get( "eventType" ).equals( "STARTED" ) &&
-            config.appList().contains( event.getData().get( "applicationKey" ) ) )
+        if ( !event.isLocalOrigin() )
         {
-            boosterTasksFacade.purgeAll();
             return;
         }
 

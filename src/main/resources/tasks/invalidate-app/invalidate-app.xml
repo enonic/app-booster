@@ -1,0 +1,8 @@
+<task>
+  <description>Invalidate Booster Cache by App</description>
+  <form>
+    <input type="TextLine" name="app">
+      <label>Application</label>
+    </input>
+  </form>
+</task>

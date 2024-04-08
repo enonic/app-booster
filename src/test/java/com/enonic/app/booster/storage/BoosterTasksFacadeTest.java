@@ -34,7 +34,7 @@ class BoosterTasksFacadeTest
         BoosterTasksFacade boosterTasksFacade = new BoosterTasksFacade( taskService );
         boosterTasksFacade.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        boosterTasksFacade.invalidate( List.of( ProjectName.from( "proj1" ), ProjectName.from( "proj2" ) ) );
+        boosterTasksFacade.invalidateProjects( List.of( ProjectName.from( "proj1" ), ProjectName.from( "proj2" ) ) );
 
         final ArgumentCaptor<SubmitTaskParams> captor = captor();
         verify( taskService ).submitTask( captor.capture() );

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.project.ProjectName;
@@ -43,7 +44,7 @@ public class BoosterTasksFacade
         this.config = BoosterConfigParsed.parse( config );
     }
 
-    public TaskId invalidate( Collection<ProjectName> projects )
+    public TaskId invalidateProjects( Collection<ProjectName> projects )
     {
         return logError( () -> {
             if ( projects.isEmpty() )
@@ -59,6 +60,31 @@ public class BoosterTasksFacade
             return taskId;
         } );
     }
+
+    public TaskId invalidateApp( final ApplicationKey app )
+    {
+        return logError( () -> {
+            final PropertyTree data = new PropertyTree();
+            data.addString( "app", app.toString() );
+            final TaskId taskId = taskService.submitTask(
+                SubmitTaskParams.create().descriptorKey( DescriptorKey.from( "com.enonic.app.booster:invalidate-app" ) ).data( data ).build() );
+            LOG.debug( "Cleanup by app task submitted {}", taskId );
+            return taskId;
+        } );
+    }
+
+
+    public TaskId invalidateAll()
+    {
+        return logError( () -> {
+            final PropertyTree data = new PropertyTree();
+            final TaskId taskId = taskService.submitTask(
+                SubmitTaskParams.create().descriptorKey( DescriptorKey.from( "com.enonic.app.booster:invalidate" ) ).data( data ).build() );
+            LOG.debug( "Cleanup all task submitted {}", taskId );
+            return taskId;
+        } );
+    }
+
 
     public TaskId enforceLimit()
     {

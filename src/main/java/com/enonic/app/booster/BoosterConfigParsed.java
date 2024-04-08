@@ -5,27 +5,31 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.enonic.app.booster.utils.SimpleCsvParser;
 
 public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableCacheStatusHeader, int cacheSize,
-                                  Set<String> appList, Map<String, String> overrideHeaders, Set<String> cacheMimeTypes)
+                                  Set<String> appsForceInvalidateOnInstall, Map<String, String> overrideHeaders, Set<String> cacheMimeTypes)
 {
     public static BoosterConfigParsed parse( BoosterConfig config )
     {
         var cacheTtlSeconds = config.cacheTtl();
-        var excludeQueryParams = SimpleCsvParser.parseLine( config.excludeQueryParams() )
-            .stream()
-            .map( String::trim )
-            .filter( Predicate.not( String::isEmpty ) )
-            .collect( Collectors.toUnmodifiableSet() );
-        var disableCacheStatusHeader = config.disableCacheStatusHeader();
         var cacheSize = config.cacheSize();
-        var appList = SimpleCsvParser.parseLine( config.appsInvalidateCacheOnStart() )
+        var disableCacheStatusHeader = config.disableCacheStatusHeader();
+
+        var excludeQueryParams = Stream.concat( SimpleCsvParser.parseLine( config.excludeQueryParams() ).stream(),
+                                                SimpleCsvParser.parseLine( config.extraExcludeQueryParams() ).stream() )
+            .map( String::trim )
+            .filter( Predicate.not( String::isEmpty ) )
+            .collect( Collectors.toUnmodifiableSet() );
+
+        var appsForceInvalidateOnInstall = SimpleCsvParser.parseLine( config.appsForceInvalidateOnInstall() )
             .stream()
             .map( String::trim )
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
+
         var overrideHeaders = config.overrideHeaders() == null
             ? Map.<String, String>of()
             : SimpleCsvParser.parseLine( config.overrideHeaders() )
@@ -33,13 +37,15 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
                 .map( s -> s.split( ":", 2 ) )
                 .filter( a -> a.length == 2 )
                 .collect( Collectors.toUnmodifiableMap( a -> a[0].trim(), a -> a[1].trim() ) );
+
         var cacheMimeTypes = SimpleCsvParser.parseLine( config.cacheMimeTypes() )
             .stream()
             .map( String::trim )
             .map( s -> s.toLowerCase( Locale.ROOT ) )
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
-        return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableCacheStatusHeader, cacheSize, appList, overrideHeaders,
+
+        return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableCacheStatusHeader, cacheSize, appsForceInvalidateOnInstall, overrideHeaders,
                                         cacheMimeTypes );
     }
 }

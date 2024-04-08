@@ -1,7 +1,5 @@
 package com.enonic.app.booster.storage;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +24,6 @@ import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
-import com.enonic.xp.project.ProjectService;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.LogicalExpr;
 import com.enonic.xp.query.filter.ValueFilter;
@@ -40,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +48,7 @@ class NodeCleanerBeanTest
     NodeService nodeService;
 
     @Mock
-    ProjectService projectService;
+    BoosterProjectMatchers boosterProjectMatchers;
 
     @Mock
     BoosterConfigService boosterConfigService;
@@ -62,8 +60,8 @@ class NodeCleanerBeanTest
     {
         final BeanContext beanContext = mock( BeanContext.class );
         when( beanContext.getService( NodeService.class ) ).thenReturn( () -> nodeService );
-        when( beanContext.getService( ProjectService.class ) ).thenReturn( () -> projectService );
-        when( beanContext.getService( BoosterConfigService.class ) ).thenReturn( () -> boosterConfigService);
+        when( beanContext.getService( BoosterProjectMatchers.class ) ).thenReturn( () -> boosterProjectMatchers );
+        when( beanContext.getService( BoosterConfigService.class ) ).thenReturn( () -> boosterConfigService );
         nodeCleanerBean = new NodeCleanerBean();
         nodeCleanerBean.initialize( beanContext );
     }
@@ -74,35 +72,11 @@ class NodeCleanerBeanTest
         verifyBasicInvalidate( nodeCleanerBean::invalidateAll );
     }
 
-    private NodeQuery verifyBasicInvalidate( Runnable runnable )
+    @Test
+    void invalidateScheduled()
     {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .addNodeHit( NodeHit.create()
-                                                                                                   .nodeId( NodeId.from( "node1" ) )
-                                                                                                   .build() )
-                                                                                  .hits( 1 )
-                                                                                  .totalHits( 1 )
-                                                                                  .build() )
-            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() );
-
-        runnable.run();
-
-        final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
-        final ArgumentCaptor<UpdateNodeParams> updateCaptor = captor();
-        verify( nodeService, times( 2 ) ).findByQuery( findByQueryCaptor.capture() );
-        final NodeQuery nodeQuery = findByQueryCaptor.getValue();
-        assertEquals( "/cache", nodeQuery.getParent().toString() );
-        assertEquals( 10000, nodeQuery.getSize() );
-
-        verify( nodeService ).update( updateCaptor.capture() );
-        final UpdateNodeParams updateNodeParams = updateCaptor.getValue();
-        assertEquals( "node1", updateNodeParams.getId().toString() );
-
-        Node node = Node.create().data( new PropertyTree() ).build();
-        final EditableNode toBeEdited = new EditableNode( node );
-        updateNodeParams.getEditor().edit( toBeEdited );
-        assertNotNull( toBeEdited.data.getInstant( "invalidatedTime" ) );
-        return nodeQuery;
+        when( boosterProjectMatchers.findScheduledForInvalidation() ).thenReturn( List.of( "project1" ) );
+        verifyBasicInvalidate( nodeCleanerBean::invalidateScheduled );
     }
 
     @Test
@@ -114,6 +88,21 @@ class NodeCleanerBeanTest
                 assertThat( filter.getFieldName() ).isEqualTo( "project" );
                 assertThat( filter.getValues() ).map( Value::toString ).containsExactlyInAnyOrder( "project1", "project2" );
             } );
+    }
+
+    @Test
+    void invalidateProjects_empty()
+    {
+        nodeCleanerBean.invalidateProjects( List.of() );
+        verifyNoInteractions( nodeService );
+    }
+
+    @Test
+    void invalidateWithApp()
+    {
+        when( boosterProjectMatchers.findByAppForInvalidation( "app1" ) ).thenReturn( List.of( "project1" ) );
+
+        verifyBasicInvalidate( () -> nodeCleanerBean.invalidateWithApp( "app1" ) );
     }
 
     @Test
@@ -212,8 +201,7 @@ class NodeCleanerBeanTest
     {
         final BoosterConfig configMock = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( configMock.cacheSize() ).thenReturn( 1 );
-        final BoosterConfigParsed config =
-            BoosterConfigParsed.parse( configMock );
+        final BoosterConfigParsed config = BoosterConfigParsed.parse( configMock );
 
         when( boosterConfigService.getConfig() ).thenReturn( config );
 
@@ -320,29 +308,34 @@ class NodeCleanerBeanTest
         assertEquals( 2, siteCacheSize );
     }
 
-    @Test
-    void findScheduledForInvalidation()
+    private NodeQuery verifyBasicInvalidate( Runnable runnable )
     {
-        final PropertyTree data = new PropertyTree();
-        data.setInstant( "lastChecked", Instant.now().minus( 1, ChronoUnit.DAYS ) );
-        when( nodeService.getByPath( any() ) ).thenReturn(
-            Node.create().id( NodeId.from( "someId" ) ).parentPath( BoosterContext.SCHEDULED_PARENT_NODE ).data( data ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
+                                                                                  .addNodeHit( NodeHit.create()
+                                                                                                   .nodeId( NodeId.from( "node1" ) )
+                                                                                                   .build() )
+                                                                                  .hits( 1 )
+                                                                                  .totalHits( 1 )
+                                                                                  .build() )
+            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() );
 
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
-                FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() )
-            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 2 ).build() );
+        runnable.run();
 
-        final List<String> scheduled = nodeCleanerBean.findScheduledForInvalidation( List.of( "project1", "project2" ) );
+        final ArgumentCaptor<NodeQuery> findByQueryCaptor = captor();
+        final ArgumentCaptor<UpdateNodeParams> updateCaptor = captor();
+        verify( nodeService, times( 2 ) ).findByQuery( findByQueryCaptor.capture() );
+        final NodeQuery nodeQuery = findByQueryCaptor.getValue();
+        assertEquals( "/cache", nodeQuery.getParent().toString() );
+        assertEquals( 10000, nodeQuery.getSize() );
 
-        assertThat( scheduled ).containsExactly( "project2" );
+        verify( nodeService ).update( updateCaptor.capture() );
+        final UpdateNodeParams updateNodeParams = updateCaptor.getValue();
+        assertEquals( "node1", updateNodeParams.getId().toString() );
 
-        verify( nodeService ).getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
-
-        verify( nodeService, times( 2 ) ).findByQuery( any( NodeQuery.class ) );
-
-        final ArgumentCaptor<UpdateNodeParams> captor = captor();
-        verify( nodeService).update( captor.capture() );
-        assertEquals( "someId", captor.getValue().getId().toString() );
+        Node node = Node.create().data( new PropertyTree() ).build();
+        final EditableNode toBeEdited = new EditableNode( node );
+        updateNodeParams.getEditor().edit( toBeEdited );
+        assertNotNull( toBeEdited.data.getInstant( "invalidatedTime" ) );
+        return nodeQuery;
     }
-
 }
