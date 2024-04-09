@@ -718,7 +718,7 @@ Only Project Owners and System Administrators have access to the widget.</p>
 <h2 id="query_parameters"><a class="link" href="#query_parameters">Query Parameters</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The <code>excludeQueryParams</code> configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;).</p>
+<p>By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The <code>excludeQueryParams</code> configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParamsExtra</code> configuration property.</p>
 </div>
 </div>
 </div>
@@ -802,7 +802,7 @@ Booster Application adds <code>Age</code> header to the response. The <code>Age<
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-09 13:19:32 UTC
+Last updated 2024-04-09 13:25:36 UTC
 </div>
 </div>
 </body>
