@@ -117,7 +117,7 @@ overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"
 
 == Query Parameters
 
-By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The `excludeQueryParams` configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...).
+By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The `excludeQueryParams` configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the `excludeQueryParamsExtra` configuration property.
 
 == MIME Types
 
