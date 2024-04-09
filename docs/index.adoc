@@ -1,4 +1,4 @@
-= Booster Application
+= Booster
 
 == Introduction
 
@@ -20,6 +20,24 @@ Features:
 - Cluster shared cache
 - 304 Not Modified support
 - max-age and s-maxage support
+
+== Installation
+
+Booster application is available in https://market.enonic.com/applications[Enonic Market].
+
+To install it, open the Applications XP tool and click on the `Install` button. Then select "Booster" from the list.
+
+=== License
+
+A license is required to use this application. Once installed, application is capable to cache responses.
+
+You can https://enonic.com/contact-us[contact Enonic] to request a license.
+The license can be installed in Content Studio widget.
+
+== Dashboard
+
+The dashboard shows a summary of the current status for the running server.
+This includes some details of the current node, the status of the cluster, and also some graphs with system metrics.
 
 == Configuration
 
