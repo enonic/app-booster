@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.22">
-<title>Booster Application</title>
+<title>Booster</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,11 +437,17 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-right">
 <div id="header">
-<h1>Booster Application</h1>
+<h1>Booster</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#introduction">Introduction</a></li>
+<li><a href="#installation">Installation</a>
+<ul class="sectlevel2">
+<li><a href="#license">License</a></li>
+</ul>
+</li>
+<li><a href="#dashboard">Dashboard</a></li>
 <li><a href="#configuration">Configuration</a></li>
 <li><a href="#cache_request_conditions">Cache Request Conditions</a></li>
 <li><a href="#cache_response_conditions">Cache Response Conditions</a></li>
@@ -521,6 +527,36 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>max-age and s-maxage support</p>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="installation"><a class="link" href="#installation">Installation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Booster application is available in <a href="https://market.enonic.com/applications">Enonic Market</a>.</p>
+</div>
+<div class="paragraph">
+<p>To install it, open the Applications XP tool and click on the <code>Install</code> button. Then select "Booster" from the list.</p>
+</div>
+<div class="sect2">
+<h3 id="license"><a class="link" href="#license">License</a></h3>
+<div class="paragraph">
+<p>A license is required to use this application. Once installed, application is capable to cache responses.</p>
+</div>
+<div class="paragraph">
+<p>You can <a href="https://enonic.com/contact-us">contact Enonic</a> to request a license.
+The license can be installed in Content Studio widget.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="dashboard"><a class="link" href="#dashboard">Dashboard</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The dashboard shows a summary of the current status for the running server.
+This includes some details of the current node, the status of the cluster, and also some graphs with system metrics.</p>
 </div>
 </div>
 </div>
@@ -802,7 +838,7 @@ Booster Application adds <code>Age</code> header to the response. The <code>Age<
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-09 14:42:32 UTC
+Last updated 2024-04-09 14:47:18 UTC
 </div>
 </div>
 </body>
