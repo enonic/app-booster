@@ -159,5 +159,5 @@ Cached response always contains an `ETag` header.If the request has `If-None-Mat
 
 === Age, max-age and s-maxage
 
-Booster application supports `max-age` and `s-maxage` cache directives in upstream response `Cahe-Control` headers. The `max-age` directive is used to specify the maximum amount of time that a response can be cached. The `s-maxage` directive is used to specify the maximum amount of time that a shared cache can cache the response. The `s-maxage` directive is preferred over the `max-age` directive.
+Booster application supports `max-age` and `s-maxage` cache directives in upstream response `Cahe-Control` headers. The `max-age` and `s-maxage` directives are used to specify the maximum amount of time that a response can be cached. The `s-maxage` directive is preferred over the `max-age` directive, when both are present in `Cahe-Control`.
 Booster Application adds `Age` header to the response. The `Age` header is the time in seconds since the response was cached plus the value of the `Age` header in the response from the upstream.
