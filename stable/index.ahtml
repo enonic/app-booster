@@ -572,10 +572,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>It is an HTTP or HTTPS request.</p>
 </li>
 <li>
-<p>It is a GET request. (Note, that HEAD requests can return cached response headers.)</p>
+<p>It is a <code>GET</code> request. (Note, that <code>HEAD</code> requests can return cached response headers.)</p>
 </li>
 <li>
-<p>It does not contain an Authorization header.</p>
+<p>It does not contain an <code>Authorization</code> header.</p>
 </li>
 <li>
 <p>It does not correspond to a valid session.</p>
@@ -590,7 +590,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="paragraph">
 <p>If the request not cacheable Booster application will not intercept the request.
-If the request is cacheable, Booster application will check if cached response is available, not stale, not invalidated and return it.</p>
+If the request is cacheable, Booster application will check if cached response is available, not stale and return it.</p>
 </div>
 </div>
 </div>
@@ -603,13 +603,13 @@ If the request is cacheable, Booster application will check if cached response i
 <div class="ulist">
 <ul>
 <li>
-<p>It is a 200 OK response.</p>
+<p>It is a response with 200 OK status.</p>
 </li>
 <li>
 <p>The response does not contain a <code>Cache-Control</code> header with a <code>private</code>, <code>no-cache</code> or <code>no-store</code> directive.</p>
 </li>
 <li>
-<p>The response does not contain a <code>Expires</code> header. (And value of <code>Expires</code> header, even in future)</p>
+<p>The response does not contain a <code>Expires</code> header. (Note: Any value of <code>Expires</code> header)</p>
 </li>
 <li>
 <p>The response does not contain a <code>Set-Cookie</code> header.</p>
@@ -621,7 +621,7 @@ If the request is cacheable, Booster application will check if cached response i
 <p>The response does not contain a <code>Vary</code> header.</p>
 </li>
 <li>
-<p>The response MIME type (from <code>Cache-Control</code> header) is in the <code>cacheMimeTypes</code> configuration property.</p>
+<p>The response MIME type (from <code>Content-Type</code> header) is in the <code>cacheMimeTypes</code> configuration property. (By default <code>text/html</code> and <code>text/xhtml</code>)</p>
 </li>
 <li>
 <p>The response is processed by a Site</p>
@@ -660,7 +660,8 @@ If the request is cacheable, Booster application will check if cached response i
 <div class="sect2">
 <h3 id="manual_cache_invalidation"><a class="link" href="#manual_cache_invalidation">Manual Cache Invalidation</a></h3>
 <div class="paragraph">
-<p>The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.</p>
+<p>The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.
+Only Project Owners and System Administrators have access to the widget.</p>
 </div>
 </div>
 <div class="sect2">
@@ -801,7 +802,7 @@ Booster Application adds <code>Age</code> header to the response. The <code>Age<
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-09 08:31:06 UTC
+Last updated 2024-04-09 13:19:32 UTC
 </div>
 </div>
 </body>
