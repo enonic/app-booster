@@ -793,7 +793,7 @@ Cached response always contains an <code>ETag</code> header.If the request has <
 <div class="sect2">
 <h3 id="age_max_age_and_s_maxage"><a class="link" href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></h3>
 <div class="paragraph">
-<p>Booster application supports <code>max-age</code> and <code>s-maxage</code> cache directives in upstream response <code>Cahe-Control</code> headers. The <code>max-age</code> directive is used to specify the maximum amount of time that a response can be cached. The <code>s-maxage</code> directive is used to specify the maximum amount of time that a shared cache can cache the response. The <code>s-maxage</code> directive is preferred over the <code>max-age</code> directive.
+<p>Booster application supports <code>max-age</code> and <code>s-maxage</code> cache directives in upstream response <code>Cahe-Control</code> headers. The <code>max-age</code> and <code>s-maxage</code> directives are used to specify the maximum amount of time that a response can be cached. The <code>s-maxage</code> directive is preferred over the <code>max-age</code> directive, when both are present in <code>Cahe-Control</code>.
 Booster Application adds <code>Age</code> header to the response. The <code>Age</code> header is the time in seconds since the response was cached plus the value of the <code>Age</code> header in the response from the upstream.</p>
 </div>
 </div>
@@ -802,7 +802,7 @@ Booster Application adds <code>Age</code> header to the response. The <code>Age<
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-09 14:41:18 UTC
+Last updated 2024-04-09 14:42:32 UTC
 </div>
 </div>
 </body>
