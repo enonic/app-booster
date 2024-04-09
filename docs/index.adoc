@@ -39,26 +39,26 @@ Features:
 A request is considered cacheable if the following conditions are met:
 
 - It is an HTTP or HTTPS request.
-- It is a GET request. (Note, that HEAD requests can return cached response headers.)
-- It does not contain an Authorization header.
+- It is a `GET` request. (Note, that `HEAD` requests can return cached response headers.)
+- It does not contain an `Authorization` header.
 - It does not correspond to a valid session.
 - It is a Site's Portal request. (VHost target starts with or equal to `/site`)
 - Its URI does not contain `/_/`. (This is a convention for service requests.)
 
 If the request not cacheable Booster application will not intercept the request.
-If the request is cacheable, Booster application will check if cached response is available, not stale, not invalidated and return it.
+If the request is cacheable, Booster application will check if cached response is available, not stale and return it.
 
 == Cache Response Conditions
 
 A response is considered cacheable if the following conditions are met:
 
-- It is a 200 OK response.
+- It is a response with 200 OK status.
 - The response does not contain a `Cache-Control` header with a `private`, `no-cache` or `no-store` directive.
-- The response does not contain a `Expires` header. (And value of `Expires` header, even in future)
+- The response does not contain a `Expires` header. (Note: Any value of `Expires` header)
 - The response does not contain a `Set-Cookie` header.
 - The response does not contain a `Content-Encoding` header.
 - The response does not contain a `Vary` header.
-- The response MIME type (from `Cache-Control` header) is in the `cacheMimeTypes` configuration property.
+- The response MIME type (from `Content-Type` header) is in the `cacheMimeTypes` configuration property. (By default `text/html` and `text/xhtml`)
 - The response is processed by a Site
     * Application is installed on a Site
     * Application configuration allows request to be cached (`Disabled` is unchecked and request path matches configured cacheable `Patterns`)
@@ -79,6 +79,7 @@ The cache is automatically invalidated when the following events occur:
 === Manual Cache Invalidation
 
 The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.
+Only Project Owners and System Administrators have access to the widget.
 
 === Programmatic Cache Invalidation
 
