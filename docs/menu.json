@@ -1,0 +1,20 @@
+{
+  "menuItems": [
+    {
+      "title": "Installation",
+      "document": "installation"
+    },
+    {
+      "title": "Configuration",
+      "document": "configuration"
+    },
+    {
+      "title": "Usage",
+      "document": "usage"
+    },
+    {
+      "title": "How It Works",
+      "document": "how-it-works"
+    }
+  ]
+}
