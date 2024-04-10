@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.22">
-<title>Booster</title>
+<title>Usage</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,72 +437,82 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-right">
 <div id="header">
-<h1>Booster</h1>
+<h1>Usage</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#introduction">Introduction</a></li>
+<li><a href="#cache_invalidation">Cache Invalidation</a>
+<ul class="sectlevel2">
+<li><a href="#automatic_cache_invalidation">Automatic Cache Invalidation</a></li>
+<li><a href="#manual_cache_invalidation">Manual Cache Invalidation</a></li>
+<li><a href="#programmatic_cache_invalidation">Programmatic Cache Invalidation</a></li>
+</ul>
+</li>
+<li><a href="#query_parameters">Query Parameters</a></li>
+<li><a href="#exclude_paths">Exclude Paths</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="introduction"><a class="link" href="#introduction">Introduction</a></h2>
+<h2 id="cache_invalidation"><a class="link" href="#cache_invalidation">Cache Invalidation</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="automatic_cache_invalidation"><a class="link" href="#automatic_cache_invalidation">Automatic Cache Invalidation</a></h3>
+<div class="paragraph">
+<p>The cache is automatically invalidated when the following events occur:
+- Application listed in <code>appsInvalidateCacheOnStart</code> starts. The entire cache is invalidated.
+- Content is published/unpublished. The cache is invalidated for the published Content&#8217;s Project.
+- Content scheduled for publishing/unpublishing reaches its scheduled time. The cache invalidated for the scheduled Content&#8217;s Project.
+- Project deleted. The cache invalidated for the deleted Project.
+- Cache item expired meaning Time to live (TTL) for the cache item is reached.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="manual_cache_invalidation"><a class="link" href="#manual_cache_invalidation">Manual Cache Invalidation</a></h3>
+<div class="paragraph">
+<p>The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.
+Only Project Owners and System Administrators have access to the widget.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="programmatic_cache_invalidation"><a class="link" href="#programmatic_cache_invalidation">Programmatic Cache Invalidation</a></h3>
+<div class="paragraph">
+<p>There are two tasks that can be used to invalidate the cache programmatically:
+- <code>com.enonic.app.booster:invalidate</code>
+- <code>com.enonic.app.booster:purge-all</code></p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="query_parameters"><a class="link" href="#query_parameters">Query Parameters</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This application caches rendered pages. It is useful for sites that have a lot of traffic and rendering is slow.</p>
+<p>By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The <code>excludeQueryParams</code> configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParamsExtra</code> configuration property.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="exclude_paths"><a class="link" href="#exclude_paths">Exclude Paths</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The <code>Disabled</code> site configuration allows to disable caching for the entire Site. The <code>Patterns</code> site configuration property allows to cache only specific paths.</p>
 </div>
 <div class="paragraph">
-<p>Features:</p>
+<p>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Cache individual sites</p>
-</li>
-<li>
-<p>Limit cache size and TTL</p>
-</li>
-<li>
-<p>Control downstream cache via headers</p>
-</li>
-<li>
-<p>Invalidate cache on applications start</p>
-</li>
-<li>
-<p>Invalidate cache on content publish</p>
-</li>
-<li>
-<p>Invalidate cache manually</p>
-</li>
-<li>
-<p>Exclude specific query parameters from cache key</p>
-</li>
-<li>
-<p>Cache only specific MIME types</p>
-</li>
-<li>
-<p>Exclude specific paths from cache</p>
-</li>
-<li>
-<p>Serve Brotli or Gzip compressed content</p>
-</li>
-<li>
-<p>Request collapsing</p>
-</li>
-<li>
-<p>Cluster shared cache</p>
-</li>
-<li>
-<p>304 Not Modified support</p>
-</li>
-<li>
-<p>max-age and s-maxage support</p>
-</li>
-<li>
-<p>Cache survives xp restart</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>A pattern is a regular expression that is used to match the request path.
+A pattern element may also contain an <code>invert</code> attribute to indicate that the result of evaluating the regular expression should be negated.</p>
+</div>
+<div class="paragraph">
+<p>The syntax of the pattern is the same as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/exclude-paths.png" alt="exclude paths">
+</div>
 </div>
 </div>
 </div>

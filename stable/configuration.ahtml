@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.22">
-<title>Booster</title>
+<title>Configuration</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,72 +437,119 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-right">
 <div id="header">
-<h1>Booster</h1>
+<h1>Configuration</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#introduction">Introduction</a></li>
+<li><a href="#global_configuration_file">Global Configuration file</a>
+<ul class="sectlevel2">
+<li><a href="#control_downstream_cache">Control downstream cache</a></li>
+</ul>
+</li>
+<li><a href="#mime_types">MIME Types</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="introduction"><a class="link" href="#introduction">Introduction</a></h2>
+<h2 id="global_configuration_file"><a class="link" href="#global_configuration_file">Global Configuration file</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This application caches rendered pages. It is useful for sites that have a lot of traffic and rendering is slow.</p>
-</div>
-<div class="paragraph">
-<p>Features:</p>
+<p><code>com.enonic.app.booster.cfg</code> is the configuration file for the application. It includes the following properties:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Cache individual sites</p>
+<p><code>cacheTtl</code>: Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).</p>
 </li>
 <li>
-<p>Limit cache size and TTL</p>
+<p><code>cacheSize</code>: Total number of items in the cache. The default value is 10000.</p>
 </li>
 <li>
-<p>Control downstream cache via headers</p>
+<p><code>appsForceInvalidateOnInstall</code>: Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.</p>
 </li>
 <li>
-<p>Invalidate cache on applications start</p>
+<p><code>excludeQueryParamsPreset</code>: Comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;)</p>
 </li>
 <li>
-<p>Invalidate cache on content publish</p>
+<p><code>excludeQueryParams</code>: Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default <code>excludeQueryParamsPreset</code>. By default, no extra query parameters are listed.</p>
 </li>
 <li>
-<p>Invalidate cache manually</p>
+<p><code>disableCacheStatusHeader</code>: If set to <code>true</code> <code>Cache-Status</code> header is not sent in the response. The default value is <code>false</code>.</p>
 </li>
 <li>
-<p>Exclude specific query parameters from cache key</p>
+<p><code>overrideHeaders</code>: Comma-separated list of instructions that override headers. By default, no instructions are listed.</p>
 </li>
 <li>
-<p>Cache only specific MIME types</p>
-</li>
-<li>
-<p>Exclude specific paths from cache</p>
-</li>
-<li>
-<p>Serve Brotli or Gzip compressed content</p>
-</li>
-<li>
-<p>Request collapsing</p>
-</li>
-<li>
-<p>Cluster shared cache</p>
-</li>
-<li>
-<p>304 Not Modified support</p>
-</li>
-<li>
-<p>max-age and s-maxage support</p>
-</li>
-<li>
-<p>Cache survives xp restart</p>
+<p><code>cacheMimeTypes</code>: Comma-separated list of MIME types that should be cached. The default value is <code>text/html, text/xhtml</code>.</p>
 </li>
 </ul>
+</div>
+<div class="sect2">
+<h3 id="control_downstream_cache"><a class="link" href="#control_downstream_cache">Control downstream cache</a></h3>
+<div class="paragraph">
+<p>Different CDN and proxy servers can cache the response. Booster application can help to control the downstream cache by using <code>overrideHeaders</code> configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.</p>
+</div>
+<div class="paragraph">
+<p>Disable caching in the downstream cache (CDN and browser):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Cache-Control: private, no-store"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disable cache in Fastly CDN but leave browser caching instruction as is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Surrogate-Control: private"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disable cache in Cloudflare CDN but leave browser caching instruction as is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Cloudflare-CDN-Cache-Control: private"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Allow Fastly CDN to cache the response for 24 hours, but browser should cache the response for 1 minute:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="mime_types"><a class="link" href="#mime_types">MIME Types</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, Booster application caches only <code>text/html</code> and <code>text/xhtml</code> MIME types. The <code>cacheMimeTypes</code> configuration property is a comma-separated list of MIME types that should be cached.</p>
+</div>
+<div class="paragraph">
+<p>Allow caching of <code>text/plain</code> (such as robots.txt), <code>text/xml</code> (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Booster does not cache responses with <code>Vary</code> header, including but not limited to <code>Vary: Accept</code>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
