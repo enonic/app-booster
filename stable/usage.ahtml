@@ -448,8 +448,6 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#programmatic_cache_invalidation">Programmatic Cache Invalidation</a></li>
 </ul>
 </li>
-<li><a href="#query_parameters">Query Parameters</a></li>
-<li><a href="#exclude_paths">Exclude Paths</a></li>
 </ul>
 </div>
 </div>
@@ -485,41 +483,10 @@ Only Project Owners and System Administrators have access to the widget.</p>
 </div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="query_parameters"><a class="link" href="#query_parameters">Query Parameters</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The <code>excludeQueryParams</code> configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParamsExtra</code> configuration property.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="exclude_paths"><a class="link" href="#exclude_paths">Exclude Paths</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The <code>Disabled</code> site configuration allows to disable caching for the entire Site. The <code>Patterns</code> site configuration property allows to cache only specific paths.</p>
-</div>
-<div class="paragraph">
-<p>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</p>
-</div>
-<div class="paragraph">
-<p>A pattern is a regular expression that is used to match the request path.
-A pattern element may also contain an <code>invert</code> attribute to indicate that the result of evaluating the regular expression should be negated.</p>
-</div>
-<div class="paragraph">
-<p>The syntax of the pattern is the same as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>.</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="images/exclude-paths.png" alt="exclude paths">
-</div>
-</div>
-</div>
-</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-10 13:25:05 UTC
+Last updated 2024-04-10 13:42:00 UTC
 </div>
 </div>
 </body>

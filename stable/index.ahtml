@@ -500,7 +500,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>max-age and s-maxage support</p>
 </li>
 <li>
-<p>Cache survives xp restart</p>
+<p>Cache survives XP restart</p>
 </li>
 </ul>
 </div>
@@ -509,7 +509,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-10 13:25:05 UTC
+Last updated 2024-04-10 13:42:00 UTC
 </div>
 </div>
 </body>
