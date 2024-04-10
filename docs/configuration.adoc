@@ -41,7 +41,7 @@ Allow Fastly CDN to cache the response for 24 hours, but browser should cache th
 overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"
 ----
 
-== MIME Types
+=== MIME Types
 
 By default, Booster application caches only `text/html` and `text/xhtml` MIME types. The `cacheMimeTypes` configuration property is a comma-separated list of MIME types that should be cached.
 
@@ -52,3 +52,28 @@ cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest
 ----
 
 NOTE: Booster does not cache responses with `Vary` header, including but not limited to `Vary: Accept`.
+
+=== Query Parameters
+
+By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The `excludeQueryParams` configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the `excludeQueryParamsExtra` configuration property.
+
+== Application Configuration
+
+image::images/exclude-paths.png[]
+
+=== Exclude Paths
+
+By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The `Disabled` site configuration allows to disable caching for the entire Site. The `Patterns` site configuration property allows to cache only specific paths.
+
+If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.
+
+A pattern is a regular expression that is used to match the request path.
+A pattern element may also contain an `invert` attribute to indicate that the result of evaluating the regular expression should be negated.
+
+
+The syntax of the pattern is the same as https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings[XP Framework pattern mappings].
+
+=== Default TTL
+
+Default TTL setting allows to specify cache TTL for controller responses without max-age or s-max-age headers.
+By default, the value is not set and the cache TTL is determined by the `cacheTtl` configuration property.

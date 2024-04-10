@@ -20,4 +20,4 @@ Features:
 - Cluster shared cache
 - 304 Not Modified support
 - max-age and s-maxage support
-- Cache survives xp restart
+- Cache survives XP restart
