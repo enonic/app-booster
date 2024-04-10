@@ -1,0 +1,86 @@
+= How It Works
+
+== Cache Request Conditions
+
+A request is considered cacheable if the following conditions are met:
+
+- It is an HTTP or HTTPS request.
+- It is a `GET` request. (Note, that `HEAD` requests can return cached response headers.)
+- It does not contain an `Authorization` header.
+- It does not correspond to a valid session.
+- It is a Site's Portal request. (VHost target starts with or equal to `/site`)
+- Its URI does not contain `/_/`. (This is a convention for service requests.)
+
+If the request not cacheable Booster application will not intercept the request.
+If the request is cacheable, Booster application will check if cached response is available, not stale and return it.
+
+== Cache Response Conditions
+
+A response is considered cacheable if the following conditions are met:
+
+- It is a response with 200 OK status.
+- The response does not contain a `Cache-Control` header with a `private`, `no-cache` or `no-store` directive.
+- The response does not contain a `Expires` header. (Note: Any value of `Expires` header)
+- The response does not contain a `Set-Cookie` header.
+- The response does not contain a `Content-Encoding` header.
+- The response does not contain a `Vary` header.
+- The response MIME type (from `Content-Type` header) is in the `cacheMimeTypes` configuration property. (By default `text/html` and `text/xhtml`)
+- The response is processed by a Site
+* Application is installed on a Site
+* Application configuration allows request to be cached (`Disabled` is unchecked and request path matches configured cacheable `Patterns`)
+
+If the response is cacheable, Booster application stores the response in the cache.
+
+== Compressed Content
+
+Booster application can serve Brotli or Gzip compressed content. The application checks if the client supports Brotli or Gzip compression and serves the compressed content if it is available.
+Application respects `Accept-Encoding` header and serves the compressed content if the client supports it. Brotli compression is preferred over Gzip compression. And Gzip compression is preferred over uncompressed content.
+
+== Request Collapsing
+
+Booster application supports request collapsing. It means that if there are multiple requests for the same resource, only one request is sent to the backend. The other requests are waiting for the response from the first request. When the first request is completed, the response is sent to all waiting requests. The request collapsing only happens if the request is cacheable and there is a stale or invalidated cache item for the request.
+
+== 304 Not Modified
+
+Booster application supports 304 `Not Modified` responses.
+Cached response always contains an `ETag` header.If the request has `If-None-Match` header, the application checks if the cached `ETag` value matches the `If-None-Match` value. If the values match, the application returns 304 `Not Modified` response.
+
+== Age, max-age and s-maxage
+
+Booster application supports `max-age` and `s-maxage` cache directives in upstream response `Cahe-Control` headers. The `max-age` and `s-maxage` directives are used to specify the maximum amount of time that a response can be cached. The `s-maxage` directive is preferred over the `max-age` directive, when both are present in `Cahe-Control`.
+Booster Application adds `Age` header to the response. The `Age` header is the time in seconds since the response was cached plus the value of the `Age` header in the response from the upstream.
+
+== Cache-Status
+
+Booster application adds `Cache-Status` header to the response. The `Cache-Status` header contains information about the cache status of the response. The `Cache-Status` follows RFC 7234 specification.
+Examples of `Cache-Status` header can have the following values:
+
+.Response served from cache
+[source]
+----
+Cache-Status: Booster, hit
+----
+
+.License is not configured for the app
+[source]
+----
+Cache-Status: Booster; fwd=bypass; detail=LICENSE
+----
+
+.Session found for request
+[source]
+----
+Cache-Status: Booster; fwd=bypass; detail=SESSION
+----
+
+.Response found in cache, but was stale
+[source]
+----
+Cache-Status: Booster, fwd=stale
+----
+
+.Response not found in cache
+[source]
+----
+Cache-Status: Booster, fwd=miss
+----

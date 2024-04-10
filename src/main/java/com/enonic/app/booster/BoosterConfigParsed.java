@@ -18,8 +18,8 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
         var cacheSize = config.cacheSize();
         var disableCacheStatusHeader = config.disableCacheStatusHeader();
 
-        var excludeQueryParams = Stream.concat( SimpleCsvParser.parseLine( config.excludeQueryParams() ).stream(),
-                                                SimpleCsvParser.parseLine( config.extraExcludeQueryParams() ).stream() )
+        var excludeQueryParams = Stream.concat( SimpleCsvParser.parseLine( config.excludeQueryParamsPreset() ).stream(),
+                                                SimpleCsvParser.parseLine( config.excludeQueryParams() ).stream() )
             .map( String::trim )
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );

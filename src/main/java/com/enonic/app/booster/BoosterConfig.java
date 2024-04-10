@@ -8,9 +8,9 @@ public @interface BoosterConfig
 
     String appsForceInvalidateOnInstall() default "";
 
-    String excludeQueryParams() default "fbclid, twclid, dclid, gclid, gclsrc, wbraid, gbraid, msclkid, yclid, _ga, _gl, utm_source, utm_medium, utm_campaign, utm_term, utm_source_platform, utm_creative_format, utm_marketing_tactic, _hsenc, __hssc, __hstc, __hsfp, hsCtaTracking";
+    String excludeQueryParamsPreset() default "fbclid, twclid, dclid, gclid, gclsrc, wbraid, gbraid, msclkid, yclid, _ga, _gl, utm_source, utm_medium, utm_campaign, utm_term, utm_source_platform, utm_creative_format, utm_marketing_tactic, _hsenc, __hssc, __hstc, __hsfp, hsCtaTracking";
 
-    String extraExcludeQueryParams() default "";
+    String excludeQueryParams() default "";
 
     boolean disableCacheStatusHeader() default false;
 

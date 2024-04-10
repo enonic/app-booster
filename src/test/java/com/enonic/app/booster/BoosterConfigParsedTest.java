@@ -36,7 +36,7 @@ class BoosterConfigParsedTest
     void parse()
     {
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
-        when( config.excludeQueryParams() ).thenReturn( "b, a" );
+        when( config.excludeQueryParamsPreset() ).thenReturn( "b, a" );
         when( config.appsForceInvalidateOnInstall() ).thenReturn( "app2, app1" );
         when( config.cacheTtl() ).thenReturn( 86400L );
         when( config.cacheMimeTypes() ).thenReturn( "text/html, text/xhtml, application/json" );
@@ -50,10 +50,10 @@ class BoosterConfigParsedTest
     }
 
     @Test
-    void extraExcludeQueryParams()
+    void excludeQueryParamsPreset()
     {
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
-        when( config.extraExcludeQueryParams() ).thenReturn( "c, d" );
+        when( config.excludeQueryParams() ).thenReturn( "c, d" );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
         assertEquals(
             Set.of( "c", "d", "fbclid", "twclid", "dclid", "gclid", "gclsrc", "wbraid", "gbraid", "msclkid", "yclid", "_ga", "_gl",
