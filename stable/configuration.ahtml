@@ -524,7 +524,7 @@ overrideHeaders =</code></pre>
 <p><code>excludeQueryParamsPreset</code> contains a list query parameters that should be excluded from the cache key. These complete list is:</p>
 </div>
 <div class="paragraph">
-<p><code>fbclid, twclid, dclid, gclid, gclsrc, wbraid, gbraid, msclkid, yclid, _ga, _gl, utm_source, utm_medium, utm_campaign, utm_term, utm_source_platform, utm_creative_format, utm_marketing_tactic, _hsenc, <em>hssc, </em>hstc, __hsfp, hsCtaTracking</code></p>
+<p><code>fbclid, twclid, dclid, gclid, gclsrc, wbraid, gbraid, msclkid, yclid, _ga, _gl, utm_source, utm_medium, utm_campaign, utm_term, utm_source_platform, utm_creative_format, utm_marketing_tactic, _hsenc, __hssc, __hstc, __hsfp, hsCtaTracking</code></p>
 </div>
 <div class="paragraph">
 <p>If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParams</code> configuration property. To override the presets, simply add your own version of <code>excludeQueryParamsPreset</code> in the configuration file.</p>
@@ -651,7 +651,7 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:01:33 UTC
+Last updated 2024-04-11 13:01:59 UTC
 </div>
 </div>
 </body>

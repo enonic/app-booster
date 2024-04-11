@@ -684,7 +684,7 @@ Compression happens only once, occurs during cache creation
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
+For an XP cluster, request collapsing is performed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
 </td>
 </tr>
 </table>
@@ -698,7 +698,7 @@ For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning t
 <p>Cached responses always contains an <code>ETag</code> header. If a request contains the <code>If-None-Match</code> header, Booster will try to match this with the stored <code>ETag</code> value.</p>
 </div>
 <div class="paragraph">
-<p>If the values match, Booster will return a 304 <code>Not Modified</code> response and no data. This lets the browser use it&#8217;s local cache - saving network bandwith and reducing latency.</p>
+<p>If the values match, Booster will return a 304 <code>Not Modified</code> response and no data. This lets the browser use it&#8217;s local cache - saving network bandwidth and reducing latency.</p>
 </div>
 </div>
 </div>
@@ -760,7 +760,7 @@ For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning t
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:01:33 UTC
+Last updated 2024-04-11 13:01:59 UTC
 </div>
 </div>
 </body>

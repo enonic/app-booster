@@ -441,7 +441,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#todo">TODO</a></li>
+<li><a href="#invalidate">Invalidate</a></li>
+<li><a href="#purge_all">Purge All</a></li>
 </ul>
 </div>
 </div>
@@ -454,15 +455,56 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect1">
-<h2 id="todo"><a class="link" href="#todo">TODO</a></h2>
+<h2 id="invalidate"><a class="link" href="#invalidate">Invalidate</a></h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Invalidate (soft purge) all or specific Content Project cache</p>
+</div>
+<div class="listingblock">
+<div class="title">Invalidate specific Content Project cache</div>
+<div class="content">
+<pre class="highlight"><code class="language-js" data-lang="js">const taskId = taskLib.submitTask({
+descriptor: 'com.enonic.app.booster:invalidate',
+config: {
+project: 'sample-blog'
+}
+});</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Invalidate entire cache</div>
+<div class="content">
+<pre class="highlight"><code class="language-js" data-lang="js">const taskId = taskLib.submitTask({
+descriptor: 'com.enonic.app.booster:invalidate',
+config: {
+}
+});</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="purge_all"><a class="link" href="#purge_all">Purge All</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Purge (delete) all records in cache</p>
+</div>
+<div class="listingblock">
+<div class="title">Purge entire cache</div>
+<div class="content">
+<pre class="highlight"><code class="language-js" data-lang="js">const taskId = taskLib.submitTask({
+descriptor: 'com.enonic.app.booster:purge-all',
+config: {
+}
+});</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:01:33 UTC
+Last updated 2024-04-11 13:01:59 UTC
 </div>
 </div>
 </body>

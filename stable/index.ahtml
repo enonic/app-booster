@@ -465,7 +465,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Booster caches pages rendered with the Enonic framework/site engine. It is useful for sites that have a lot of traffic, or simply for getting faster pages.</p>
 </div>
 <div class="paragraph">
-<p>Booster is built to be highly effective, without the typical side-effects of html caching - meaning it will automaticall determine what content can be cached, and automatically invalidate cache when content is published.</p>
+<p>Booster is built to be highly effective, without the typical side-effects of html caching - meaning it will automatically determine what content can be cached, and automatically invalidate cache when content is published.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -556,7 +556,7 @@ Booster will not work without a valid Enonic license
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:01:33 UTC
+Last updated 2024-04-11 13:01:59 UTC
 </div>
 </div>
 </body>

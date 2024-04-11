@@ -531,7 +531,7 @@ Remember to publish the site after adding Booster for changes to take effect.
 <p>Beyond experiencing much faster pages, the best way of validating that Booster is working proerly is by looking at the HTTP response headers (using your browser&#8217;s dev tools, or by using cURL commandline utility)</p>
 </div>
 <div class="paragraph">
-<p>You should see the <code>Cache-Status</code> header, and it should contain <code>Booster;</code> as one of it&#8217;s values.</p>
+<p>You should see the <code>Cache-Status</code> header, and it should contain <code>Booster;</code> as one of its values.</p>
 </div>
 <div class="paragraph">
 <p>For more details, visit the <a href="how-it-works.ahtml">How it works chapter</a></p>
@@ -593,7 +593,7 @@ You may verify that the cache was cleared by checking the <code>Cache-Status</co
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:01:33 UTC
+Last updated 2024-04-11 13:01:59 UTC
 </div>
 </div>
 </body>
