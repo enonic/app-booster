@@ -106,7 +106,7 @@ Booster also adds an `Age` header to the response. The `Age` header is the time 
 
 == Cache-Status header
 
-Booster adds a `Cache-Status` header to the response. The header follows the RFC 7234 specification.
+Booster adds a `Cache-Status` header to the response. The header follows the RFC-7234 specification.
 
 Some examples of header values:
 
