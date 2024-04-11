@@ -441,87 +441,101 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#cache_request_conditions">Cache Request Conditions</a></li>
-<li><a href="#cache_response_conditions">Cache Response Conditions</a></li>
+<li><a href="#request_conditions">Request conditions</a></li>
+<li><a href="#response_conditions">Response Conditions</a></li>
+<li><a href="#caching">Caching</a></li>
+<li><a href="#invalidation">Invalidation</a></li>
 <li><a href="#compressed_content">Compressed Content</a></li>
 <li><a href="#request_collapsing">Request Collapsing</a></li>
 <li><a href="#304_not_modified">304 Not Modified</a></li>
 <li><a href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></li>
-<li><a href="#cache_status">Cache-Status</a></li>
+<li><a href="#cache_status_header">Cache-Status header</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="cache_request_conditions"><a class="link" href="#cache_request_conditions">Cache Request Conditions</a></h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>A request is considered cacheable if the following conditions are met:</p>
+<p>Dive deeper to understand how Booster works</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="request_conditions"><a class="link" href="#request_conditions">Request conditions</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A request is considered cacheable if the request:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>It is an HTTP or HTTPS request.</p>
+<p>Is an HTTP or HTTPS request.</p>
 </li>
 <li>
-<p>It is a <code>GET</code> request. (Note, that <code>HEAD</code> requests can return cached response headers.)</p>
+<p>Is a <code>GET</code> request. (Note, that <code>HEAD</code> requests can return cached response headers.)</p>
 </li>
 <li>
-<p>It does not contain an <code>Authorization</code> header.</p>
+<p>Does not contain an <code>Authorization</code> header.</p>
 </li>
 <li>
-<p>It does not correspond to a valid session.</p>
+<p>Does not correspond to a valid session.</p>
 </li>
 <li>
-<p>It is a Site&#8217;s Portal request. (VHost target starts with or equal to <code>/site</code>)</p>
+<p>Is a Site&#8217;s Portal request. (VHost target starts with or equal to <code>/site</code>)</p>
 </li>
 <li>
-<p>Its URI does not contain <code>/_/</code>. (This is a convention for service requests.)</p>
+<p>Is a request to the master branch (draft items are never cached)</p>
+</li>
+<li>
+<p>It&#8217;s URI does not contain <code>/_/</code>. (This is a convention for service requests.)</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>If the request not cacheable Booster application will not intercept the request.
-If the request is cacheable, Booster application will check if cached response is available, not stale and return it.</p>
+<p>If the request is not cacheable, Booster will forward the request.</p>
+</div>
+<div class="paragraph">
+<p>If the request is cacheable, Booster will check if a cached response is available, not stale and return it. Otherwise it will render, cache and return a new response.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="cache_response_conditions"><a class="link" href="#cache_response_conditions">Cache Response Conditions</a></h2>
+<h2 id="response_conditions"><a class="link" href="#response_conditions">Response Conditions</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A response is considered cacheable if the following conditions are met:</p>
+<p>A response is considered cacheable if the response:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>It is a response with 200 OK status.</p>
+<p>Returns 200 OK status.</p>
 </li>
 <li>
-<p>The response does not contain a <code>Cache-Control</code> header with a <code>private</code>, <code>no-cache</code> or <code>no-store</code> directive.</p>
+<p>Does not contain a <code>Cache-Control</code> header with <code>private</code>, <code>no-cache</code> or <code>no-store</code> directive(s).</p>
 </li>
 <li>
-<p>The response does not contain a <code>Expires</code> header. (Note: Any value of <code>Expires</code> header)</p>
+<p>Does not contain an <code>Expires</code> header. (Note: Any value of <code>Expires</code> header)</p>
 </li>
 <li>
-<p>The response does not contain a <code>Set-Cookie</code> header.</p>
+<p>Does not contain a <code>Set-Cookie</code> header.</p>
 </li>
 <li>
-<p>The response does not contain a <code>Content-Encoding</code> header.</p>
+<p>Does not contain a <code>Content-Encoding</code> header.</p>
 </li>
 <li>
-<p>The response does not contain a <code>Vary</code> header.</p>
+<p>Does not contain a <code>Vary</code> header.</p>
 </li>
 <li>
-<p>The response MIME type (from <code>Content-Type</code> header) is in the <code>cacheMimeTypes</code> configuration property. (By default <code>text/html</code> and <code>text/xhtml</code>)</p>
+<p>The <code>Content-Type</code> contains a supported value (default is <code>text/html</code> and <code>text/xhtml</code>)</p>
 </li>
 <li>
-<p>The response is processed by a Site</p>
+<p>Originates from the site engine (Internal XP path start with <code>/site</code>)</p>
+</li>
+<li>
+<p>Booster is installed and enabled on the requested site</p>
 <div class="ulist">
 <ul>
-<li>
-<p>Application is installed on a Site</p>
-</li>
 <li>
 <p>Application configuration allows request to be cached (<code>Disabled</code> is unchecked and request path matches configured cacheable <code>Patterns</code>)</p>
 </li>
@@ -536,11 +550,115 @@ If the request is cacheable, Booster application will check if cached response i
 </div>
 </div>
 <div class="sect1">
+<h2 id="caching"><a class="link" href="#caching">Caching</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The request URL is used as the cache key. To ensure optimal re-use of cached items, Booster will perform URL normalization by:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Sorting of query parameters</p>
+</li>
+<li>
+<p>Lowercasing host and path</p>
+</li>
+<li>
+<p>Removing excluded query parameters (based on config)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Booster then uses the underlying Node API to persist the cached items. As such, cached items will be available across all nodes in an XP cluster, optimizing performance and scalability even further.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="invalidation"><a class="link" href="#invalidation">Invalidation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Booster will automatically invalidate cache when one of the following events occur:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Cache for the entire content project is automatically cleared when:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Content gets published/unpublished or expires</p>
+</li>
+<li>
+<p>Project is deleted</p>
+</li>
+<li>
+<p>Applications used by a site starts/restarts</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Cache for a single item is automatically cleared when</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Cache item reaches Time to live (TTL)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>All cache gets deleted when:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Applications listed in the configuration <code>appsInvalidateCacheOnStart</code> starts</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When an item is invalidated, it is simply marked as invalid.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Cache can also be invalidated manually via the Content Studio Booster widget, or via the Booster API.</p>
+</div>
+<div class="paragraph">
+<p>Invalid items are periodically removed from the cache by a background task. This task also enforces the <code>cacheSize</code> configuration setting.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="compressed_content"><a class="link" href="#compressed_content">Compressed Content</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Booster application can serve Brotli or Gzip compressed content. The application checks if the client supports Brotli or Gzip compression and serves the compressed content if it is available.
-Application respects <code>Accept-Encoding</code> header and serves the compressed content if the client supports it. Brotli compression is preferred over Gzip compression. And Gzip compression is preferred over uncompressed content.</p>
+<p>If the client supports Brotli or Gzip compression (determined from request <code>Accept-Encoding</code> header), Booster will serve a compressed version of the content.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Compression happens only once, occurs during cache creation
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Brotli compression is preferred over Gzip compression. And Gzip compression is preferred over uncompressed content.</p>
 </div>
 </div>
 </div>
@@ -548,7 +666,28 @@ Application respects <code>Accept-Encoding</code> header and serves the compress
 <h2 id="request_collapsing"><a class="link" href="#request_collapsing">Request Collapsing</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Booster application supports request collapsing. It means that if there are multiple requests for the same resource, only one request is sent to the backend. The other requests are waiting for the response from the first request. When the first request is completed, the response is sent to all waiting requests. The request collapsing only happens if the request is cacheable and there is a stale or invalidated cache item for the request.</p>
+<p>"Thundering herd" is a scenario when multiple requests are made for a single resource at the same time. If the item is not cached, the traffic may potentially bring down your server.</p>
+</div>
+<div class="paragraph">
+<p>To mitigate this situation, Booster implements a technique called request collapsing. This ensures only one of the requests are forwarded to the site engine for rendering.</p>
+</div>
+<div class="paragraph">
+<p>Remaining requests are queued up for the response from the first request. Once the rendering is completed, the response is then sent to all the waiting requests.</p>
+</div>
+<div class="paragraph">
+<p>Request collapsing only happens if the request is cacheable and a stale or invalidated cache item already exists.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -556,8 +695,10 @@ Application respects <code>Accept-Encoding</code> header and serves the compress
 <h2 id="304_not_modified"><a class="link" href="#304_not_modified">304 Not Modified</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Booster application supports 304 <code>Not Modified</code> responses.
-Cached response always contains an <code>ETag</code> header.If the request has <code>If-None-Match</code> header, the application checks if the cached <code>ETag</code> value matches the <code>If-None-Match</code> value. If the values match, the application returns 304 <code>Not Modified</code> response.</p>
+<p>Cached responses always contains an <code>ETag</code> header. If a request contains the <code>If-None-Match</code> header, Booster will try to match this with the stored <code>ETag</code> value.</p>
+</div>
+<div class="paragraph">
+<p>If the values match, Booster will return a 304 <code>Not Modified</code> response and no data. This lets the browser use it&#8217;s local cache - saving network bandwith and reducing latency.</p>
 </div>
 </div>
 </div>
@@ -565,17 +706,24 @@ Cached response always contains an <code>ETag</code> header.If the request has <
 <h2 id="age_max_age_and_s_maxage"><a class="link" href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Booster application supports <code>max-age</code> and <code>s-maxage</code> cache directives in upstream response <code>Cahe-Control</code> headers. The <code>max-age</code> and <code>s-maxage</code> directives are used to specify the maximum amount of time that a response can be cached. The <code>s-maxage</code> directive is preferred over the <code>max-age</code> directive, when both are present in <code>Cahe-Control</code>.
-Booster Application adds <code>Age</code> header to the response. The <code>Age</code> header is the time in seconds since the response was cached plus the value of the <code>Age</code> header in the response from the upstream.</p>
+<p>Booster supports <code>max-age</code> and <code>s-maxage</code> cache directives from the upstream response <code>Cahe-Control</code> headers.</p>
+</div>
+<div class="paragraph">
+<p>The <code>max-age</code> and <code>s-maxage</code> directives are used to specify the maximum amount of time a response can be cached. The <code>s-maxage</code> directive is preferred over the <code>max-age</code> directive, when both are present in <code>Cahe-Control</code>.</p>
+</div>
+<div class="paragraph">
+<p>Booster also adds an <code>Age</code> header to the response. The <code>Age</code> header is the time in seconds since the response was cached plus the value of the <code>Age</code> header in the response from the upstream (if it exists).</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="cache_status"><a class="link" href="#cache_status">Cache-Status</a></h2>
+<h2 id="cache_status_header"><a class="link" href="#cache_status_header">Cache-Status header</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Booster application adds <code>Cache-Status</code> header to the response. The <code>Cache-Status</code> header contains information about the cache status of the response. The <code>Cache-Status</code> follows RFC 7234 specification.
-Examples of <code>Cache-Status</code> header can have the following values:</p>
+<p>Booster adds a <code>Cache-Status</code> header to the response. The header follows the RFC 7234 specification.</p>
+</div>
+<div class="paragraph">
+<p>Some examples of header values:</p>
 </div>
 <div class="listingblock">
 <div class="title">Response served from cache</div>
@@ -612,7 +760,7 @@ Examples of <code>Cache-Status</code> header can have the following values:</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-10 13:42:00 UTC
+Last updated 2024-04-11 12:30:28 UTC
 </div>
 </div>
 </body>

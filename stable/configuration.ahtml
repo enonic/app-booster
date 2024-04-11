@@ -441,16 +441,16 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#global_configuration_file">Global Configuration file</a>
+<li><a href="#global_configuration">Global configuration</a>
 <ul class="sectlevel2">
-<li><a href="#control_downstream_cache">Control downstream cache</a></li>
-<li><a href="#mime_types">MIME Types</a></li>
 <li><a href="#query_parameters">Query Parameters</a></li>
+<li><a href="#mime_types">MIME Types</a></li>
+<li><a href="#control_downstream_cache">Control downstream cache</a></li>
 </ul>
 </li>
-<li><a href="#application_configuration">Application Configuration</a>
+<li><a href="#site_configuration">Site configuration</a>
 <ul class="sectlevel2">
-<li><a href="#exclude_paths">Exclude Paths</a></li>
+<li><a href="#cache_patterns">Cache patterns</a></li>
 <li><a href="#default_ttl">Default TTL</a></li>
 </ul>
 </li>
@@ -459,38 +459,102 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="global_configuration_file"><a class="link" href="#global_configuration_file">Global Configuration file</a></h2>
+<h2 id="global_configuration"><a class="link" href="#global_configuration">Global configuration</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><code>com.enonic.app.booster.cfg</code> is the configuration file for the application. It includes the following properties:</p>
+<p>Configure Booster by adding a configuration file to your XP instance.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>cacheTtl</code>: Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).</p>
-</li>
-<li>
-<p><code>cacheSize</code>: Total number of items in the cache. The default value is 10000.</p>
-</li>
-<li>
-<p><code>appsForceInvalidateOnInstall</code>: Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.</p>
-</li>
-<li>
-<p><code>excludeQueryParamsPreset</code>: Comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;)</p>
-</li>
-<li>
-<p><code>excludeQueryParams</code>: Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default <code>excludeQueryParamsPreset</code>. By default, no extra query parameters are listed.</p>
-</li>
-<li>
-<p><code>disableCacheStatusHeader</code>: If set to <code>true</code> <code>Cache-Status</code> header is not sent in the response. The default value is <code>false</code>.</p>
-</li>
-<li>
-<p><code>overrideHeaders</code>: Comma-separated list of instructions that override headers. By default, no instructions are listed.</p>
-</li>
-<li>
-<p><code>cacheMimeTypes</code>: Comma-separated list of MIME types that should be cached. The default value is <code>text/html, text/xhtml</code>.</p>
-</li>
-</ul>
+<div class="paragraph">
+<p><code>XP_HOME/config/com.enonic.app.booster.cfg</code></p>
+</div>
+<div class="listingblock">
+<div class="title">Example configuration with default values</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">cacheTtl = 3600
+cacheSize = 10000
+appsForceInvalidateOnInstall =
+excludeQueryParams =
+disableCacheStatusHeader = false
+cacheMimeTypes = text/html, text/xhtml
+overrideHeaders =</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">cacheTtl</dt>
+<dd>
+<p>Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).</p>
+</dd>
+<dt class="hdlist1">cacheSize</dt>
+<dd>
+<p>Total number of items in the cache. The default value is 10000.</p>
+</dd>
+<dt class="hdlist1">appsForceInvalidateOnInstall</dt>
+<dd>
+<p>Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.</p>
+</dd>
+<dt class="hdlist1">excludeQueryParams</dt>
+<dd>
+<p>Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default. By default, no extra query parameters are listed.</p>
+</dd>
+<dt class="hdlist1">excludeQueryParamsPreset</dt>
+<dd>
+<p>This comma-separated list contains "preset" of query parameters that will not be affected by changing <code>excludeQueryParams</code>. More details about this below:</p>
+</dd>
+<dt class="hdlist1">disableCacheStatusHeader</dt>
+<dd>
+<p>If set to <code>true</code> <code>Cache-Status</code> header is not sent in the response. The default value is <code>false</code>.</p>
+</dd>
+<dt class="hdlist1">cacheMimeTypes</dt>
+<dd>
+<p>Comma-separated list of MIME types that should be cached. The default value is <code>text/html, text/xhtml</code>.</p>
+</dd>
+<dt class="hdlist1">overrideHeaders</dt>
+<dd>
+<p>Comma-separated list of instructions that override headers. By default, no instructions are listed. Use with causion.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="query_parameters"><a class="link" href="#query_parameters">Query Parameters</a></h3>
+<div class="paragraph">
+<p>Booster considers query parameters when generating the cache key. However, some query parameters are not relevant, and should be excluded for a better performing cache. Examples of such are marketing and ads related parameters, where the rendered result will look the same regardlessly.</p>
+</div>
+<div class="paragraph">
+<p><code>excludeQueryParamsPreset</code> contains a list query parameters that should be excluded from the cache key. These complete list is:</p>
+</div>
+<div class="paragraph">
+<p><code>fbclid, twclid, dclid, gclid, gclsrc, wbraid, gbraid, msclkid, yclid, _ga, _gl, utm_source, utm_medium, utm_campaign, utm_term, utm_source_platform, utm_creative_format, utm_marketing_tactic, _hsenc, <em>hssc, </em>hstc, __hsfp, hsCtaTracking</code></p>
+</div>
+<div class="paragraph">
+<p>If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParams</code> configuration property. To override the presets, simply add your own version of <code>excludeQueryParamsPreset</code> in the configuration file.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="mime_types"><a class="link" href="#mime_types">MIME Types</a></h3>
+<div class="paragraph">
+<p>Booster caches <code>text/html</code> and <code>text/xhtml</code> MIME types by default. The <code>cacheMimeTypes</code> configuration property is a comma-separated list of MIME types that should be cached.</p>
+</div>
+<div class="paragraph">
+<p>Allow caching of <code>text/plain</code> (such as robots.txt), <code>text/xml</code> (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Booster does not cache responses with <code>Vary</code> header, including but not limited to <code>Vary: Accept</code>.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="control_downstream_cache"><a class="link" href="#control_downstream_cache">Control downstream cache</a></h3>
@@ -529,20 +593,6 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"</code></pre>
 </div>
 </div>
-</div>
-<div class="sect2">
-<h3 id="mime_types"><a class="link" href="#mime_types">MIME Types</a></h3>
-<div class="paragraph">
-<p>By default, Booster application caches only <code>text/html</code> and <code>text/xhtml</code> MIME types. The <code>cacheMimeTypes</code> configuration property is a comma-separated list of MIME types that should be cached.</p>
-</div>
-<div class="paragraph">
-<p>Allow caching of <code>text/plain</code> (such as robots.txt), <code>text/xml</code> (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json</code></pre>
-</div>
-</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -550,39 +600,40 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Booster does not cache responses with <code>Vary</code> header, including but not limited to <code>Vary: Accept</code>.
+Only the following cache headers may be set:
+<code>Cache-Control</code>, <code>CDN-Cache-Control</code>, <code>Cloudflare-CDN-Cache-Control</code>, <code>Surrogate-Control</code>, <code>Vercel-CDN-Cache-Control</code>,
+ <code>Akamai-Cache-Control</code>
 </td>
 </tr>
 </table>
 </div>
 </div>
-<div class="sect2">
-<h3 id="query_parameters"><a class="link" href="#query_parameters">Query Parameters</a></h3>
-<div class="paragraph">
-<p>By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The <code>excludeQueryParams</code> configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. <code>utm_source</code>, <code>gclid</code>, <code>fbclid</code>, &#8230;&#8203;). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParamsExtra</code> configuration property.</p>
-</div>
-</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="application_configuration"><a class="link" href="#application_configuration">Application Configuration</a></h2>
+<h2 id="site_configuration"><a class="link" href="#site_configuration">Site configuration</a></h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>When adding Booster to a site, it may be tuned specifically</p>
+</div>
 <div class="imageblock">
 <div class="content">
 <img src="images/exclude-paths.png" alt="exclude paths">
 </div>
 </div>
 <div class="sect2">
-<h3 id="exclude_paths"><a class="link" href="#exclude_paths">Exclude Paths</a></h3>
+<h3 id="cache_patterns"><a class="link" href="#cache_patterns">Cache patterns</a></h3>
 <div class="paragraph">
-<p>By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The <code>Disabled</code> site configuration allows to disable caching for the entire Site. The <code>Patterns</code> site configuration property allows to cache only specific paths.</p>
+<p>By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.</p>
 </div>
 <div class="paragraph">
-<p>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</p>
+<p><code>Patterns</code> lets you tune caching only for specific paths.</p>
 </div>
 <div class="paragraph">
-<p>A pattern is a regular expression that is used to match the request path.
-A pattern element may also contain an <code>invert</code> attribute to indicate that the result of evaluating the regular expression should be negated.</p>
+<p>If no patterns are provided, all paths are cached. By adding a pattern, no path are cached by default, and you must ensure at least one pattern matches requests to be cached.</p>
+</div>
+<div class="paragraph">
+<p>A pattern is a regular expression that is used to match the request path. A pattern element may also contain an <code>invert</code> attribute to indicate that the result of evaluating the regular expression should be negated.</p>
 </div>
 <div class="paragraph">
 <p>The syntax of the pattern is the same as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>.</p>
@@ -600,7 +651,7 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-10 13:42:00 UTC
+Last updated 2024-04-11 12:30:28 UTC
 </div>
 </div>
 </body>

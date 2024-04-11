@@ -441,66 +441,113 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#introduction">Introduction</a></li>
+<li><a href="#about">About</a>
+<ul class="sectlevel2">
+<li><a href="#not_for_you">Not for you</a></li>
+</ul>
+</li>
+<li><a href="#features">Features</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="introduction"><a class="link" href="#introduction">Introduction</a></h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This application caches rendered pages. It is useful for sites that have a lot of traffic and rendering is slow.</p>
+<p>Supercharge your Enonic site with non-intrusive html caching.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="about"><a class="link" href="#about">About</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Booster caches pages rendered with the Enonic framework/site engine. It is useful for sites that have a lot of traffic, or simply for getting faster pages.</p>
 </div>
 <div class="paragraph">
-<p>Features:</p>
+<p>Booster is built to be highly effective, without the typical side-effects of html caching - meaning it will automaticall determine what content can be cached, and automatically invalidate cache when content is published.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Booster will not work without a valid Enonic license
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="not_for_you"><a class="link" href="#not_for_you">Not for you</a></h3>
+<div class="paragraph">
+<p>Booster is probably not relevant if you are using 3.rd party front-end frameworks, or when users are logged into Enonic XP (i.e. intranets), or if you are doing extensive server-side personalization.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="features"><a class="link" href="#features">Features</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Here are the essential capabilities provided:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Cache individual sites</p>
+<p>Enable on a per site level</p>
 </li>
 <li>
-<p>Limit cache size and TTL</p>
-</li>
-<li>
-<p>Control downstream cache via headers</p>
-</li>
-<li>
-<p>Invalidate cache on applications start</p>
-</li>
-<li>
-<p>Invalidate cache on content publish</p>
-</li>
-<li>
-<p>Invalidate cache manually</p>
-</li>
-<li>
-<p>Exclude specific query parameters from cache key</p>
-</li>
-<li>
-<p>Cache only specific MIME types</p>
+<p>Control default TTL per site</p>
 </li>
 <li>
 <p>Exclude specific paths from cache</p>
 </li>
 <li>
-<p>Serve Brotli or Gzip compressed content</p>
+<p>Only caches published content (ignores draft items)</p>
 </li>
 <li>
-<p>Request collapsing</p>
+<p>Invalidates cache on application start</p>
 </li>
 <li>
-<p>Cluster shared cache</p>
+<p>Invalidates cache on content publish</p>
 </li>
 <li>
-<p>304 Not Modified support</p>
+<p>Invalidate cache via UI or API</p>
 </li>
 <li>
-<p>max-age and s-maxage support</p>
+<p>Serves Brotli or Gzip compressed content</p>
+</li>
+<li>
+<p>Cache is shared across entire XP cluster</p>
 </li>
 <li>
 <p>Cache survives XP restart</p>
+</li>
+<li>
+<p>Excludes named query parameters from cache key</p>
+</li>
+<li>
+<p>Caches only specific MIME types (defaults to html/xhtml)</p>
+</li>
+<li>
+<p>Implements 304 Not Modified headers</p>
+</li>
+<li>
+<p>Respects max-age and s-maxage headers</p>
+</li>
+<li>
+<p>Optionally control downstream cache headers</p>
+</li>
+<li>
+<p>Control cache size (max items in cache)</p>
+</li>
+<li>
+<p>Provides <code>Cache-Status</code> and <code>Age</code> headers</p>
+</li>
+<li>
+<p>Mitigates thundering herd via request collapsing</p>
 </li>
 </ul>
 </div>
@@ -509,7 +556,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-10 13:42:00 UTC
+Last updated 2024-04-11 12:30:28 UTC
 </div>
 </div>
 </body>

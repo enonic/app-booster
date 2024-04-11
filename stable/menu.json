@@ -5,12 +5,16 @@
       "document": "installation"
     },
     {
+      "title": "Usage",
+      "document": "usage"
+    },
+    {
       "title": "Configuration",
       "document": "configuration"
     },
     {
-      "title": "Usage",
-      "document": "usage"
+      "title": "How It Works",
+      "document": "how-it-works"
     },
     {
       "title": "How It Works",

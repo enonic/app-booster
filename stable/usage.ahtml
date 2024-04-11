@@ -441,44 +441,151 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#cache_invalidation">Cache Invalidation</a>
+<li><a href="#1_install">1. Install</a></li>
+<li><a href="#2_add_to_site">2. Add to site</a></li>
+<li><a href="#3_add_license">3. Add License</a></li>
+<li><a href="#4_verify">4. Verify</a></li>
+<li><a href="#5_cache_invalidation">5. Cache Invalidation</a>
 <ul class="sectlevel2">
-<li><a href="#automatic_cache_invalidation">Automatic Cache Invalidation</a></li>
-<li><a href="#manual_cache_invalidation">Manual Cache Invalidation</a></li>
-<li><a href="#programmatic_cache_invalidation">Programmatic Cache Invalidation</a></li>
+<li><a href="#manually">Manually</a></li>
+<li><a href="#programmatically">Programmatically</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="cache_invalidation"><a class="link" href="#cache_invalidation">Cache Invalidation</a></h2>
+<div id="preamble">
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="automatic_cache_invalidation"><a class="link" href="#automatic_cache_invalidation">Automatic Cache Invalidation</a></h3>
 <div class="paragraph">
-<p>The cache is automatically invalidated when the following events occur:
-- Application listed in <code>appsInvalidateCacheOnStart</code> starts. The entire cache is invalidated.
-- Content is published/unpublished. The cache is invalidated for the published Content&#8217;s Project.
-- Content scheduled for publishing/unpublishing reaches its scheduled time. The cache invalidated for the scheduled Content&#8217;s Project.
-- Project deleted. The cache invalidated for the deleted Project.
-- Cache item expired meaning Time to live (TTL) for the cache item is reached.</p>
+<p>How to install and enable Booster on your site</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="1_install"><a class="link" href="#1_install">1. Install</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Booster is available on <a href="https://market.enonic.com/applications">Enonic Market</a>.</p>
+</div>
+<div class="paragraph">
+<p>Install via <code>XP menu</code> &#8594; <code>Applications</code> &#8594; <code>Install</code> button, or via the Cloud Console.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="2_add_to_site"><a class="link" href="#2_add_to_site">2. Add to site</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Next, edit the site where you wish to activate Booster, and add Booster to the list of site applications.</p>
+</div>
+<div class="paragraph">
+<p>Optionally configure the application by setting Time To Live and exclude patterns</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/exclude-paths.png" alt="exclude paths">
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Remember to publish the site after adding Booster for changes to take effect.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="3_add_license"><a class="link" href="#3_add_license">3. Add License</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Unlike most Enonic apps, Booster requires a valid Enonic subscription to work. In Content Studio, open the <code>Booster</code> context panel and upload your license file - if it was not already installed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<a href="https://enonic.com/contact-us">Contact us</a> for a trial license, or for activating a subscription.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="4_verify"><a class="link" href="#4_verify">4. Verify</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With a licensed version of Booster deployed to your site, it is time to verify that it is working properly.</p>
+</div>
+<div class="paragraph">
+<p>Beyond experiencing much faster pages, the best way of validating that Booster is working proerly is by looking at the HTTP response headers (using your browser&#8217;s dev tools, or by using cURL commandline utility)</p>
+</div>
+<div class="paragraph">
+<p>You should see the <code>Cache-Status</code> header, and it should contain <code>Booster;</code> as one of it&#8217;s values.</p>
+</div>
+<div class="paragraph">
+<p>For more details, visit the <a href="how-it-works.ahtml">How it works chapter</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="5_cache_invalidation"><a class="link" href="#5_cache_invalidation">5. Cache Invalidation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Booster will automatically invalidate cache for common scenarios like publishing and changes to applications, there are however two other ways you may clear the cache:</p>
+</div>
+<div class="sect2">
+<h3 id="manually"><a class="link" href="#manually">Manually</a></h3>
+<div class="paragraph">
+<p>Clear cache for an entire content project by using the <code>Booster</code> context panel, available in Content Studio.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+One of the roles <code>CMS Admin</code>, <code>Project Owner</code> or <code>System Admin</code> is required to access to this widget.
+</td>
+</tr>
+</table>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/widget.png" alt="Purge cache via widget" width="467px">
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You may verify that the cache was cleared by checking the <code>Cache-Status</code> header.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
-<h3 id="manual_cache_invalidation"><a class="link" href="#manual_cache_invalidation">Manual Cache Invalidation</a></h3>
+<h3 id="programmatically"><a class="link" href="#programmatically">Programmatically</a></h3>
 <div class="paragraph">
-<p>The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.
-Only Project Owners and System Administrators have access to the widget.</p>
+<p>Sometimes you may wish to clear the Booster cache based on other changes. This can be done by invoking the Booster API tasks <code>invalidate</code> or <code>purge-all</code>.</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="programmatic_cache_invalidation"><a class="link" href="#programmatic_cache_invalidation">Programmatic Cache Invalidation</a></h3>
 <div class="paragraph">
-<p>There are two tasks that can be used to invalidate the cache programmatically:
-- <code>com.enonic.app.booster:invalidate</code>
-- <code>com.enonic.app.booster:purge-all</code></p>
+<p>Visit the <a href="api.ahtml">API chapter</a> for more details.</p>
 </div>
 </div>
 </div>
@@ -486,7 +593,7 @@ Only Project Owners and System Administrators have access to the widget.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-10 13:42:00 UTC
+Last updated 2024-04-11 12:30:28 UTC
 </div>
 </div>
 </body>
