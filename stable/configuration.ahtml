@@ -559,7 +559,7 @@ Booster does not cache responses with <code>Vary</code> header, including but no
 <div class="sect2">
 <h3 id="control_downstream_cache"><a class="link" href="#control_downstream_cache">Control downstream cache</a></h3>
 <div class="paragraph">
-<p>Different CDN and proxy servers can cache the response. Booster application can help to control the downstream cache by using <code>overrideHeaders</code> configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.</p>
+<p>Different CDN and proxy servers can cache the response. Booster can help to control the downstream cache by using <code>overrideHeaders</code> configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.</p>
 </div>
 <div class="paragraph">
 <p>Disable caching in the downstream cache (CDN and browser):</p>
@@ -651,7 +651,7 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 12:30:28 UTC
+Last updated 2024-04-11 12:49:55 UTC
 </div>
 </div>
 </body>

@@ -545,7 +545,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </div>
 <div class="paragraph">
-<p>If the response is cacheable, Booster application stores the response in the cache.</p>
+<p>If the response is cacheable, Booster stores the response in the cache.</p>
 </div>
 </div>
 </div>
@@ -760,7 +760,7 @@ For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning t
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 12:30:28 UTC
+Last updated 2024-04-11 12:49:55 UTC
 </div>
 </div>
 </body>

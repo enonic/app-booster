@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.22">
-<title>Booster</title>
+<title>Booster - Smart cache for Enonic sites</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,13 +437,13 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-right">
 <div id="header">
-<h1>Booster</h1>
+<h1>Booster - Smart cache for Enonic sites</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#about">About</a>
 <ul class="sectlevel2">
-<li><a href="#not_for_you">Not for you</a></li>
+<li><a href="#ignore_booster_if">Ignore booster if</a></li>
 </ul>
 </li>
 <li><a href="#features">Features</a></li>
@@ -454,7 +454,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Supercharge your Enonic site with non-intrusive html caching.</p>
+<p>Supercharge sites rendered with the Enonic framework</p>
 </div>
 </div>
 </div>
@@ -480,9 +480,9 @@ Booster will not work without a valid Enonic license
 </table>
 </div>
 <div class="sect2">
-<h3 id="not_for_you"><a class="link" href="#not_for_you">Not for you</a></h3>
+<h3 id="ignore_booster_if"><a class="link" href="#ignore_booster_if">Ignore booster if</a></h3>
 <div class="paragraph">
-<p>Booster is probably not relevant if you are using 3.rd party front-end frameworks, or when users are logged into Enonic XP (i.e. intranets), or if you are doing extensive server-side personalization.</p>
+<p>If you are using 3.rd party front-end frameworks, or doing heavy server-side personalization - Booster is probably not relevant.</p>
 </div>
 </div>
 </div>
@@ -556,7 +556,7 @@ Booster will not work without a valid Enonic license
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 12:30:28 UTC
+Last updated 2024-04-11 12:49:55 UTC
 </div>
 </div>
 </body>
