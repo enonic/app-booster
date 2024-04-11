@@ -1,10 +1,30 @@
 = API
 
-To programmatically invalidate cache, Booster provides the following tasks:
+To programmatically invalidate cache, Booster provides named tasks.
+
+In order to use them you need to do the following steps:
+
+- Add the following to your `build.gradle` file:
+
+[source,groovy]
+----
+dependencies {
+  include "com.enonic.xp:lib-task:${xpVersion}"
+}
+----
+
+- In your JavaScript controller, add a require statement:
+
+[source,js]
+----
+const taskLib = require('/lib/xp/task');
+----
+
+The following tasks are available:
 
 == Invalidate
 
-Invalidate (soft purge) all or specific Content Project cache
+Invalidate (soft purge) entire or specific Content Project cache
 
 .Invalidate specific Content Project cache
 [source,js]

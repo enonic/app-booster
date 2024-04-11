@@ -38,6 +38,7 @@ Booster considers query parameters when generating the cache key. However, some 
 
 If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the `excludeQueryParams` configuration property. To override the presets, simply add your own version of `excludeQueryParamsPreset` in the configuration file.
 
+NOTE: If page rendering varies on any of the excluded parameters, make sure that Booster application does not cache the response, for instance by having `Cache-Control: private` header in the controller's response.
 
 === MIME Types
 
@@ -79,11 +80,6 @@ Allow Fastly CDN to cache the response for 24 hours, but browser should cache th
 ----
 overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"
 ----
-
-NOTE: Only the following cache headers may be set:
-`Cache-Control`, `CDN-Cache-Control`, `Cloudflare-CDN-Cache-Control`, `Surrogate-Control`, `Vercel-CDN-Cache-Control`,
- `Akamai-Cache-Control`
-
 
 == Site configuration
 
