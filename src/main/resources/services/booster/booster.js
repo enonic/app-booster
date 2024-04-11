@@ -1,6 +1,6 @@
 const contentLib = require('/lib/xp/content');
 const taskLib = require('/lib/xp/task');
-const licenseManager = require("/lib/license-manager");
+const helper = require("/lib/helper");
 
 const submitTask = function (descriptor, config) {
     return taskLib.submitTask({
@@ -28,7 +28,7 @@ exports.post = function (req) {
     const supportedActions = ['invalidate', 'purge-all', 'enforce-all', 'status'];
     const params = JSON.parse(req.body);
 
-    if (!licenseManager.isLicenseValid()) {
+    if (!helper.isLicenseValid()) {
         return {
             status: 500,
             body: 'Invalid license'
@@ -41,6 +41,7 @@ exports.post = function (req) {
             body: 'Invalid action'
         };
     }
+
     const action = params.action.trim();
     let taskId = params.data.taskId;
 
@@ -51,6 +52,13 @@ exports.post = function (req) {
     const contentId = params.data.contentId;
     const project = params.data.project;
     const config = { project };
+
+    if (!helper.hasAllowedRole(project)) {
+        return {
+            status: 403,
+            body: 'Forbidden'
+        };
+    }
 
     if (contentId) {
         const content = contentLib.get({
