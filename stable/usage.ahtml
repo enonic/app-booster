@@ -484,7 +484,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="images/exclude-paths.png" alt="exclude paths">
+<img src="images/site-config.png" alt="Adding Booster to your site" width="739">
 </div>
 </div>
 <div class="admonitionblock note">
@@ -593,7 +593,7 @@ You may verify that the cache was cleared by checking the <code>Cache-Status</co
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 12:58:21 UTC
+Last updated 2024-04-11 13:01:33 UTC
 </div>
 </div>
 </body>

@@ -618,7 +618,7 @@ Only the following cache headers may be set:
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="images/exclude-paths.png" alt="exclude paths">
+<img src="images/site-config.png" alt="Adding Booster to your site" width="739">
 </div>
 </div>
 <div class="sect2">
@@ -651,7 +651,7 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 12:58:21 UTC
+Last updated 2024-04-11 13:01:33 UTC
 </div>
 </div>
 </body>
