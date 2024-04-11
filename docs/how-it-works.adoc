@@ -76,7 +76,7 @@ If the client supports Brotli or Gzip compression (determined from request `Acce
 
 NOTE: Compression happens only once, occurs during cache creation
 
-Brotli compression is preferred over Gzip compression. And Gzip compression is preferred over uncompressed content.
+Brotli compression is preferred over Gzip. Gzip is preferred over uncompressed content.
 
 == Request Collapsing
 
