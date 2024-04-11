@@ -34,7 +34,7 @@ A response is considered cacheable if the response:
 - Booster is installed and enabled on the requested site
 * Application configuration allows request to be cached (`Disabled` is unchecked and request path matches configured cacheable `Patterns`)
 
-If the response is cacheable, Booster application stores the response in the cache.
+If the response is cacheable, Booster stores the response in the cache.
 
 == Caching
 

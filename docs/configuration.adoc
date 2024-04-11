@@ -54,7 +54,7 @@ NOTE: Booster does not cache responses with `Vary` header, including but not lim
 
 === Control downstream cache
 
-Different CDN and proxy servers can cache the response. Booster application can help to control the downstream cache by using `overrideHeaders` configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.
+Different CDN and proxy servers can cache the response. Booster can help to control the downstream cache by using `overrideHeaders` configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.
 
 Disable caching in the downstream cache (CDN and browser):
 [source,properties]

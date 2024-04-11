@@ -1,6 +1,6 @@
-= Booster
+= Booster - Smart cache for Enonic sites
 
-Supercharge your Enonic site with non-intrusive html caching. 
+Supercharge sites rendered with the Enonic framework
 
 == About
 
@@ -10,9 +10,9 @@ Booster is built to be highly effective, without the typical side-effects of htm
 
 NOTE: Booster will not work without a valid Enonic license
 
-=== Not for you
+=== Ignore booster if
 
-Booster is probably not relevant if you are using 3.rd party front-end frameworks, or when users are logged into Enonic XP (i.e. intranets), or if you are doing extensive server-side personalization.
+If you are using 3.rd party front-end frameworks, or doing heavy server-side personalization - Booster is probably not relevant.
 
 
 == Features
