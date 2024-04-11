@@ -1,17 +1,56 @@
 = Configuration
 
-== Global Configuration file
+== Global configuration
 
-`com.enonic.app.booster.cfg` is the configuration file for the application. It includes the following properties:
+Configure Booster by adding a configuration file to your XP instance.
 
-- `cacheTtl`: Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).
-- `cacheSize`: Total number of items in the cache. The default value is 10000.
-- `appsForceInvalidateOnInstall`: Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.
-- `excludeQueryParamsPreset`: Comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...)
-- `excludeQueryParams`: Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default `excludeQueryParamsPreset`. By default, no extra query parameters are listed.
-- `disableCacheStatusHeader`: If set to `true` `Cache-Status` header is not sent in the response. The default value is `false`.
-- `overrideHeaders`: Comma-separated list of instructions that override headers. By default, no instructions are listed.
-- `cacheMimeTypes`: Comma-separated list of MIME types that should be cached. The default value is `text/html, text/xhtml`.
+`XP_HOME/config/com.enonic.app.booster.cfg`
+
+.Example configuration with default values
+[source,properties]
+----
+cacheTtl = 3600 
+cacheSize = 10000
+appsForceInvalidateOnInstall = 
+excludeQueryParams = 
+disableCacheStatusHeader = false
+cacheMimeTypes = text/html, text/xhtml
+overrideHeaders = 
+----
+
+cacheTtl:: Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).
+cacheSize:: Total number of items in the cache. The default value is 10000.
+appsForceInvalidateOnInstall:: Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.
+excludeQueryParams:: Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default. By default, no extra query parameters are listed.
+excludeQueryParamsPreset:: This comma-separated list contains "preset" of query parameters that will not be affected by changing `excludeQueryParams`. More details about this below:
+disableCacheStatusHeader:: If set to `true` `Cache-Status` header is not sent in the response. The default value is `false`.
+cacheMimeTypes:: Comma-separated list of MIME types that should be cached. The default value is `text/html, text/xhtml`.
+overrideHeaders:: Comma-separated list of instructions that override headers. By default, no instructions are listed. Use with causion.
+
+
+=== Query Parameters
+
+Booster considers query parameters when generating the cache key. However, some query parameters are not relevant, and should be excluded for a better performing cache. Examples of such are marketing and ads related parameters, where the rendered result will look the same regardlessly. 
+
+`excludeQueryParamsPreset` contains a list query parameters that should be excluded from the cache key. These complete list is:
+
+`fbclid, twclid, dclid, gclid, gclsrc, wbraid, gbraid, msclkid, yclid, _ga, _gl, utm_source, utm_medium, utm_campaign, utm_term, utm_source_platform, utm_creative_format, utm_marketing_tactic, _hsenc, __hssc, __hstc, __hsfp, hsCtaTracking`
+
+If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the `excludeQueryParams` configuration property. To override the presets, simply add your own version of `excludeQueryParamsPreset` in the configuration file.
+
+
+=== MIME Types
+
+Booster caches `text/html` and `text/xhtml` MIME types by default. The `cacheMimeTypes` configuration property is a comma-separated list of MIME types that should be cached.
+
+Allow caching of `text/plain` (such as robots.txt), `text/xml` (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:
+[source,properties]
+----
+cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json
+----
+
+NOTE: Booster does not cache responses with `Vary` header, including but not limited to `Vary: Accept`.
+
 
 === Control downstream cache
 
@@ -41,35 +80,26 @@ Allow Fastly CDN to cache the response for 24 hours, but browser should cache th
 overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"
 ----
 
-=== MIME Types
+NOTE: Only the following cache headers may be set: 
+`Cache-Control`, `CDN-Cache-Control`, `Cloudflare-CDN-Cache-Control`, `Surrogate-Control`, `Vercel-CDN-Cache-Control`,
+ `Akamai-Cache-Control`
 
-By default, Booster application caches only `text/html` and `text/xhtml` MIME types. The `cacheMimeTypes` configuration property is a comma-separated list of MIME types that should be cached.
 
-Allow caching of `text/plain` (such as robots.txt), `text/xml` (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:
-[source,properties]
-----
-cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json
-----
+== Site configuration
 
-NOTE: Booster does not cache responses with `Vary` header, including but not limited to `Vary: Accept`.
-
-=== Query Parameters
-
-By default, Booster application considers query parameters when generating the cache key. However, some query parameters are not relevant to the cache key and should be excluded. The `excludeQueryParams` configuration property is a comma-separated list of query parameters that should be excluded from the cache key. The default value provides a list of common query parameters that should be excluded from the cache key (e.g. `utm_source`, `gclid`, `fbclid`, ...). If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the `excludeQueryParamsExtra` configuration property.
-
-== Application Configuration
+When adding Booster to a site, it may be tuned specifically
 
 image::images/exclude-paths.png[]
 
-=== Exclude Paths
+=== Cache patterns
 
-By default, when Booster application is installed on a Site, it caches all paths. However, there are cases when some paths should not be cached. The `Disabled` site configuration allows to disable caching for the entire Site. The `Patterns` site configuration property allows to cache only specific paths.
+By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.
 
-If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.
+`Patterns` lets you tune caching only for specific paths.
 
-A pattern is a regular expression that is used to match the request path.
-A pattern element may also contain an `invert` attribute to indicate that the result of evaluating the regular expression should be negated.
+If no patterns are provided, all paths are cached. By adding a pattern, no path are cached by default, and you must ensure at least one pattern matches requests to be cached.
 
+A pattern is a regular expression that is used to match the request path. A pattern element may also contain an `invert` attribute to indicate that the result of evaluating the regular expression should be negated.
 
 The syntax of the pattern is the same as https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings[XP Framework pattern mappings].
 

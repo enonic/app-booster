@@ -1,23 +1,39 @@
 = Booster
 
-== Introduction
+Supercharge your Enonic site with non-intrusive html caching. 
 
-This application caches rendered pages. It is useful for sites that have a lot of traffic and rendering is slow.
+== About
 
-Features:
+Booster caches pages rendered with the Enonic framework/site engine. It is useful for sites that have a lot of traffic, or simply for getting faster pages.
 
-- Cache individual sites
-- Limit cache size and TTL
-- Control downstream cache via headers
-- Invalidate cache on applications start
-- Invalidate cache on content publish
-- Invalidate cache manually
-- Exclude specific query parameters from cache key
-- Cache only specific MIME types
+Booster is built to be highly effective, without the typical side-effects of html caching - meaning it will automaticall determine what content can be cached, and automatically invalidate cache when content is published.
+
+NOTE: Booster will not work without a valid Enonic license
+
+=== Not for you
+
+Booster is probably not relevant if you are using 3.rd party front-end frameworks, or when users are logged into Enonic XP (i.e. intranets), or if you are doing extensive server-side personalization.
+
+
+== Features
+
+Here are the essential capabilities provided:
+
+- Enable on a per site level
+- Control default TTL per site
 - Exclude specific paths from cache
-- Serve Brotli or Gzip compressed content
-- Request collapsing
-- Cluster shared cache
-- 304 Not Modified support
-- max-age and s-maxage support
+- Only caches published content (ignores draft items)
+- Invalidates cache on application start
+- Invalidates cache on content publish
+- Invalidate cache via UI or API
+- Serves Brotli or Gzip compressed content
+- Cache is shared across entire XP cluster
 - Cache survives XP restart
+- Excludes named query parameters from cache key
+- Caches only specific MIME types (defaults to html/xhtml)
+- Implements 304 Not Modified headers
+- Respects max-age and s-maxage headers
+- Optionally control downstream cache headers
+- Control cache size (max items in cache)
+- Provides `Cache-Status` and `Age` headers
+- Mitigates thundering herd via request collapsing

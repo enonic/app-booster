@@ -1,24 +1,61 @@
 = Usage
 
-== Cache Invalidation
+How to install and enable Booster on your site
 
-=== Automatic Cache Invalidation
 
-The cache is automatically invalidated when the following events occur:
-- Application listed in `appsInvalidateCacheOnStart` starts. The entire cache is invalidated.
-- Content is published/unpublished. The cache is invalidated for the published Content's Project.
-- Content scheduled for publishing/unpublishing reaches its scheduled time. The cache invalidated for the scheduled Content's Project.
-- Project deleted. The cache invalidated for the deleted Project.
-- Cache item expired meaning Time to live (TTL) for the cache item is reached.
+== 1. Install
 
-=== Manual Cache Invalidation
+Booster is available on https://market.enonic.com/applications[Enonic Market].
 
-The cache can be manually invalidated in Content Studio widget. Only entire project cache can be invalidated.
-Only Project Owners and System Administrators have access to the widget.
+Install via `XP menu` -> `Applications` -> `Install` button, or via the Cloud Console.
 
-=== Programmatic Cache Invalidation
+== 2. Add to site
 
-There are two tasks that can be used to invalidate the cache programmatically:
-- `com.enonic.app.booster:invalidate`
-- `com.enonic.app.booster:purge-all`
+Next, edit the site where you wish to activate Booster, and add Booster to the list of site applications. 
+
+Optionally configure the application by setting Time To Live and exclude patterns
+
+image::images/exclude-paths.png[]
+
+NOTE: Remember to publish the site after adding Booster for changes to take effect.
+
+== 3. Add License
+
+Unlike most Enonic apps, Booster requires a valid Enonic subscription to work. In Content Studio, open the `Booster` context panel and upload your license file - if it was not already installed. 
+
+NOTE: https://enonic.com/contact-us[Contact us] for a trial license, or for activating a subscription.
+
+== 4. Verify
+
+With a licensed version of Booster deployed to your site, it is time to verify that it is working properly.
+
+Beyond experiencing much faster pages, the best way of validating that Booster is working proerly is by looking at the HTTP response headers (using your browser's dev tools, or by using cURL commandline utility)
+
+You should see the `Cache-Status` header, and it should contain `Booster;` as one of it's values.
+
+For more details, visit the <<how-it-works#, How it works chapter>> 
+
+== 5. Cache Invalidation
+
+Booster will automatically invalidate cache for common scenarios like publishing and changes to applications, there are however two other ways you may clear the cache:
+
+=== Manually
+
+Clear cache for an entire content project by using the `Booster` context panel, available in Content Studio.
+
+NOTE: One of the roles `CMS Admin`, `Project Owner` or `System Admin` is required to access to this widget.
+
+image::images/widget.png["Purge cache via widget", 467px]
+
+TIP: You may verify that the cache was cleared by checking the `Cache-Status` header.
+
+=== Programmatically
+
+Sometimes you may wish to clear the Booster cache based on other changes. This can be done by invoking the Booster API tasks `invalidate` or `purge-all`.
+
+Visit the <<api#, API chapter>> for more details.
+
+
+
+
 
