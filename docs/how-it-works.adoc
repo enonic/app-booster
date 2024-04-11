@@ -58,7 +58,7 @@ Booster will automatically invalidate cache when one of the following events occ
 
 . Cache for a single item is automatically cleared when
 
-* Cache item reaches Time to live (TTL) 
+* Cache item reaches Time to live (TTL)
 
 . All cache gets deleted when:
 
@@ -66,7 +66,7 @@ Booster will automatically invalidate cache when one of the following events occ
 
 NOTE: When an item is invalidated, it is simply marked as invalid.
 
-Cache can also be invalidated manually via the Content Studio Booster widget, or via the Booster API. 
+Cache can also be invalidated manually via the Content Studio Booster widget, or via the Booster API.
 
 Invalid items are periodically removed from the cache by a background task. This task also enforces the `cacheSize` configuration setting.
 
@@ -80,25 +80,25 @@ Brotli compression is preferred over Gzip. Gzip is preferred over uncompressed c
 
 == Request Collapsing
 
-"Thundering herd" is a scenario when multiple requests are made for a single resource at the same time. If the item is not cached, the traffic may potentially bring down your server. 
+"Thundering herd" is a scenario when multiple requests are made for a single resource at the same time. If the item is not cached, the traffic may potentially bring down your server.
 
-To mitigate this situation, Booster implements a technique called request collapsing. This ensures only one of the requests are forwarded to the site engine for rendering. 
+To mitigate this situation, Booster implements a technique called request collapsing. This ensures only one of the requests are forwarded to the site engine for rendering.
 
-Remaining requests are queued up for the response from the first request. Once the rendering is completed, the response is then sent to all the waiting requests. 
+Remaining requests are queued up for the response from the first request. Once the rendering is completed, the response is then sent to all the waiting requests.
 
 Request collapsing only happens if the request is cacheable and a stale or invalidated cache item already exists.
 
-NOTE: For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
+NOTE: For an XP cluster, request collapsing is performed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
 
 == 304 Not Modified
 
-Cached responses always contains an `ETag` header. If a request contains the `If-None-Match` header, Booster will try to match this with the stored `ETag` value. 
+Cached responses always contains an `ETag` header. If a request contains the `If-None-Match` header, Booster will try to match this with the stored `ETag` value.
 
-If the values match, Booster will return a 304 `Not Modified` response and no data. This lets the browser use it's local cache - saving network bandwith and reducing latency.
+If the values match, Booster will return a 304 `Not Modified` response and no data. This lets the browser use it's local cache - saving network bandwidth and reducing latency.
 
 == Age, max-age and s-maxage
 
-Booster supports `max-age` and `s-maxage` cache directives from the upstream response `Cahe-Control` headers. 
+Booster supports `max-age` and `s-maxage` cache directives from the upstream response `Cahe-Control` headers.
 
 The `max-age` and `s-maxage` directives are used to specify the maximum amount of time a response can be cached. The `s-maxage` directive is preferred over the `max-age` directive, when both are present in `Cahe-Control`.
 

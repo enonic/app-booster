@@ -11,7 +11,7 @@ Install via `XP menu` -> `Applications` -> `Install` button, or via the Cloud Co
 
 == 2. Add to site
 
-Next, edit the site where you wish to activate Booster, and add Booster to the list of site applications. 
+Next, edit the site where you wish to activate Booster, and add Booster to the list of site applications.
 
 Optionally configure the application by setting Time To Live and exclude patterns
 
@@ -21,7 +21,7 @@ NOTE: Remember to publish the site after adding Booster for changes to take effe
 
 == 3. Add License
 
-Unlike most Enonic apps, Booster requires a valid Enonic subscription to work. In Content Studio, open the `Booster` context panel and upload your license file - if it was not already installed. 
+Unlike most Enonic apps, Booster requires a valid Enonic subscription to work. In Content Studio, open the `Booster` context panel and upload your license file - if it was not already installed.
 
 NOTE: https://enonic.com/contact-us[Contact us] for a trial license, or for activating a subscription.
 
@@ -31,9 +31,9 @@ With a licensed version of Booster deployed to your site, it is time to verify t
 
 Beyond experiencing much faster pages, the best way of validating that Booster is working proerly is by looking at the HTTP response headers (using your browser's dev tools, or by using cURL commandline utility)
 
-You should see the `Cache-Status` header, and it should contain `Booster;` as one of it's values.
+You should see the `Cache-Status` header, and it should contain `Booster;` as one of its values.
 
-For more details, visit the <<how-it-works#, How it works chapter>> 
+For more details, visit the <<how-it-works#, How it works chapter>>
 
 == 5. Cache Invalidation
 

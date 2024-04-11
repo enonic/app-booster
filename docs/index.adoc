@@ -6,7 +6,7 @@ Supercharge sites rendered with the Enonic framework
 
 Booster caches pages rendered with the Enonic framework/site engine. It is useful for sites that have a lot of traffic, or simply for getting faster pages.
 
-Booster is built to be highly effective, without the typical side-effects of html caching - meaning it will automaticall determine what content can be cached, and automatically invalidate cache when content is published.
+Booster is built to be highly effective, without the typical side-effects of html caching - meaning it will automatically determine what content can be cached, and automatically invalidate cache when content is published.
 
 NOTE: Booster will not work without a valid Enonic license
 

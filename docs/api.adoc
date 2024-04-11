@@ -2,7 +2,41 @@
 
 To programmatically invalidate cache, Booster provides the following tasks:
 
-== TODO
+== Invalidate
 
+Invalidate (soft purge) all or specific Content Project cache
 
+.Invalidate specific Content Project cache
+[source,js]
+----
+const taskId = taskLib.submitTask({
+descriptor: 'com.enonic.app.booster:invalidate',
+config: {
+project: 'sample-blog'
+}
+});
+----
 
+.Invalidate entire cache
+[source,js]
+----
+const taskId = taskLib.submitTask({
+descriptor: 'com.enonic.app.booster:invalidate',
+config: {
+}
+});
+----
+
+== Purge All
+
+Purge (delete) all records in cache
+
+.Purge entire cache
+[source,js]
+----
+const taskId = taskLib.submitTask({
+descriptor: 'com.enonic.app.booster:purge-all',
+config: {
+}
+});
+----
