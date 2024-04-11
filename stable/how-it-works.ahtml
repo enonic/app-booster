@@ -658,7 +658,7 @@ Compression happens only once, occurs during cache creation
 </table>
 </div>
 <div class="paragraph">
-<p>Brotli compression is preferred over Gzip compression. And Gzip compression is preferred over uncompressed content.</p>
+<p>Brotli compression is preferred over Gzip. Gzip is preferred over uncompressed content.</p>
 </div>
 </div>
 </div>
@@ -760,7 +760,7 @@ For an XP cluster, request collapsing is perfomed on a per-node-basis, meaning t
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 12:49:55 UTC
+Last updated 2024-04-11 12:58:21 UTC
 </div>
 </div>
 </body>

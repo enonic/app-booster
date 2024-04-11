@@ -1,20 +1,16 @@
 {
   "menuItems": [
     {
-      "title": "Installation",
-      "document": "installation"
-    },
-    {
       "title": "Usage",
       "document": "usage"
     },
     {
-      "title": "Configuration",
-      "document": "configuration"
-    },
-    {
       "title": "How It Works",
       "document": "how-it-works"
+    },
+    {
+      "title": "Configuration",
+      "document": "configuration"
     },
     {
       "title": "API",
