@@ -15,7 +15,7 @@ Next, edit the site where you wish to activate Booster, and add Booster to the l
 
 Optionally configure the application by setting Time To Live and exclude patterns
 
-image::images/exclude-paths.png[]
+image::images/site-config.png[Adding Booster to your site, 739]
 
 NOTE: Remember to publish the site after adding Booster for changes to take effect.
 
@@ -45,7 +45,7 @@ Clear cache for an entire content project by using the `Booster` context panel, 
 
 NOTE: One of the roles `CMS Admin`, `Project Owner` or `System Admin` is required to access to this widget.
 
-image::images/widget.png["Purge cache via widget", 467px]
+image::images/widget.png[Purge cache via widget, 467px]
 
 TIP: You may verify that the cache was cleared by checking the `Cache-Status` header.
 

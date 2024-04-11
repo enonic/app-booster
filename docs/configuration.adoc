@@ -89,7 +89,7 @@ NOTE: Only the following cache headers may be set:
 
 When adding Booster to a site, it may be tuned specifically
 
-image::images/exclude-paths.png[]
+image::images/site-config.png[Adding Booster to your site, 739]
 
 === Cache patterns
 
