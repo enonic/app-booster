@@ -1,10 +1,13 @@
 <widget id="widget-booster">
     <link rel="stylesheet" href="{{assetsUri}}/styles/main.css" type="text/css" media="all"/>
     <script src="{{assetsUri}}/js/main.js" data-service-url="{{serviceUrl}}" data-project="{{project}}"></script>
+    {{#isEnabled}}
     {{^isLicenseValid}}
     <script src="{{assetsUri}}/js/license.js" data-service-url="{{licenseUploadUrl}}"></script>
     {{/isLicenseValid}}
-    <div id="widget-booster-container" class="widget-booster-container{{^isLicenseValid}} license-invalid{{/isLicenseValid}}">
+    {{/isEnabled}}
+    <div id="widget-booster-container" class="widget-booster-container{{#isEnabled}}{{^isLicenseValid}} license-invalid{{/isLicenseValid}}{{/isEnabled}}">
+        {{#isEnabled}}
         {{^isLicenseValid}}
         <div id="widget-booster-license-invalid">
             <div id="license-upload">
@@ -21,6 +24,7 @@
             </div>
         </div>
         {{/isLicenseValid}}
+        {{/isEnabled}}
         <div id="widget-booster-license-valid">
             {{#isEnabled}}
 

@@ -1,30 +1,9 @@
 const portal = require('/lib/xp/portal');
 const contentLib = require('/lib/xp/content');
-const authLib = require('/lib/xp/auth');
 const mustache = require('/lib/mustache');
-const licenseManager = require("/lib/license-manager");
+const helper = require("/lib/helper");
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
-
-const allowedRoles = ['role:system.admin', 'role:cms.admin'];
-
-const hasAllowedRole = (project) => {
-    let hasAllowedRole = false;
-    allowedRoles.concat(getProjectOwnerRole(project)).forEach(role => {
-        if (authLib.hasRole(role)) {
-            log.info('Current user has role: ' + role);
-            hasAllowedRole = true;
-        }
-    });
-    return hasAllowedRole;
-}
-
-const getProjectOwnerRole = (project) => {
-    if (!project) {
-        return null;
-    }
-    return `role:cms.project.${project}.owner`;
-}
 
 const isAppEnabledOnSite = (contentId) => {
     if (!contentId) {
@@ -58,8 +37,8 @@ const renderWidgetView = (req) => {
 
     if (!project) {
         error = 'Project not found';
-    } else if (!hasAllowedRole(project)) {
-        error = 'You do not have permission to access this application';
+    } else if (!helper.hasAllowedRole(project)) {
+        error = 'You do not have a permission to access this application';
     }
 
     if (!error) {
@@ -79,7 +58,7 @@ const renderWidgetView = (req) => {
         isEnabled: !error,
         assetsUri: portal.assetUrl({ path: ''}),
         serviceUrl: portal.serviceUrl({ service: 'booster' }),
-        isLicenseValid: licenseManager.isLicenseValid(),
+        isLicenseValid: helper.isLicenseValid(),
         licenseUploadUrl: portal.serviceUrl({ service: 'license-upload' }),
         error,
         hint
