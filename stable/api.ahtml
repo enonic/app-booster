@@ -450,7 +450,39 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>To programmatically invalidate cache, Booster provides the following tasks:</p>
+<p>To programmatically invalidate cache, Booster provides named tasks.</p>
+</div>
+<div class="paragraph">
+<p>In order to use them you need to do the following steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the following to your <code>build.gradle</code> file:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-groovy" data-lang="groovy">dependencies {
+  include "com.enonic.xp:lib-task:${xpVersion}"
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>In your JavaScript controller, add a require statement:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-js" data-lang="js">const taskLib = require('/lib/xp/task');</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The following tasks are available:</p>
 </div>
 </div>
 </div>
@@ -458,7 +490,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="invalidate"><a class="link" href="#invalidate">Invalidate</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Invalidate (soft purge) all or specific Content Project cache</p>
+<p>Invalidate (soft purge) entire or specific Content Project cache</p>
 </div>
 <div class="listingblock">
 <div class="title">Invalidate specific Content Project cache</div>
@@ -504,7 +536,7 @@ config: {
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:47:17 UTC
+Last updated 2024-04-11 14:09:33 UTC
 </div>
 </div>
 </body>

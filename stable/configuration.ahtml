@@ -529,6 +529,18 @@ overrideHeaders =</code></pre>
 <div class="paragraph">
 <p>If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParams</code> configuration property. To override the presets, simply add your own version of <code>excludeQueryParamsPreset</code> in the configuration file.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If page rendering varies on any of the excluded parameters, make sure that Booster application does not cache the response, for instance by having <code>Cache-Control: private</code> header in the controller&#8217;s response.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="mime_types"><a class="link" href="#mime_types">MIME Types</a></h3>
@@ -593,20 +605,6 @@ Booster does not cache responses with <code>Vary</code> header, including but no
 <pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"</code></pre>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Only the following cache headers may be set:
-<code>Cache-Control</code>, <code>CDN-Cache-Control</code>, <code>Cloudflare-CDN-Cache-Control</code>, <code>Surrogate-Control</code>, <code>Vercel-CDN-Cache-Control</code>,
- <code>Akamai-Cache-Control</code>
-</td>
-</tr>
-</table>
-</div>
 </div>
 </div>
 </div>
@@ -651,7 +649,7 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 13:47:17 UTC
+Last updated 2024-04-11 14:09:33 UTC
 </div>
 </div>
 </body>
