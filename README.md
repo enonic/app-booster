@@ -1,9 +1,13 @@
 # Booster: Cache Rendered Pages
 
-This application caches rendered pages. It is useful for sites that have a lot of pages and/or a lot of traffic.
+Booster caches pages rendered with the Enonic framework/site engine. It is useful for sites that have a lot of traffic, or simply for getting faster pages.
 
-## Installation
+## Deploy locally
 
 ```shell
 ./gradlew deploy
 ```
+
+## Documentation
+
+https://developer.enonic.com/docs/booster/stable
