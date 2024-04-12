@@ -466,7 +466,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="1_install"><a class="link" href="#1_install">1. Install</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Booster is available on <a href="https://market.enonic.com/applications">Enonic Market</a>.</p>
+<p>Booster is available on <a href="https://market.enonic.com/vendors/enonic/booster">Enonic Market</a>.</p>
 </div>
 <div class="paragraph">
 <p>Install via <code>XP menu</code> &#8594; <code>Applications</code> &#8594; <code>Install</code> button, or via the Cloud Console.</p>
@@ -593,7 +593,7 @@ You may verify that the cache was cleared by checking the <code>Cache-Status</co
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-12 11:46:28 UTC
+Last updated 2024-04-12 12:19:34 UTC
 </div>
 </div>
 </body>
