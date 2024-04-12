@@ -23,7 +23,7 @@ Here are the essential capabilities provided:
 - Control default TTL per site
 - Exclude specific paths from cache
 - Only caches published content (ignores draft items)
-- Invalidates cache on application start
+- Invalidates cache on application install
 - Invalidates cache on content publish
 - Invalidate cache via UI or API
 - Serves Brotli or Gzip compressed content

@@ -54,7 +54,7 @@ Booster will automatically invalidate cache when one of the following events occ
 
 * Content gets published/unpublished or expires
 * Project is deleted
-* Applications used by a site starts/restarts
+* Applications used by a site is installed
 
 . Cache for a single item is automatically cleared when
 
