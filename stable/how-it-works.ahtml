@@ -592,7 +592,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Project is deleted</p>
 </li>
 <li>
-<p>Applications used by a site starts/restarts</p>
+<p>Applications used by a site is installed</p>
 </li>
 </ul>
 </div>
@@ -760,7 +760,7 @@ For an XP cluster, request collapsing is performed on a per-node-basis, meaning 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 14:09:33 UTC
+Last updated 2024-04-12 11:46:28 UTC
 </div>
 </div>
 </body>

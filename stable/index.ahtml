@@ -508,7 +508,7 @@ Booster will not work without a valid Enonic license
 <p>Only caches published content (ignores draft items)</p>
 </li>
 <li>
-<p>Invalidates cache on application start</p>
+<p>Invalidates cache on application install</p>
 </li>
 <li>
 <p>Invalidates cache on content publish</p>
@@ -556,7 +556,7 @@ Booster will not work without a valid Enonic license
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-11 14:09:33 UTC
+Last updated 2024-04-12 11:46:28 UTC
 </div>
 </div>
 </body>
