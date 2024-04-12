@@ -5,7 +5,7 @@ How to install and enable Booster on your site
 
 == 1. Install
 
-Booster is available on https://market.enonic.com/applications[Enonic Market].
+Booster is available on https://market.enonic.com/vendors/enonic/booster[Enonic Market].
 
 Install via `XP menu` -> `Applications` -> `Install` button, or via the Cloud Console.
 
