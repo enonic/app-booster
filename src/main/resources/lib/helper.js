@@ -10,7 +10,7 @@ exports.hasAllowedRole = (project) => {
     let hasAllowedRole = false;
     allowedRoles.concat(getProjectOwnerRole(project)).forEach(role => {
         if (authLib.hasRole(role)) {
-            log.info('Current user has role: ' + role);
+            log.debug('Current user has role: ' + role);
             hasAllowedRole = true;
         }
     });
