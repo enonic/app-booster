@@ -250,10 +250,21 @@ public final class CachingResponseWrapper
         if ( store == null )
         {
             store = storeConditions.apply( request, this );
+            LOG.debug( "Store conditions result {}", store );
             beforeWrite.accept( response );
         }
 
-        final ServletOutputStream outputStream = store ? new CachingOutputStream( delegateStream ) : delegateStream;
+        final ServletOutputStream outputStream;
+        if ( store )
+        {
+            LOG.debug( "Delegate response data to caching output stream" );
+            outputStream = new CachingOutputStream( delegateStream );
+        }
+        else
+        {
+            LOG.debug( "Bypass response data" );
+            outputStream = delegateStream;
+        }
         outputStreamHolder.set( outputStream );
         return outputStream;
     }
@@ -262,6 +273,7 @@ public final class CachingResponseWrapper
     public void addCookie( final Cookie cookie )
     {
         store = false;
+        LOG.debug( "Do not store because cookie added" );
         super.addCookie( cookie );
     }
 
@@ -270,6 +282,7 @@ public final class CachingResponseWrapper
         throws IOException
     {
         store = false;
+        LOG.debug( "Do not store because error sent" );
         super.sendError( sc, msg );
     }
 
@@ -278,6 +291,7 @@ public final class CachingResponseWrapper
         throws IOException
     {
         store = false;
+        LOG.debug( "Do not store because error sent" );
         super.sendError( sc );
     }
 
@@ -286,6 +300,7 @@ public final class CachingResponseWrapper
         throws IOException
     {
         store = false;
+        LOG.debug( "Do not store because redirect sent" );
         super.sendRedirect( location );
     }
 
@@ -294,6 +309,7 @@ public final class CachingResponseWrapper
         throws IOException
     {
         store = false;
+        LOG.debug( "Do not store because Writer requested" );
         return super.getWriter();
     }
 
@@ -301,6 +317,7 @@ public final class CachingResponseWrapper
     public void reset()
     {
         store = false;
+        LOG.debug( "Do not store because reset is called" );
         outputStreamHolder.set( null );
         super.reset();
     }
@@ -309,6 +326,7 @@ public final class CachingResponseWrapper
     public void resetBuffer()
     {
         store = false;
+        LOG.debug( "Do not store because resetBuffer is called" );
         super.resetBuffer();
     }
 
