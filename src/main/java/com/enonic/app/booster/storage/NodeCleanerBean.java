@@ -17,6 +17,7 @@ import com.enonic.xp.node.FindNodesByQueryResult;
 import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeHits;
 import com.enonic.xp.node.NodeId;
+import com.enonic.xp.node.NodeNotFoundException;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.RefreshMode;
@@ -196,8 +197,15 @@ public class NodeCleanerBean
 
     private void setInvalidatedTime( final NodeId nodeId, final Instant cutOffTime )
     {
-        nodeService.update(
-            UpdateNodeParams.create().id( nodeId ).editor( editor -> editor.data.setInstant( "invalidatedTime", cutOffTime ) ).build() );
+        try
+        {
+            nodeService.update(
+                UpdateNodeParams.create().id( nodeId ).editor( editor -> editor.data.setInstant( "invalidatedTime", cutOffTime ) ).build() );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            LOG.debug( "Node for invalidate was already deleted", e );
+        }
     }
 
     private void delete( final NodeId nodeId )
