@@ -23,7 +23,7 @@ NOTE: Remember to publish the site after adding Booster for changes to take effe
 
 Unlike most Enonic apps, Booster requires a valid Enonic subscription to work. In Content Studio, open the `Booster` context panel and upload your license file - if it was not already installed.
 
-NOTE: https://enonic.com/contact-us[Contact us] for a trial license, or for activating a subscription.
+NOTE: https://www.enonic.com/company/contact-us[Contact us] for a trial license, or for activating a subscription.
 
 == 4. Verify
 
