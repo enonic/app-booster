@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.22">
+<meta name="generator" content="Asciidoctor 2.0.23">
 <title>Usage</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -514,7 +514,7 @@ Remember to publish the site after adding Booster for changes to take effect.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<a href="https://enonic.com/contact-us">Contact us</a> for a trial license, or for activating a subscription.
+<a href="https://www.enonic.com/company/contact-us">Contact us</a> for a trial license, or for activating a subscription.
 </td>
 </tr>
 </table>
@@ -593,7 +593,7 @@ You may verify that the cache was cleared by checking the <code>Cache-Status</co
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-04-12 12:19:34 UTC
+Last updated 2024-08-05 13:51:44 UTC
 </div>
 </div>
 </body>
