@@ -1,5 +1,5 @@
 [versions]
-brotli4jVersion = "1.16.0"
+brotli4jVersion = "1.17.0"
 
 [libraries]
 
