@@ -44,7 +44,7 @@ dependencies {
     include 'com.enonic.lib:lib-license:3.1.0'
 
     testImplementation(platform('org.junit:junit-bom:5.11.1'))
-    testImplementation(platform("org.mockito:mockito-bom:5.13.0"))
+    testImplementation(platform("org.mockito:mockito-bom:5.14.1"))
 
     testImplementation('org.junit.jupiter:junit-jupiter')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher')
