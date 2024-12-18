@@ -488,7 +488,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Is a request to the master branch (draft items are never cached)</p>
 </li>
 <li>
-<p>It&#8217;s URI does not contain <code>/_/</code>. (This is a convention for service requests.)</p>
+<p>It&#8217;s URI does not contain <code>/_/</code> (This is a convention for service requests.), except for <code>/_/component/</code> requests.</p>
 </li>
 </ul>
 </div>
@@ -760,7 +760,7 @@ For an XP cluster, request collapsing is performed on a per-node-basis, meaning 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-08-05 13:51:44 UTC
+Last updated 2024-12-18 17:47:20 UTC
 </div>
 </div>
 </body>
