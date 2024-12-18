@@ -39,9 +39,12 @@ public class Preconditions
             return Result.SILENT_BYPASS;
         }
 
-        // If path contains /_/ it is a controller request. We don't cache them here at least for now.
+        // If path contains /_/ it is a controller request.
+        // We cache /_/component/ controller requests, but not the other ones.
         final String requestURI = request.getRequestURI();
-        if ( requestURI.contains( "/_/" ) )
+        final int indexOfUnderscore = requestURI.indexOf( "/_/" );
+        if ( indexOfUnderscore != -1 &&
+            !requestURI.regionMatches( indexOfUnderscore + "/_/".length(), "component/", 0, "component/".length() ) )
         {
             LOG.debug( "Bypassing request with uri {}", requestURI );
             return Result.SILENT_BYPASS;

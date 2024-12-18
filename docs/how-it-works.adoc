@@ -13,7 +13,7 @@ A request is considered cacheable if the request:
 - Does not correspond to a valid session.
 - Is a Site's Portal request. (VHost target starts with or equal to `/site`)
 - Is a request to the master branch (draft items are never cached)
-- It's URI does not contain `/_/`. (This is a convention for service requests.)
+- It's URI does not contain `/\_/` (This is a convention for service requests.), except for `/_/component/` requests.
 
 If the request is not cacheable, Booster will forward the request.
 
