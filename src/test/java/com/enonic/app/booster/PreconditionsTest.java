@@ -140,6 +140,28 @@ class PreconditionsTest
     }
 
     @Test
+    void preconditions_component_service_incomplete()
+    {
+        when( request.getScheme() ).thenReturn( "https" );
+        when( request.getMethod() ).thenReturn( "GET" );
+        when( request.getRequestURI() ).thenReturn( "/site/repo/master/_/component" );
+
+        Preconditions preconditions = new Preconditions();
+        assertTrue( preconditions.check( request ).bypass() );
+    }
+
+    @Test
+    void preconditions_component_service()
+    {
+        when( request.getScheme() ).thenReturn( "https" );
+        when( request.getMethod() ).thenReturn( "GET" );
+        when( request.getRequestURI() ).thenReturn( "/site/repo/master/_/component/main/0" );
+
+        Preconditions preconditions = new Preconditions();
+        assertFalse( preconditions.check( request ).bypass() );
+    }
+
+    @Test
     void no_license()
     {
         final Preconditions.LicensePrecondition noLicense = new Preconditions.LicensePrecondition( () -> false );
