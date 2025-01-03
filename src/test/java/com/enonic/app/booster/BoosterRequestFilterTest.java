@@ -176,7 +176,7 @@ class BoosterRequestFilterTest
         {
             when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
             when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( null );
-            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn( new BoosterSiteConfig( null, List.of() ) );
+            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn( new BoosterSiteConfig( null, null, List.of() ) );
             doAnswer( invocation -> {
                 HttpServletResponse response = invocation.getArgument( 1, HttpServletResponse.class );
                 response.getOutputStream(); // simulate call, otherwise response won't be cacheable

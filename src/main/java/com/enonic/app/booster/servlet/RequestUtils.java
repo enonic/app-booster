@@ -92,6 +92,14 @@ public final class RequestUtils
         return acceptGzip ? AcceptEncoding.GZIP : AcceptEncoding.UNSPECIFIED;
     }
 
+    public static boolean isComponentRequest( final HttpServletRequest request )
+    {
+        final String requestURI = request.getRequestURI();
+        final int indexOfUnderscore = requestURI.indexOf( "/_/" );
+        return indexOfUnderscore != -1 &&
+            requestURI.regionMatches( indexOfUnderscore + "/_/".length(), "component/", 0, "component/".length() );
+    }
+
     public enum AcceptEncoding
     {
         GZIP, BROTLI, UNSPECIFIED

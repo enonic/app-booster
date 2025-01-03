@@ -10,6 +10,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -138,4 +140,35 @@ class RequestUtilsTest
         assertEquals( RequestUtils.AcceptEncoding.UNSPECIFIED, acceptEncoding );
     }
 
+    @Test
+    void isComponentRequest_withComponentPath_returnsTrue()
+    {
+        HttpServletRequest request = mock( HttpServletRequest.class );
+        when( request.getRequestURI() ).thenReturn( "/_/component/some/path" );
+        assertTrue( RequestUtils.isComponentRequest( request ) );
+    }
+
+    @Test
+    void isComponentRequest_withoutComponentPath_returnsFalse()
+    {
+        HttpServletRequest request = mock( HttpServletRequest.class );
+        when( request.getRequestURI() ).thenReturn( "/some/other/path" );
+        assertFalse( RequestUtils.isComponentRequest( request ) );
+    }
+
+    @Test
+    void isComponentRequest_withUnderscoreButNoComponent_returnsFalse()
+    {
+        HttpServletRequest request = mock( HttpServletRequest.class );
+        when( request.getRequestURI() ).thenReturn( "/_/some/other/path" );
+        assertFalse( RequestUtils.isComponentRequest( request ) );
+    }
+
+    @Test
+    void isComponentRequest_withComponentAtStart_returnsTrue()
+    {
+        HttpServletRequest request = mock( HttpServletRequest.class );
+        when( request.getRequestURI() ).thenReturn( "/_/component/" );
+        assertTrue( RequestUtils.isComponentRequest( request ) );
+    }
 }

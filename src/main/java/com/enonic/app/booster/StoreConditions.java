@@ -141,16 +141,24 @@ public class StoreConditions
         public boolean check( HttpServletRequest request, CachingResponse response )
         {
             final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
-            final BoosterSiteConfig boosterSiteConfig = BoosterSiteConfig.getSiteConfig( portalRequest );
+            final BoosterSiteConfig config = BoosterSiteConfig.getSiteConfig( portalRequest );
 
             // site must have booster application
-            if ( boosterSiteConfig == null )
+            if ( config == null )
             {
                 LOG.debug( "Not cacheable because site booster app is not enabled for this site" );
                 return false;
             }
 
-            final List<BoosterSiteConfig.PathPattern> patterns = boosterSiteConfig.patterns;
+            final Integer fallbackTTL =
+                config.componentTTL != null && RequestUtils.isComponentRequest( request ) ? config.componentTTL : config.defaultTTL;
+            if ( Integer.valueOf( 0 ).equals( fallbackTTL ) )
+            {
+                LOG.debug( "Not cacheable because TTL is set to 0" );
+                return false;
+            }
+
+            final List<BoosterSiteConfig.PathPattern> patterns = config.patterns;
             if (!patterns.isEmpty()) {
                 final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
                 for ( var pattern : patterns )

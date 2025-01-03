@@ -20,11 +20,14 @@ public final class BoosterSiteConfig
 
     public Integer defaultTTL;
 
+    public Integer componentTTL;
+
     public List<PathPattern> patterns;
 
-    public BoosterSiteConfig( final Integer defaultTTL, final List<PathPattern> patterns )
+    public BoosterSiteConfig( final Integer defaultTTL, final Integer componentTTL, final List<PathPattern> patterns )
     {
         this.defaultTTL = defaultTTL;
+        this.componentTTL = componentTTL;
         this.patterns = patterns;
     }
 
@@ -68,7 +71,8 @@ public final class BoosterSiteConfig
         } ).toList();
 
         final Integer defaultTTL = Numbers.safeParseInteger( boosterConfig.getString( "defaultTTL" ) );
-        return new BoosterSiteConfig( defaultTTL, patterns );
+        final Integer componentTTL = Numbers.safeParseInteger( boosterConfig.getString( "componentTTL" ) );
+        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns  );
     }
 
     public static class PathPattern

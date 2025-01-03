@@ -5,26 +5,38 @@
       <default>false</default>
     </input>
     <input name="defaultTTL" type="TextLine">
-          <label>Default TTL in seconds</label>
+          <label>Default TTL (seconds)</label>
       <help-text>Default TTL when max-age is not specified.</help-text>
       <config>
         <regexp>\b\d{1,8}\b</regexp>
       </config>
     </input>
-    <item-set name="patterns">
-      <label>Patterns</label>
-      <occurrences minimum="0" maximum="0"/>
-      <help-text>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</help-text>
+    <field-set>
+      <label>Advanced</label>
       <items>
-        <input name="pattern" type="TextLine">
-          <label>Pattern</label>
-          <help-text>For example, "/section/.*" or "/api/.*\.json"</help-text>
+        <input name="componentTTL" type="TextLine">
+          <label>Component TTL (seconds)</label>
+          <help-text>Default Component TTL when max-age is not specified.</help-text>
+          <config>
+            <regexp>\b\d{1,8}\b</regexp>
+          </config>
         </input>
-        <input name="invert" type="Checkbox">
-          <label>Invert</label>
-          <default>false</default>
-        </input>
+        <item-set name="patterns">
+          <label>Patterns</label>
+          <occurrences minimum="0" maximum="0"/>
+          <help-text>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</help-text>
+          <items>
+            <input name="pattern" type="TextLine">
+              <label>Pattern</label>
+              <help-text>For example, "/section/.*" or "/api/.*\.json"</help-text>
+            </input>
+            <input name="invert" type="Checkbox">
+              <label>Invert</label>
+              <default>false</default>
+            </input>
+          </items>
+        </item-set>
       </items>
-    </item-set>
+    </field-set>
   </form>
 </site>
