@@ -156,9 +156,12 @@ public class BoosterRequestFilter
 
                     final BoosterSiteConfig config = BoosterSiteConfig.getSiteConfig( RequestAttributes.getPortalRequest( request ) );
 
+                    final Integer fallbackTTL =
+                        config.componentTTL != null && RequestUtils.isComponentRequest( request ) ? config.componentTTL : config.defaultTTL;
+
                     cacheHolder[0] =
                         new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
-                                       freshness.time(), freshness.expiresTime( config.defaultTTL ), freshness.age(), null,
+                                       freshness.time(), freshness.expiresTime( fallbackTTL ), freshness.age(), null,
                                        cachingResponse.getSize(), cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
                                        cachingResponse.getCachedBrBody().orElse( null ) );
                     cacheStore.put( cacheKey, cacheHolder[0], cacheMeta );

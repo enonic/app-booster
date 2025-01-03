@@ -219,8 +219,45 @@ class StoreConditionsTest
 
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
-        portalRequest.setBranch( Branch.from( "draft" ) );
+        portalRequest.setBranch( Branch.from( "master" ) );
         portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+
+        final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
+        assertFalse( siteConfigConditions.check( request, response ) );
+    }
+
+    @Test
+    public void storeConditions_siteConfig_0ttl()
+    {
+        final PropertyTree data = new PropertyTree();
+        data.setString( "defaultTTL", "0" );
+        final SiteConfig siteConfig =
+            SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
+
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "master" ) );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+
+        final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
+        assertFalse( siteConfigConditions.check( request, response ) );
+    }
+
+    @Test
+    public void storeConditions_siteConfig_0ttl_component_override()
+    {
+        final PropertyTree data = new PropertyTree();
+        data.setString( "componentTTL", "0" );
+        final SiteConfig siteConfig =
+            SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
+
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "master" ) );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        when( request.getRequestURI() ).thenReturn( "/site/_/component/main/0" );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
