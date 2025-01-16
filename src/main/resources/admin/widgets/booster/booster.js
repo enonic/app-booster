@@ -38,7 +38,12 @@ const getCommonlyCachedPaths = (project, numResults) => {
     const allCachedPaths = boosterRepo.query({
         start: 0,
         count: 0,
-        query: `project = '${project}'`,
+        query: {
+            'term': {
+                'field': 'project',
+                'value': project
+            }
+        },
         aggregations: {
             paths: {
                 terms: {

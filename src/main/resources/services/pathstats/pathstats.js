@@ -78,7 +78,12 @@ const renderPathStats = (req) => {
   const pathUrls = boosterRepo.query({
     start: 0,
     count: 0,
-    query: 'path = "' + path + '"',
+    query: {
+      'term': {
+        'field': 'path',
+        'value': path
+      }
+    },
     aggregations: {
       urls: {
         terms: {
