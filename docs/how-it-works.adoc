@@ -62,7 +62,7 @@ Booster will automatically invalidate cache when one of the following events occ
 
 . All cache gets deleted when:
 
-* Applications listed in the configuration `appsInvalidateCacheOnStart` starts
+* Applications listed in the configuration `appsForceInvalidateOnInstall` installed
 
 NOTE: When an item is invalidated, it is simply marked as invalid.
 

@@ -1,6 +1,7 @@
 package com.enonic.app.booster.storage;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
+import com.enonic.app.booster.concurrent.ThreadFactoryImpl;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.event.Event;
 import com.enonic.xp.event.EventListener;
@@ -26,6 +29,7 @@ import com.enonic.xp.index.IndexService;
 import com.enonic.xp.project.ProjectConstants;
 import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.repository.RepositoryId;
+import com.enonic.xp.task.TaskId;
 
 @Component(immediate = true, configurationPid = "com.enonic.app.booster")
 public class BoosterInvalidator
@@ -39,29 +43,30 @@ public class BoosterInvalidator
 
     private final BoosterTasksFacade boosterTasksFacade;
 
+    private final BoosterProjectMatchers boosterProjectMatchers;
+
     private volatile BoosterConfigParsed config;
 
+    // permits null. null = all projects
     private volatile Set<ProjectName> projects = new HashSet<>();
 
     @Activate
-    public BoosterInvalidator( @Reference final BoosterTasksFacade boosterTasksFacade, @Reference final IndexService indexService )
+    public BoosterInvalidator( final BundleContext context, @Reference final BoosterTasksFacade boosterTasksFacade,
+                               @Reference final IndexService indexService, @Reference final BoosterProjectMatchers boosterProjectMatchers )
     {
-        this( boosterTasksFacade, indexService, Executors.newSingleThreadScheduledExecutor() );
+        this( boosterTasksFacade, indexService, boosterProjectMatchers, Executors.newSingleThreadScheduledExecutor( new ThreadFactoryImpl(
+            context.getBundle().getSymbolicName() + "-" + context.getBundle().getBundleId() + "-invalidator-%d" ) ) );
     }
 
     BoosterInvalidator( final BoosterTasksFacade boosterTasksFacade, final IndexService indexService,
-                        final ScheduledExecutorService executorService )
+                        final BoosterProjectMatchers boosterProjectMatchers, final ScheduledExecutorService executorService )
     {
         this.boosterTasksFacade = boosterTasksFacade;
         this.executorService = executorService;
         this.indexService = indexService;
-        this.executorService.scheduleWithFixedDelay( () -> boosterTasksFacade.invalidateProjects( exchange() ), 10, 10, TimeUnit.SECONDS );
-    }
+        this.boosterProjectMatchers = boosterProjectMatchers;
 
-    @Deactivate
-    public void deactivate()
-    {
-        executorService.shutdownNow();
+        this.executorService.scheduleWithFixedDelay( this::invalidatePublished, 10, 10, TimeUnit.SECONDS );
     }
 
     @Activate
@@ -71,6 +76,12 @@ public class BoosterInvalidator
         this.config = BoosterConfigParsed.parse( config );
     }
 
+    @Deactivate
+    public void deactivate()
+    {
+        executorService.shutdownNow();
+    }
+
     @Override
     public void onEvent( final Event event )
     {
@@ -78,16 +89,14 @@ public class BoosterInvalidator
 
         if ( type.equals( "application.cluster" ) && event.getData().get( "eventType" ).equals( "installed" ) )
         {
-            if ( indexService.isMaster() )
+            final ApplicationKey applicationKey = ApplicationKey.from( (String) event.getData().get( "key" ) );
+            try
             {
-                if ( config.appsForceInvalidateOnInstall().contains( event.getData().get( "key" ) ) )
-                {
-                    boosterTasksFacade.invalidateAll();
-                }
-                else
-                {
-                    boosterTasksFacade.invalidateApp( ApplicationKey.from( (String) event.getData().get( "key" ) ) );
-                }
+                executorService.schedule( () -> invalidateApp( applicationKey ), 0, TimeUnit.SECONDS );
+            }
+            catch ( Exception e )
+            {
+                LOG.debug( "Could not invalidate cache for app {}", applicationKey, e );
             }
             return;
         }
@@ -97,7 +106,7 @@ public class BoosterInvalidator
             return;
         }
 
-        Set<ProjectName> projects = new HashSet<>();
+        final Set<ProjectName> projects = new HashSet<>();
         if ( type.startsWith( "repository." ) )
         {
             final String repo = (String) event.getData().get( "id" );
@@ -118,7 +127,6 @@ public class BoosterInvalidator
                     final String repo = node.get( "repo" ).toString();
                     if ( repo.startsWith( ProjectConstants.PROJECT_REPO_ID_PREFIX ) )
                     {
-
                         final ProjectName project = ProjectName.from( RepositoryId.from( repo ) );
                         final boolean added = projects.add( project );
                         if ( added )
@@ -132,15 +140,80 @@ public class BoosterInvalidator
         addProjects( projects );
     }
 
-    synchronized void addProjects( Collection<ProjectName> projects )
+    private synchronized void addProjects( Collection<ProjectName> projects )
     {
         this.projects.addAll( projects );
     }
 
-    synchronized Set<ProjectName> exchange()
+    private synchronized Set<ProjectName> poll()
     {
         final Set<ProjectName> result = projects;
         projects = new HashSet<>();
         return result;
+    }
+
+    private void invalidateApp( ApplicationKey applicationKey )
+    {
+        try
+        {
+            if ( indexService.isMaster() )
+            {
+                if ( config.appsForceInvalidateOnInstall().contains( applicationKey.getName() ) )
+                {
+                    doInvalidate( Collections.singleton( null ) );
+                }
+                else
+                {
+                    final List<ProjectName> toInvalidate = boosterProjectMatchers.findByAppForInvalidation( List.of( applicationKey ) );
+                    doInvalidate( toInvalidate );
+                }
+            }
+        }
+        catch ( Exception e )
+        {
+            LOG.warn( "Could not invalidate cache for app {}", applicationKey, e );
+        }
+    }
+
+    private void invalidatePublished()
+    {
+        try
+        {
+            final Set<ProjectName> toInvalidate = new HashSet<>();
+            if ( indexService.isMaster() )
+            {
+                toInvalidate.addAll( boosterProjectMatchers.findScheduledForInvalidation() );
+            }
+            toInvalidate.addAll( this.poll() );
+            doInvalidate( toInvalidate );
+        }
+        catch ( Exception e )
+        {
+            LOG.warn( "Could not invalidate cache", e );
+        }
+    }
+
+    private void doInvalidate( final Collection<ProjectName> toInvalidate )
+    {
+        if ( toInvalidate.isEmpty() )
+        {
+            return;
+        }
+        final TaskId taskId;
+
+        if ( toInvalidate.contains( null ) )
+        {
+            taskId = boosterTasksFacade.invalidateAll();
+        }
+        else
+        {
+            taskId = boosterTasksFacade.invalidate( toInvalidate );
+        }
+
+        if ( taskId == null )
+        {
+            LOG.debug( "Task was not submitted. Adding back projects for later invalidation" );
+            addProjects( toInvalidate );
+        }
     }
 }

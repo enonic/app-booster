@@ -1,6 +1,6 @@
 exports.run = function (params, taskId) {
-    log.debug('Running booster node cleaner task with params: ' + JSON.stringify(params));
-    let nodeCleanerBean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
+    log.debug('Running booster invalidate task with params: ' + JSON.stringify(params));
+    let nodeCleanerBean = __.newBean('com.enonic.app.booster.script.NodeCleanerBean');
 
     if (params.content) {
         nodeCleanerBean.invalidateContent(params.project, params.content);

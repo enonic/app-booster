@@ -16,11 +16,9 @@ import com.enonic.xp.repository.RepositoryService;
 public class BoosterInitializer
     extends ExternalInitializer
 {
-
     private final RepositoryService repositoryService;
 
     private final NodeService nodeService;
-
 
     public BoosterInitializer( final Builder builder )
     {
