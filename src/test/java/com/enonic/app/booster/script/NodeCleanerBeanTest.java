@@ -1,4 +1,4 @@
-package com.enonic.app.booster.storage;
+package com.enonic.app.booster.script;
 
 import java.util.List;
 
@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
 import com.enonic.app.booster.BoosterConfigService;
+import com.enonic.app.booster.storage.BoosterProjectMatchers;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.data.Value;
 import com.enonic.xp.node.DeleteNodeParams;
@@ -47,12 +48,6 @@ class NodeCleanerBeanTest
     @Mock
     NodeService nodeService;
 
-    @Mock
-    BoosterProjectMatchers boosterProjectMatchers;
-
-    @Mock
-    BoosterConfigService boosterConfigService;
-
     NodeCleanerBean nodeCleanerBean;
 
     @BeforeEach
@@ -60,8 +55,6 @@ class NodeCleanerBeanTest
     {
         final BeanContext beanContext = mock( BeanContext.class );
         when( beanContext.getService( NodeService.class ) ).thenReturn( () -> nodeService );
-        when( beanContext.getService( BoosterProjectMatchers.class ) ).thenReturn( () -> boosterProjectMatchers );
-        when( beanContext.getService( BoosterConfigService.class ) ).thenReturn( () -> boosterConfigService );
         nodeCleanerBean = new NodeCleanerBean();
         nodeCleanerBean.initialize( beanContext );
     }
@@ -70,13 +63,6 @@ class NodeCleanerBeanTest
     void invalidateAll()
     {
         verifyBasicInvalidate( nodeCleanerBean::invalidateAll );
-    }
-
-    @Test
-    void invalidateScheduled()
-    {
-        when( boosterProjectMatchers.findScheduledForInvalidation() ).thenReturn( List.of( "project1" ) );
-        verifyBasicInvalidate( nodeCleanerBean::invalidateScheduled );
     }
 
     @Test
@@ -95,14 +81,6 @@ class NodeCleanerBeanTest
     {
         nodeCleanerBean.invalidateProjects( List.of() );
         verifyNoInteractions( nodeService );
-    }
-
-    @Test
-    void invalidateWithApp()
-    {
-        when( boosterProjectMatchers.findByAppForInvalidation( "app1" ) ).thenReturn( List.of( "project1" ) );
-
-        verifyBasicInvalidate( () -> nodeCleanerBean.invalidateWithApp( "app1" ) );
     }
 
     @Test
@@ -196,40 +174,6 @@ class NodeCleanerBeanTest
         assertThat( captor.getValue().getNodeId() ).asString().isEqualTo( "node1" );
     }
 
-    @Test
-    void scavenge()
-    {
-        final BoosterConfig configMock = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
-        when( configMock.cacheSize() ).thenReturn( 1 );
-        final BoosterConfigParsed config = BoosterConfigParsed.parse( configMock );
-
-        when( boosterConfigService.getConfig() ).thenReturn( config );
-
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .addNodeHit( NodeHit.create()
-                                                                                                   .nodeId( NodeId.from( "node1" ) )
-                                                                                                   .build() )
-                                                                                  .addNodeHit( NodeHit.create()
-                                                                                                   .nodeId( NodeId.from( "node2" ) )
-                                                                                                   .build() )
-                                                                                  .hits( 2 )
-                                                                                  .totalHits( 2 )
-                                                                                  .build() )
-            .thenReturn( FindNodesByQueryResult.create()
-                             .addNodeHit( NodeHit.create().nodeId( NodeId.from( "node1" ) ).build() )
-                             .hits( 1 )
-                             .totalHits( 1 )
-                             .build() );
-
-        nodeCleanerBean.scavenge();
-
-        verify( nodeService, times( 2 ) ).findByQuery( any( NodeQuery.class ) );
-        verify( nodeService ).refresh( RefreshMode.SEARCH );
-        final ArgumentCaptor<DeleteNodeParams> captor = captor();
-        verify( nodeService ).delete( captor.capture() );
-        assertThat( captor.getValue().getNodeId() ).asString().isEqualTo( "node1" );
-        verifyNoMoreInteractions( nodeService );
-    }
 
     @Test
     void getProjectCacheSize()

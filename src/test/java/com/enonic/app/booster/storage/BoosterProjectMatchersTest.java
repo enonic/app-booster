@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.FindNodesByQueryResult;
 import com.enonic.xp.node.Node;
@@ -60,9 +61,9 @@ class BoosterProjectMatchersTest
                 FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() )
             .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 2 ).build() );
 
-        final List<String> scheduled = boosterProjectMatchers.findScheduledForInvalidation();
+        final List<ProjectName> scheduled = boosterProjectMatchers.findScheduledForInvalidation();
 
-        assertThat( scheduled ).containsExactly( "project2" );
+        assertThat( scheduled ).containsExactly( ProjectName.from( "project2" ) );
 
         verify( nodeService ).getByPath( BoosterContext.SCHEDULED_PARENT_NODE );
 
@@ -85,9 +86,9 @@ class BoosterProjectMatchersTest
                 FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() )
             .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 2 ).build() );
 
-        final List<String> scheduled = boosterProjectMatchers.findByAppForInvalidation( "someApp" );
+        final List<ProjectName> scheduled = boosterProjectMatchers.findByAppForInvalidation( List.of( ApplicationKey.from( "someApp" ) ) );
 
-        assertThat( scheduled ).containsExactly( "project2" );
+        assertThat( scheduled ).containsExactly( ProjectName.from( "project2" ) );
 
         verify( nodeService, times( 2 ) ).findByQuery( any( NodeQuery.class ) );
     }

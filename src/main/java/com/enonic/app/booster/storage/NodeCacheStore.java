@@ -35,7 +35,6 @@ import com.enonic.xp.util.BinaryReference;
 @Component(immediate = true, service = NodeCacheStore.class)
 public class NodeCacheStore
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( NodeCacheStore.class );
 
     public static final BinaryReference GZIP_DATA_BINARY_REFERENCE = BinaryReference.from( "data.gzip" );
@@ -231,5 +230,4 @@ public class NodeCacheStore
         }
         return result;
     }
-
 }

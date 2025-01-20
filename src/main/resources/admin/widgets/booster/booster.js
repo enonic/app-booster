@@ -42,7 +42,7 @@ const renderWidgetView = (req) => {
     }
 
     if (!error) {
-        const nodeCleanerBean = __.newBean('com.enonic.app.booster.storage.NodeCleanerBean');
+        const nodeCleanerBean = __.newBean('com.enonic.app.booster.script.NodeCleanerBean');
         size = nodeCleanerBean.getProjectCacheSize(project);
 
         if (contentId && !isAppEnabledOnSite(contentId)) {

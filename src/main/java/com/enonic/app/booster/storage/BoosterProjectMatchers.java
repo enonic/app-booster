@@ -8,6 +8,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
@@ -42,26 +43,28 @@ public class BoosterProjectMatchers
         this.projectService = projectService;
     }
 
-    public List<String> findByAppForInvalidation( final String app )
+    public List<ProjectName> findByAppForInvalidation( final List<ApplicationKey> app )
     {
         return BoosterContext.callInContext( () -> {
             final List<String> projects = projectService.list().stream().map( Project::getName ).map( Object::toString ).toList();
 
             final NodeQuery.Builder nodeQueryBuilder = NodeQuery.create().size( 0 );
 
-            final NodeQuery nodeQuery = nodeQueryBuilder.query(
-                QueryExpr.from( CompareExpr.eq( FieldExpr.from( "data.siteConfig.applicationkey" ), ValueExpr.string( app ) ) ) ).build();
+            final NodeQuery nodeQuery = nodeQueryBuilder.query( QueryExpr.from(
+                CompareExpr.in( FieldExpr.from( "data.siteConfig.applicationkey" ),
+                                app.stream().map( ApplicationKey::getName ).map( ValueExpr::string ).toList() ) ) ).build();
             return projects.stream()
                 .filter( name -> ContextBuilder.from( ContextAccessor.current() )
                     .branch( Branch.from( "master" ) )
                     .repositoryId( ProjectName.from( name ).getRepoId() )
                     .build()
                     .callWith( () -> nodeService.findByQuery( nodeQuery ).getTotalHits() > 0 ) )
+                .map( ProjectName::from )
                 .toList();
         } );
     }
 
-    public List<String> findScheduledForInvalidation()
+    public List<ProjectName> findScheduledForInvalidation()
     {
         final Instant now = Instant.now().truncatedTo( ChronoUnit.SECONDS );
 
@@ -103,7 +106,7 @@ public class BoosterProjectMatchers
                                         .editor( editor -> editor.data.setInstant( "lastChecked", now ) )
                                         .build() );
             }
-            return filteredProjects;
+            return filteredProjects.stream().map( ProjectName::from ).toList();
         } );
     }
 }
