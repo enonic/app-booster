@@ -38,15 +38,25 @@ public class BoosterInitializer
     protected void doInitialize()
     {
         BoosterContext.runInContext( () -> {
-            repositoryService.createRepository( CreateRepositoryParams.create().repositoryId( BoosterContext.REPOSITORY_ID ).build() );
-            nodeService.create(
-                CreateNodeParams.create().parent( NodePath.ROOT ).name( BoosterContext.CACHE_PARENT_NODE.getName() ).build() );
-            nodeService.create( CreateNodeParams.create()
-                                    .parent( NodePath.ROOT )
-                                    .name( BoosterContext.SCHEDULED_PARENT_NODE.getName() )
-                                    .childOrder(
-                                        ChildOrder.create().add( FieldOrderExpr.create( "time", OrderExpr.Direction.DESC ) ).build() )
-                                    .build() );
+            if ( repositoryService.get( BoosterContext.REPOSITORY_ID ) == null )
+            {
+                repositoryService.createRepository(
+                    CreateRepositoryParams.create().repositoryId( BoosterContext.REPOSITORY_ID ).build() );
+            }
+            if ( !nodeService.nodeExists( BoosterContext.CACHE_PARENT_NODE ) )
+            {
+                nodeService.create(
+                    CreateNodeParams.create().parent( NodePath.ROOT ).name( BoosterContext.CACHE_PARENT_NODE.getName() ).build() );
+            }
+            if ( !nodeService.nodeExists( BoosterContext.SCHEDULED_PARENT_NODE ) )
+            {
+                nodeService.create( CreateNodeParams.create()
+                                        .parent( NodePath.ROOT )
+                                        .name( BoosterContext.SCHEDULED_PARENT_NODE.getName() )
+                                        .childOrder(
+                                            ChildOrder.create().add( FieldOrderExpr.create( "time", OrderExpr.Direction.DESC ) ).build() )
+                                        .build() );
+            }
         } );
     }
 
