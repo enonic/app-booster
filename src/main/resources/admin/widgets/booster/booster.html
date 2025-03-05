@@ -65,29 +65,6 @@
                 </div>
             </div>
 
-            <table id="widget-booster-commonlycachedpaths">
-                <caption>Commonly Cached Paths</caption>
-                <thead>
-                    <tr>
-                        <!-- We put count before path so that when path is too long for the widget width, we still see both columns -->
-                        <th>Count</th>
-                        <th>Path</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#commonlyCachedPaths}}
-                    <tr>
-                        <td>{{docCount}}</td>
-                        <td>
-                            <details data-detailurl="{{pathStatsServiceUrl}}?path={{key}}">
-                                <summary>{{key}}</summary>
-                                <div class="detail-target"></div>
-                            </details>
-                        </td>
-                    </tr>
-                    {{/commonlyCachedPaths}}
-                </tbody>
-            </table>
 
             {{/isEnabled}}
 

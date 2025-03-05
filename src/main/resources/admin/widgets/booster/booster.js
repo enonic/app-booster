@@ -2,7 +2,6 @@ const portal = require('/lib/xp/portal');
 const contentLib = require('/lib/xp/content');
 const mustache = require('/lib/mustache');
 const helper = require("/lib/helper");
-const nodeLib = require('/lib/xp/node');
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
 
@@ -27,35 +26,6 @@ const isAppEnabledOnSite = (contentId) => {
     });
 
     return !!siteConfig;
-}
-
-const getCommonlyCachedPaths = (project, numResults) => {
-    const boosterRepo = nodeLib.connect({
-        repoId: 'com.enonic.app.booster',
-        branch: 'master'
-    });
-
-    const allCachedPaths = boosterRepo.query({
-        start: 0,
-        count: 0,
-        query: {
-            'term': {
-                'field': 'project',
-                'value': project
-            }
-        },
-        aggregations: {
-            paths: {
-                terms: {
-                    field: 'path',
-                    order: '_count DESC',
-                    size: numResults
-                }
-            }
-        }
-    });
-
-    return allCachedPaths.total ? allCachedPaths.aggregations.paths.buckets : [];
 }
 
 const renderWidgetView = (req) => {
@@ -90,8 +60,6 @@ const renderWidgetView = (req) => {
         serviceUrl: portal.serviceUrl({ service: 'booster' }),
         isLicenseValid: helper.isLicenseValid(),
         licenseUploadUrl: portal.serviceUrl({ service: 'license-upload' }),
-        commonlyCachedPaths: getCommonlyCachedPaths(project, 20),
-        pathStatsServiceUrl: portal.serviceUrl({ service: 'pathstats' }),
         error,
         hint
     };

@@ -156,26 +156,6 @@
         });
 
         confirmNoButton && confirmNoButton.addEventListener('click', () => hideConfirmation());
-
-        pathDetails.forEach(detailElement => {
-            detailElement.addEventListener('click', () => {
-                const detailTarget = detailElement.querySelector('.detail-target');
-                // Only load details once
-                if (detailElement.getAttribute('data-loaded') === 'true') {
-                    return;
-                }
-    
-                fetch(detailElement.getAttribute('data-detailurl'))
-                    .then(response => response.text())
-                    .then(html => {
-                        detailTarget.innerHTML = html;
-                        detailElement.setAttribute('data-loaded', 'true');
-                    })
-                    .catch(error => {
-                        console.error('Error fetching details:', error);
-                    });
-            });
-        });
     }
 
     const serviceUrl = document.currentScript.getAttribute('data-service-url');
@@ -193,7 +173,6 @@
     const confirmYesButton = document.getElementById('widget-booster-confirmation-button-yes');
     const confirmNoButton = document.getElementById('widget-booster-confirmation-button-no');
     const responseContainer = document.getElementById('widget-booster-action-response');
-    const pathDetails = document.querySelectorAll('#widget-booster-commonlycachedpaths details');
 
     initEventListeners();
 
