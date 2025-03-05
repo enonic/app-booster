@@ -41,7 +41,7 @@ public class BoosterInitializer
             if ( repositoryService.get( BoosterContext.REPOSITORY_ID ) == null )
             {
                 repositoryService.createRepository(
-                    CreateRepositoryParams.create().repositoryId( BoosterContext.REPOSITORY_ID ).build() );
+                    CreateRepositoryParams.create().repositoryId( BoosterContext.REPOSITORY_ID ).transientFlag( true ).build() );
             }
             if ( !nodeService.nodeExists( BoosterContext.CACHE_PARENT_NODE ) )
             {
