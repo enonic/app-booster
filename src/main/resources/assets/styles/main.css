@@ -1,88 +1,107 @@
-#widget-booster {
-    .widget-booster-container {
-        text-align: center;
-    }
+#widget-booster .widget-booster-container {
+    text-align: center;
+}
 
-    .widget-booster-button {
-        margin: 20px auto;
-        display: inline-block;
-        padding: 8px 20px;
-    }
+#widget-booster .widget-booster-button {
+    margin: 20px auto;
+    display: inline-block;
+    padding: 8px 20px;
+}
 
-    .widget-booster-button:not(.red):disabled {
-        opacity: 1;
-    }
+#widget-booster .widget-booster-button:not(.red):disabled {
+    opacity: 1;
+}
 
-    #widget-booster-action-response {
-        display: none;
-        text-align: center;
-        font-size: 14px;
-    }
+#widget-booster-action-response {
+    display: none;
+    text-align: center;
+    font-size: 14px;
+}
 
-    #widget-booster-action-response.visible {
-        display: block;
-    }
+#widget-booster-action-response.visible {
+    display: block;
+}
 
-    #widget-booster-action-response.success {
-        display: block;
-        color: green;
-    }
+#widget-booster-action-response.success {
+    display: block;
+    color: green;
+}
 
-    #widget-booster-action-response.failure {
-        display: block;
-        color: red;
-    }
+#widget-booster-action-response.failure {
+    display: block;
+    color: red;
+}
 
-    #widget-booster-confirmation-dialog {
-        display: none;
-        text-align: left;
-    }
+#widget-booster-confirmation-dialog {
+    display: none;
+    text-align: left;
+}
 
-    #widget-booster-confirmation-dialog.visible {
-        display: flex;
-        background-color: rgb(0, 0, 0, 0.5);
-        backdrop-filter: blur(2px);
+#widget-booster-confirmation-dialog.visible {
+    display: flex;
+    background-color: rgb(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
 
-        .confirmation-dialog {
-            display: block;
-        }
-    }
+#widget-booster-confirmation-dialog.visible .confirmation-dialog {
+    display: block;
+}
 
-    .widget-booster-container.license-valid {
-        #widget-booster-license-invalid {
-            display: none;
-        }
-    }
+#widget-booster .widget-booster-container.license-valid #widget-booster-license-invalid {
+    display: none;
+}
 
-    .widget-booster-container.license-invalid {
-        h6 {
-            margin-top: 10px;
-        }
-        #widget-booster-license-valid {
-            display: none;
-        }
-    }
+#widget-booster .widget-booster-container.license-invalid h6 {
+    margin-top: 10px;
+}   
 
-    #booster-license-upload-button {
-        text-align: center;
-        font-size: 12px;
-        background-color: #2c76e9;
-        color: white;
-        cursor: pointer;
-    }
+#widget-booster .widget-booster-container.license-invalid #widget-booster-license-valid {
+    display: none;
+}
 
-    #license-invalid-message {
-        display: none;
-    }
+#widget-booster #booster-license-upload-button {
+    text-align: center;
+    font-size: 12px;
+    background-color: #2c76e9;
+    color: white;
+    cursor: pointer;
+}
 
-    #license-invalid-message.visible {
-        display: block;
-        color: red;
-        font-size: 13px;
-    }
+#widget-booster #license-invalid-message {
+    display: none;
+}
 
-    #widget-booster-hint {
-        font-style: italic;
-        margin-top: 10px;
-    }
+#widget-booster #license-invalid-message.visible {
+    display: block;
+    color: red;
+    font-size: 13px;
+}
+
+#widget-booster-hint {
+    font-style: italic;
+    margin-top: 10px;
+}
+
+#widget-booster table {
+    border-collapse: collapse;
+    text-align: left;
+    min-width: 100%; /* mitigates aggressive word-wrap on caption and cells */
+}
+
+#widget-booster caption {
+    font-weight: bold;
+    text-align: left;
+}
+
+#widget-booster th, #widget-booster td {
+    border: 1px solid lightgray;
+    padding: 4px 7px;
+}
+
+#widget-booster details summary {
+    cursor: pointer;
+}
+
+#widget-booster details .no-q-params {
+    opacity: 0.4
 }
