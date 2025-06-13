@@ -71,7 +71,7 @@ const renderPathStats = (req) => {
   const path = req.params.path;
 
   const boosterRepo = nodeLib.connect({
-    repoId: 'com.enonic.app.booster',
+    repoId: app.name,
     branch: 'master'
   });
 
@@ -109,7 +109,7 @@ const renderPathStats = (req) => {
 
   return {
     contentType: 'text/html',
-    body: '<p>(no querystring params in cache)</p>'
+    body: '<p class="no-q-params">(no querystring params in cache)</p>'
   };
 }
 

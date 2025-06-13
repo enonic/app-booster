@@ -31,7 +31,7 @@ const isAppEnabledOnSite = (contentId) => {
 
 const getCommonlyCachedPaths = (project, numResults) => {
     const boosterRepo = nodeLib.connect({
-        repoId: 'com.enonic.app.booster',
+        repoId: app.name,
         branch: 'master'
     });
 
