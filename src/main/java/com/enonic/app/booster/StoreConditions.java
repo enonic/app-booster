@@ -227,11 +227,11 @@ public class StoreConditions
 
     public static class UserAgentConditions
     {
-        private final Set<String> excludeUserAgents;
+        private final Set<String> defaultExcludeUserAgents;
 
-        public UserAgentConditions( final Set<String> excludeUserAgents )
+        public UserAgentConditions( final Set<String> defaultExcludeUserAgents )
         {
-            this.excludeUserAgents = excludeUserAgents;
+            this.defaultExcludeUserAgents = defaultExcludeUserAgents;
         }
 
         public boolean check( HttpServletRequest request, CachingResponse response )
@@ -244,6 +244,17 @@ public class StoreConditions
             }
 
             final String userAgentLower = userAgent.toLowerCase( Locale.ROOT );
+
+            // First check site config for excluded user agents
+            final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
+            final BoosterSiteConfig siteConfig = BoosterSiteConfig.getSiteConfig( portalRequest );
+
+            Set<String> excludeUserAgents = defaultExcludeUserAgents;
+            if ( siteConfig != null && siteConfig.excludeUserAgents != null && !siteConfig.excludeUserAgents.isEmpty() )
+            {
+                // Use site configuration if available
+                excludeUserAgents = siteConfig.excludeUserAgents;
+            }
 
             for ( final String excludedAgent : excludeUserAgents )
             {
