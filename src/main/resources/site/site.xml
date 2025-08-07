@@ -36,6 +36,11 @@
             </input>
           </items>
         </item-set>
+        <input name="excludeUserAgent" type="TextLine">
+          <label>Excluded User Agent</label>
+          <occurrences minimum="0" maximum="0"/>
+          <help-text>User agents that should be excluded from caching. For example, "Googlebot", "facebookexternalhit", or "Twitterbot"</help-text>
+        </input>
       </items>
     </field-set>
   </form>
