@@ -10,7 +10,8 @@ import java.util.stream.Stream;
 import com.enonic.app.booster.utils.SimpleCsvParser;
 
 public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQueryParams, boolean disableCacheStatusHeader, int cacheSize,
-                                  Set<String> appsForceInvalidateOnInstall, Map<String, String> overrideHeaders, Set<String> cacheMimeTypes)
+                                  Set<String> appsForceInvalidateOnInstall, Map<String, String> overrideHeaders, Set<String> cacheMimeTypes,
+                                  Set<String> excludeUserAgents)
 {
     public static BoosterConfigParsed parse( BoosterConfig config )
     {
@@ -45,7 +46,14 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
             .filter( Predicate.not( String::isEmpty ) )
             .collect( Collectors.toUnmodifiableSet() );
 
+        var excludeUserAgents = SimpleCsvParser.parseLine( config.excludeUserAgents() )
+            .stream()
+            .map( String::trim )
+            .map( s -> s.toLowerCase( Locale.ROOT ) )
+            .filter( Predicate.not( String::isEmpty ) )
+            .collect( Collectors.toUnmodifiableSet() );
+
         return new BoosterConfigParsed( cacheTtlSeconds, excludeQueryParams, disableCacheStatusHeader, cacheSize, appsForceInvalidateOnInstall, overrideHeaders,
-                                        cacheMimeTypes );
+                                        cacheMimeTypes, excludeUserAgents );
     }
 }

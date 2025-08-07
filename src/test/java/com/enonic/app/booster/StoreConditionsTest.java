@@ -341,6 +341,66 @@ class StoreConditionsTest
         assertTrue( storeConditions.check( request, response ) );
     }
 
+    @Test
+    void storeConditions_userAgent_facebookBot()
+    {
+        when( request.getHeader( "User-Agent" ) ).thenReturn( "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)" );
+
+        final var storeConditions = new StoreConditions.UserAgentConditions( Set.of( "facebookexternalhit", "linkedinbot", "twitterbot" ) );
+
+        assertFalse( storeConditions.check( request, response ) );
+    }
+
+    @Test
+    void storeConditions_userAgent_linkedInBot()
+    {
+        when( request.getHeader( "User-Agent" ) ).thenReturn( "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)" );
+
+        final var storeConditions = new StoreConditions.UserAgentConditions( Set.of( "facebookexternalhit", "linkedinbot", "twitterbot" ) );
+
+        assertFalse( storeConditions.check( request, response ) );
+    }
+
+    @Test
+    void storeConditions_userAgent_normalBrowser()
+    {
+        when( request.getHeader( "User-Agent" ) ).thenReturn( "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" );
+
+        final var storeConditions = new StoreConditions.UserAgentConditions( Set.of( "facebookexternalhit", "linkedinbot", "twitterbot" ) );
+
+        assertTrue( storeConditions.check( request, response ) );
+    }
+
+    @Test
+    void storeConditions_userAgent_null()
+    {
+        when( request.getHeader( "User-Agent" ) ).thenReturn( null );
+
+        final var storeConditions = new StoreConditions.UserAgentConditions( Set.of( "facebookexternalhit", "linkedinbot", "twitterbot" ) );
+
+        assertTrue( storeConditions.check( request, response ) );
+    }
+
+    @Test
+    void storeConditions_userAgent_empty()
+    {
+        when( request.getHeader( "User-Agent" ) ).thenReturn( "" );
+
+        final var storeConditions = new StoreConditions.UserAgentConditions( Set.of( "facebookexternalhit", "linkedinbot", "twitterbot" ) );
+
+        assertTrue( storeConditions.check( request, response ) );
+    }
+
+    @Test
+    void storeConditions_userAgent_caseInsensitive()
+    {
+        when( request.getHeader( "User-Agent" ) ).thenReturn( "FACEBOOKEXTERNALHIT/1.1" );
+
+        final var storeConditions = new StoreConditions.UserAgentConditions( Set.of( "facebookexternalhit", "linkedinbot", "twitterbot" ) );
+
+        assertFalse( storeConditions.check( request, response ) );
+    }
+
     private static ResponseFreshness freshFreshness()
     {
         return new ResponseFreshness( null, null, false, false, false, Instant.now(), null );

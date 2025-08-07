@@ -17,4 +17,6 @@ public @interface BoosterConfig
     String overrideHeaders() default "";
 
     String cacheMimeTypes() default "text/html, text/xhtml";
+
+    String excludeUserAgents() default "facebookexternalhit, LinkedInBot, Twitterbot, WhatsApp, TelegramBot, Slackbot, Discordbot, Applebot, Googlebot, Bingbot, YandexBot, DuckDuckBot, Baiduspider, Sogou, 360Spider, AhrefsBot, SemrushBot, MJ12bot, DotBot, BLEXBot, Screaming Frog SEO Spider, rogerbot, exabot, ia_archiver, archive.org_bot, Wget, curl, PostmanRuntime, Apache-HttpClient, Java, Python, Go-http-client, node-fetch, axios, okhttp";
 }
