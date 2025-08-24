@@ -1,9 +1,12 @@
 package com.enonic.app.booster;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import com.enonic.app.booster.utils.Numbers;
@@ -24,11 +27,14 @@ public final class BoosterSiteConfig
 
     public List<PathPattern> patterns;
 
-    public BoosterSiteConfig( final Integer defaultTTL, final Integer componentTTL, final List<PathPattern> patterns )
+    public Set<String> excludeUserAgents;
+
+    public BoosterSiteConfig( final Integer defaultTTL, final Integer componentTTL, final List<PathPattern> patterns, final Set<String> excludeUserAgents )
     {
         this.defaultTTL = defaultTTL;
         this.componentTTL = componentTTL;
         this.patterns = patterns;
+        this.excludeUserAgents = excludeUserAgents;
     }
 
     private static final ApplicationKey APPLICATION_KEY = ApplicationKey.from( "com.enonic.app.booster" );
@@ -70,9 +76,14 @@ public final class BoosterSiteConfig
             return new PathPattern( PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile ), invert );
         } ).toList();
 
+        final Set<String> excludeUserAgents = StreamSupport.stream( boosterConfig.getStrings( "excludeUserAgent" ).spliterator(), false )
+            .filter( userAgent -> userAgent != null && !userAgent.trim().isEmpty() )
+            .map( userAgent -> userAgent.trim().toLowerCase( Locale.ROOT ) )
+            .collect( Collectors.toSet() );
+
         final Integer defaultTTL = Numbers.safeParseInteger( boosterConfig.getString( "defaultTTL" ) );
         final Integer componentTTL = Numbers.safeParseInteger( boosterConfig.getString( "componentTTL" ) );
-        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns  );
+        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns, excludeUserAgents );
     }
 
     public static class PathPattern

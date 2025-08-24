@@ -134,7 +134,9 @@ public class BoosterRequestFilter
                                                                          new StoreConditions.SiteConfigConditions(
                                                                              config.excludeQueryParams() )::check,
                                                                          new StoreConditions.ContentTypePreconditions(
-                                                                             config.cacheMimeTypes() )::check );
+                                                                             config.cacheMimeTypes() )::check,
+                                                                         new StoreConditions.UserAgentConditions(
+                                                                             config.excludeUserAgents() )::check );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, storeConditions::check,
                                                                                        res -> writeHeaders( res, stale
