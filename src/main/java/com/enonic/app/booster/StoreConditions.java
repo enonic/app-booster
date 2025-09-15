@@ -1,6 +1,7 @@
 package com.enonic.app.booster;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -220,6 +221,50 @@ public class StoreConditions
                 return false;
             }
             LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
+            return true;
+        }
+    }
+
+    public static class UserAgentConditions
+    {
+        private final Set<String> defaultExcludeUserAgents;
+
+        public UserAgentConditions( final Set<String> defaultExcludeUserAgents )
+        {
+            this.defaultExcludeUserAgents = defaultExcludeUserAgents;
+        }
+
+        public boolean check( HttpServletRequest request, CachingResponse response )
+        {
+            final String userAgent = request.getHeader( "User-Agent" );
+            if ( userAgent == null || userAgent.trim().isEmpty() )
+            {
+                // If no user agent is present, we can cache it
+                return true;
+            }
+
+            final String userAgentLower = userAgent.toLowerCase( Locale.ROOT );
+
+            // First check site config for excluded user agents
+            final PortalRequest portalRequest = RequestAttributes.getPortalRequest( request );
+            final BoosterSiteConfig siteConfig = BoosterSiteConfig.getSiteConfig( portalRequest );
+
+            Set<String> excludeUserAgents = defaultExcludeUserAgents;
+            if ( siteConfig != null && siteConfig.excludeUserAgents != null && !siteConfig.excludeUserAgents.isEmpty() )
+            {
+                // Use site configuration if available
+                excludeUserAgents = siteConfig.excludeUserAgents;
+            }
+
+            for ( final String excludedAgent : excludeUserAgents )
+            {
+                if ( userAgentLower.contains( excludedAgent ) )
+                {
+                    LOG.debug( "Not cacheable because User-Agent contains excluded pattern: {} (User-Agent: {})", excludedAgent, userAgent );
+                    return false;
+                }
+            }
+
             return true;
         }
     }

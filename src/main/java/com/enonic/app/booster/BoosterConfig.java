@@ -17,4 +17,6 @@ public @interface BoosterConfig
     String overrideHeaders() default "";
 
     String cacheMimeTypes() default "text/html, text/xhtml";
+
+    String excludeUserAgents() default "";
 }
