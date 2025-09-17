@@ -39,8 +39,8 @@
             </input>
           </items>
         </item-set>
-        <item-set name="headers">
-          <label>Headers - what not to cache</label>
+        <item-set name="bypassHeaders">
+          <label>Bypass Headers</label>
           <occurrences minimum="0" maximum="0"/>
           <help-text>If a request contains a listed header with a matching value, it will not be cached.</help-text>
           <items>
@@ -59,8 +59,8 @@
             </input>
           </items>
         </item-set>
-        <item-set name="cookies">
-          <label>Cookies - what not to cache</label>
+        <item-set name="bypassCookies">
+          <label>Bypass Cookies</label>
           <occurrences minimum="0" maximum="0"/>
           <help-text>If a request contains a listed cookie with a matching value, it will not be cached.</help-text>
           <items>

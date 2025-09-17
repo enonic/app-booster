@@ -7,24 +7,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
-import com.enonic.app.booster.InvertablePattern;
 import com.enonic.app.booster.servlet.RequestUtils;
 
 public class Matchers
 {
-
-    public static final ConcurrentMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
     private Matchers()
     {
     }
 
-    public static boolean matchesEntityPattern( final String pattern, boolean invert, final List<String> values )
+    public static boolean matchesPattern( final String pattern, final boolean invert, final List<String> values )
     {
         for ( String value : values )
         {
             final boolean matches = PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile ).matcher( value ).matches();
-            if ( matches && !invert || !matches && invert )
+            if ( matches ^ invert )
             {
                 return true;
             }
@@ -32,16 +30,15 @@ public class Matchers
         return false;
     }
 
-    public static boolean matchesUrlPattern( final InvertablePattern pattern, final String relativePath,
+    public static boolean matchesUrlPattern( final String pattern, final boolean invert, final String relativePath,
                                              final Set<String> excludeQueryParams, final Map<String, String[]> params )
     {
-        final boolean patternHasQueryParameters = pattern.pattern().contains( "\\?" );
-        final boolean patternMatches = PATTERN_CACHE.computeIfAbsent( pattern.pattern(), Pattern::compile )
+        final boolean patternHasQueryParameters = pattern.contains( "\\?" );
+        final boolean patternMatches = PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile )
             .matcher( patternHasQueryParameters
                           ? relativePath + "?" + RequestUtils.normalizedQueryParams( params, excludeQueryParams )
                           : relativePath )
             .matches();
-        return pattern.invert() != patternMatches;
+        return invert != patternMatches;
     }
-
 }

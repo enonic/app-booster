@@ -2,6 +2,7 @@ package com.enonic.app.booster;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -103,6 +105,46 @@ class BoosterRequestFilterTest
     }
 
     @Test
+    void hit_and_not_selected_header_bypass()
+        throws Exception
+    {
+        mockRequest();
+        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
+        filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+
+        final CacheItem cacheItem = freshCacheItemWithBypassHeader();
+
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.PROCEED ) );
+
+        var siteConfigStatic = mockStatic( BoosterSiteConfig.class );
+        try (preconditionsConstruction; siteConfigStatic)
+        {
+            when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
+            when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( cacheItem );
+
+            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn(
+                new BoosterSiteConfig( null, null, List.of(), List.of(), List.of() ) );
+            doAnswer( invocation -> {
+                HttpServletResponse response = invocation.getArgument( 1, HttpServletResponse.class );
+                response.getOutputStream(); // simulate call, otherwise response won't be cacheable
+
+                return null;
+            } ).when( filterChain ).doFilter( any(), any() );
+            filter.doHandle( request, response, filterChain );
+
+            verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
+            verify( response ).setHeader( "Cache-Status", "Booster; fwd=bypass" );
+
+            verify( filterChain ).doFilter( same( request ), any() );
+            verifyNoMoreInteractions( cacheStore );
+        }
+    }
+
+    @Test
     void collapsed_on_invalidated()
         throws Exception
     {
@@ -170,10 +212,8 @@ class BoosterRequestFilterTest
         var preconditionsConstruction = mockConstruction( Preconditions.class,
                                                           ( mock, context ) -> when( mock.check( request ) ).thenReturn(
                                                               Preconditions.Result.PROCEED ) );
-
         var storeConditionsConstruction =
             mockConstruction( StoreConditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( true ) );
-
         var siteConfigStatic = mockStatic( BoosterSiteConfig.class );
         try (preconditionsConstruction; storeConditionsConstruction; siteConfigStatic)
         {
@@ -254,13 +294,19 @@ class BoosterRequestFilterTest
                               ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
+    static CacheItem freshCacheItemWithBypassHeader()
+    {
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234,
+                              "1234567890", List.of( new EntryPattern( "Pragma", "no-cache", false ) ), List.of(),
+                              ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+    }
 
     void mockRequest()
     {
+        lenient().when( request.getMethod()  ).thenReturn( "GET" );
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getServerName() ).thenReturn( "example.com" );
         when( request.getServerPort() ).thenReturn( 443 );
         when( request.getAttribute( RequestDispatcher.FORWARD_REQUEST_URI ) ).thenReturn( "/site/repo/branch/s" );
     }
-
 }

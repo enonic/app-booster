@@ -1,11 +1,13 @@
 package com.enonic.app.booster;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -15,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.enonic.app.booster.servlet.CachingResponse;
-import com.enonic.app.booster.servlet.RequestAttributes;
 import com.enonic.app.booster.servlet.ResponseFreshness;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.branch.Branch;
@@ -310,13 +311,118 @@ class StoreConditionsTest
     }
 
     @Test
+    public void storeConditions_siteConfig_bypass_header()
+    {
+        final PropertyTree data = new PropertyTree();
+
+        final PropertySet ps = data.addSet( "bypassHeaders" );
+        ps.setString( "name", "Pragma" );
+        ps.setString( "pattern", "no-cache" );
+        ps.setBoolean( "invert", false );
+
+        final SiteConfig siteConfig =
+            SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
+
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "draft" ) );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+
+        final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
+        assertFalse( siteConfigConditions.check( request, response ) );
+    }
+
+    @Test
+    public void storeConditions_siteConfig_bypass_header_mismatch()
+    {
+        final PropertyTree data = new PropertyTree();
+
+        final PropertySet ps = data.addSet( "bypassHeaders" );
+        ps.setString( "name", "Pragma" );
+        ps.setString( "pattern", "no-cache" );
+        ps.setBoolean( "invert", true );
+
+        final SiteConfig siteConfig =
+            SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
+
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "draft" ) );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+
+        final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
+        assertTrue( siteConfigConditions.check( request, response ) );
+    }
+
+    @Test
+    public void storeConditions_siteConfig_bypass_cookie()
+    {
+        final PropertyTree data = new PropertyTree();
+
+        final PropertySet ps = data.addSet( "bypassCookies" );
+        ps.setString( "name", "RememberMe" );
+        ps.setString( "pattern", ".*" );
+        ps.setBoolean( "invert", false );
+
+        final SiteConfig siteConfig =
+            SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
+
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "draft" ) );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+        when( request.getCookies() ).thenReturn( new Cookie[]{new Cookie( "RememberMe", "1" )} );
+
+        final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
+        assertFalse( siteConfigConditions.check( request, response ) );
+    }
+
+    @Test
+    public void storeConditions_siteConfig_bypass_cookie_mismatch()
+    {
+        final PropertyTree data = new PropertyTree();
+
+        final PropertySet ps = data.addSet( "bypassCookies" );
+        ps.setString( "name", "RememberMe" );
+        ps.setString( "pattern", ".*" );
+        ps.setBoolean( "invert", true );
+
+        final SiteConfig siteConfig =
+            SiteConfig.create().config( data ).application( ApplicationKey.from( "com.enonic.app.booster" ) ).build();
+
+        final PortalRequest portalRequest = new PortalRequest();
+        portalRequest.setMode( RenderMode.LIVE );
+        portalRequest.setBranch( Branch.from( "draft" ) );
+        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+
+        when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
+        when( request.getCookies() ).thenReturn( new Cookie[]{new Cookie( "RememberMe", "1" )} );
+
+        final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
+        assertTrue( siteConfigConditions.check( request, response ) );
+    }
+
+
+    @Test
     void storeConditions_contentType_missing()
     {
         when( response.getContentType() ).thenReturn( null );
 
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
-        final var storeConditions = new StoreConditions.ContentTypePreconditions( Set.of( "text/html" ) );
+        final var storeConditions = new StoreConditions.ContentTypeConditions( Set.of( "text/html" ) );
 
         assertFalse( storeConditions.check( request, response ) );
     }
@@ -326,7 +432,7 @@ class StoreConditionsTest
     {
         when( response.getContentType() ).thenReturn( "application/octet-stream" );
 
-        final var storeConditions = new StoreConditions.ContentTypePreconditions( Set.of( "text/html" ) );
+        final var storeConditions = new StoreConditions.ContentTypeConditions( Set.of( "text/html" ) );
 
         assertFalse( storeConditions.check( request, response ) );
     }
@@ -336,7 +442,7 @@ class StoreConditionsTest
     {
         when( response.getContentType() ).thenReturn( "text/html" );
 
-        final var storeConditions = new StoreConditions.ContentTypePreconditions( Set.of( "text/html" ) );
+        final var storeConditions = new StoreConditions.ContentTypeConditions( Set.of( "text/html" ) );
 
         assertTrue( storeConditions.check( request, response ) );
     }

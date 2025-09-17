@@ -3,15 +3,11 @@ package com.enonic.app.booster;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -29,7 +25,6 @@ import com.enonic.app.booster.servlet.RequestURL;
 import com.enonic.app.booster.servlet.RequestUtils;
 import com.enonic.app.booster.servlet.ResponseFreshness;
 import com.enonic.app.booster.storage.NodeCacheStore;
-import com.enonic.app.booster.utils.Matchers;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.project.ProjectName;
@@ -135,10 +130,11 @@ public class BoosterRequestFilter
 
             LOG.debug( "Processing request with cache key {}", cacheKey );
 
-            final StoreConditions storeConditions = new StoreConditions( new StoreConditions.PortalRequestConditions()::check,
+            final StoreConditions storeConditions = new StoreConditions( ( req, res ) -> cacheStatusCode != CacheStatusCode.BYPASS,
+                                                                         new StoreConditions.PortalRequestConditions()::check,
                                                                          new StoreConditions.SiteConfigConditions(
                                                                              config.excludeQueryParams() )::check,
-                                                                         new StoreConditions.ContentTypePreconditions(
+                                                                         new StoreConditions.ContentTypeConditions(
                                                                              config.cacheMimeTypes() )::check );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, storeConditions::check,
@@ -276,43 +272,7 @@ public class BoosterRequestFilter
 
     private boolean checkSelected( final CacheItem stored, final HttpServletRequest request )
     {
-        return checkBypassHeaders( stored.bypassHeaders(), request ) && checkBypassCookies( stored.bypassCookies(), request );
-    }
-
-    private static boolean checkBypassHeaders( List<EntryPattern> headers, final HttpServletRequest request )
-    {
-        for ( var header : headers )
-        {
-            List<String> values = Collections.list( request.getHeaders( header.name() ) );
-
-            if ( Matchers.matchesEntityPattern( header.pattern(), header.invert(), values ) )
-            {
-                LOG.debug( "Not cacheable because of bypass header pattern match {}", header );
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean checkBypassCookies( final List<EntryPattern> cookies, final HttpServletRequest request )
-    {
-        if ( request.getCookies() != null )
-        {
-            for ( var cookie : cookies )
-            {
-                List<String> values = Arrays.stream( request.getCookies() )
-                    .filter( c -> c.getName().equals( cookie.name() ) )
-                    .map( Cookie::getValue )
-                    .toList();
-
-                if ( Matchers.matchesEntityPattern( cookie.pattern(), cookie.invert(), values ) )
-                {
-                    LOG.debug( "Not cacheable because of bypass cookie pattern match {}", cookie );
-                    return false;
-                }
-            }
-        }
-        return true;
+        return StoreConditions.checkBypassHeaders( stored.configBypassHeaders(), request ) && StoreConditions.checkBypassCookies( stored.configBypassCookies(), request );
     }
 
     private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestURL requestUrl )

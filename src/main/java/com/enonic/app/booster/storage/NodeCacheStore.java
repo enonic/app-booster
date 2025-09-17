@@ -77,8 +77,8 @@ public class NodeCacheStore
                 final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
                 final Instant expireTime = node.data().getInstant( "expireTime" );
                 final Integer age = Numbers.safeLongToInteger( node.data().getLong( "age" ), null );
-                final List<EntryPattern> bypassHeaders = EntryPatternMapper.mapEntryPatterns( node.data().getSets( "bypassHeaders" ) );
-                final List<EntryPattern> bypassCookies = EntryPatternMapper.mapEntryPatterns( node.data().getSets( "bypassCookies" ) );
+                final List<EntryPattern> bypassHeaders = EntryPatternMapper.mapEntryPatterns( node.data().getSets( "configBypassHeaders" ) );
+                final List<EntryPattern> bypassCookies = EntryPatternMapper.mapEntryPatterns( node.data().getSets( "configBypassCookies" ) );
 
                 final ByteSource gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
                 if ( gzipBody == null )
@@ -185,11 +185,10 @@ public class NodeCacheStore
         data.setString( "contentPath", cacheMeta.contentPath() );
         data.setInstant( "cachedTime", cacheItem.cachedTime() );
         data.setInstant( "expireTime", cacheItem.expireTime() );
-        setEntryPatternsToPropertyTree( data, cacheItem.bypassHeaders(), "bypassHeaders" );
-        setEntryPatternsToPropertyTree( data, cacheItem.bypassCookies(), "bypassCookies" );
-        final PropertySet headersPropertyTree = data.newSet();
-        cacheItem.headers().forEach( headersPropertyTree::addStrings );
-        data.setSet( "headers", headersPropertyTree );
+        setEntryPatternsToPropertyTree( data, cacheItem.configBypassHeaders(), "configBypassHeaders" );
+        setEntryPatternsToPropertyTree( data, cacheItem.configBypassCookies(), "configBypassCookies" );
+        final PropertySet headersPropertySet = data.addSet("headers");
+        cacheItem.headers().forEach( headersPropertySet::addStrings );
 
         return data;
     }
@@ -244,11 +243,10 @@ public class NodeCacheStore
         {
             for ( EntryPattern bypassHeader : patterns )
             {
-                PropertySet ps = data.newSet();
+                PropertySet ps = data.addSet( fieldName );
                 ps.setString( "name", bypassHeader.name() );
                 ps.setString( "pattern", bypassHeader.pattern() );
                 ps.setBoolean( "invert", bypassHeader.invert() );
-                data.addSet( fieldName, ps );
             }
         }
     }

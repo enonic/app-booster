@@ -1,9 +1,13 @@
 package com.enonic.app.booster;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -157,20 +161,44 @@ public class StoreConditions
                 return false;
             }
 
-            final List<InvertablePattern> patterns = config.patterns;
-            if ( !patterns.isEmpty() )
+            if ( !checkPaths( request, config.patterns, portalRequest ) )
+            {
+                return false;
+            }
+
+            if ( !checkBypassHeaders( config.headers, request ) )
+            {
+                return false;
+            }
+
+            if ( !checkBypassCookies( config.cookies, request ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public boolean checkPaths( final HttpServletRequest request, final List<InvertablePattern> patterns,
+                                   final PortalRequest portalRequest )
+        {
+            if ( patterns.isEmpty() )
+            {
+                return true;
+            }
+            else
             {
                 final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
                 for ( var pattern : patterns )
                 {
-                    if ( !Matchers.matchesUrlPattern( pattern, siteRelativePath, excludeQueryParams, request.getParameterMap() ) )
+                    if ( Matchers.matchesUrlPattern( pattern.pattern(), pattern.invert(), siteRelativePath, excludeQueryParams, request.getParameterMap() ) )
                     {
-                        LOG.debug( "Not cacheable because of path pattern mismatch {}", pattern );
-                        return false;
+                        return true;
                     }
                 }
+                LOG.debug( "Not cacheable because of path does not match any pattern" );
+                return false;
             }
-            return true;
         }
 
         private static String siteRelativePath( final Site site, final ContentPath contentPath )
@@ -190,11 +218,11 @@ public class StoreConditions
         }
     }
 
-    public static class ContentTypePreconditions
+    public static class ContentTypeConditions
     {
         private final Set<String> mimeTypes;
 
-        public ContentTypePreconditions( final Set<String> mimeTypes )
+        public ContentTypeConditions( final Set<String> mimeTypes )
         {
             this.mimeTypes = mimeTypes;
         }
@@ -204,11 +232,48 @@ public class StoreConditions
             final String responseContentType = response.getContentType();
             if ( responseContentType == null || !MimeTypes.isContentTypeSupported( mimeTypes, responseContentType ) )
             {
+                LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
                 return false;
             }
-            LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
             return true;
         }
+    }
+
+    public static boolean checkBypassHeaders( final List<EntryPattern> headers, final HttpServletRequest request )
+    {
+        for ( var header : headers )
+        {
+            final List<String> values =
+                Collections.list( Objects.requireNonNullElse( request.getHeaders( header.name() ), Collections.emptyEnumeration() ) );
+
+            if ( Matchers.matchesPattern( header.pattern(), header.invert(), values ) )
+            {
+                LOG.debug( "Not cacheable because of bypass header pattern match {}", header );
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean checkBypassCookies( final List<EntryPattern> cookies, final HttpServletRequest request )
+    {
+        if ( request.getCookies() != null )
+        {
+            for ( var cookie : cookies )
+            {
+                final List<String> values = Arrays.stream( request.getCookies() )
+                    .filter( c -> c.getName().equals( cookie.name() ) )
+                    .map( Cookie::getValue )
+                    .toList();
+
+                if ( Matchers.matchesPattern( cookie.pattern(), cookie.invert(), values ) )
+                {
+                    LOG.debug( "Not cacheable because of bypass cookie pattern match {}", cookie );
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 
