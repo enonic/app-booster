@@ -18,6 +18,8 @@ import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.CacheMeta;
+import com.enonic.app.booster.EntryPattern;
+import com.enonic.app.booster.EntryPatternMapper;
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.app.booster.utils.Numbers;
@@ -60,7 +62,7 @@ public class NodeCacheStore
             try
             {
                 node = nodeService.getById( nodeId );
-                final Integer contentLength = Numbers.safeLongToInteger(node.data().getLong( "contentLength" ), null);
+                final Integer contentLength = Numbers.safeLongToInteger( node.data().getLong( "contentLength" ), null );
                 if ( contentLength == null )
                 {
                     LOG.warn( "Cached response does not have valid content length {}", nodeId );
@@ -75,6 +77,8 @@ public class NodeCacheStore
                 final Instant invalidatedTime = node.data().getInstant( "invalidatedTime" );
                 final Instant expireTime = node.data().getInstant( "expireTime" );
                 final Integer age = Numbers.safeLongToInteger( node.data().getLong( "age" ), null );
+                final List<EntryPattern> bypassHeaders = EntryPatternMapper.mapEntryPatterns( node.data().getSets( "bypassHeaders" ) );
+                final List<EntryPattern> bypassCookies = EntryPatternMapper.mapEntryPatterns( node.data().getSets( "bypassCookies" ) );
 
                 final ByteSource gzipBody = nodeService.getBinary( nodeId, GZIP_DATA_BINARY_REFERENCE );
                 if ( gzipBody == null )
@@ -87,7 +91,8 @@ public class NodeCacheStore
                 final ByteSource brotliBody = nodeService.getBinary( nodeId, BROTLI_DATA_BINARY_REFERENCE );
 
                 return new CacheItem( status, contentType, headers, cachedTime, expireTime, age, invalidatedTime, contentLength, etag,
-                                      ByteSupply.of( gzipBody ), brotliBody == null ? null : ByteSupply.of( brotliBody ) );
+                                      bypassHeaders, bypassCookies, ByteSupply.of( gzipBody ),
+                                      brotliBody == null ? null : ByteSupply.of( brotliBody ) );
             }
             catch ( NodeNotFoundException e )
             {
@@ -180,6 +185,8 @@ public class NodeCacheStore
         data.setString( "contentPath", cacheMeta.contentPath() );
         data.setInstant( "cachedTime", cacheItem.cachedTime() );
         data.setInstant( "expireTime", cacheItem.expireTime() );
+        setEntryPatternsToPropertyTree( data, cacheItem.bypassHeaders(), "bypassHeaders" );
+        setEntryPatternsToPropertyTree( data, cacheItem.bypassCookies(), "bypassCookies" );
         final PropertySet headersPropertyTree = data.newSet();
         cacheItem.headers().forEach( headersPropertyTree::addStrings );
         data.setSet( "headers", headersPropertyTree );
@@ -229,5 +236,20 @@ public class NodeCacheStore
             }
         }
         return result;
+    }
+
+    public static void setEntryPatternsToPropertyTree( final PropertyTree data, final List<EntryPattern> patterns, final String fieldName )
+    {
+        if ( !patterns.isEmpty() )
+        {
+            for ( EntryPattern bypassHeader : patterns )
+            {
+                PropertySet ps = data.newSet();
+                ps.setString( "name", bypassHeader.name() );
+                ps.setString( "pattern", bypassHeader.pattern() );
+                ps.setBoolean( "invert", bypassHeader.invert() );
+                data.addSet( fieldName, ps );
+            }
+        }
     }
 }

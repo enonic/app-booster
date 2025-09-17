@@ -5,7 +5,7 @@
       <default>false</default>
     </input>
     <input name="defaultTTL" type="TextLine">
-          <label>Default TTL (seconds)</label>
+      <label>Default TTL (seconds)</label>
       <help-text>Default TTL when max-age is not specified.</help-text>
       <config>
         <regexp>\b\d{1,8}\b</regexp>
@@ -22,9 +22,11 @@
           </config>
         </input>
         <item-set name="patterns">
-          <label>Patterns</label>
+          <label>Patterns - what to cache</label>
           <occurrences minimum="0" maximum="0"/>
-          <help-text>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for the request to be cached.</help-text>
+          <help-text>If no patterns are provided, all paths are cached. Otherwise, at least one pattern should match the request path for
+            the request to be cached.
+          </help-text>
           <items>
             <input name="pattern" type="TextLine">
               <label>Pattern</label>
@@ -32,6 +34,47 @@
             </input>
             <input name="invert" type="Checkbox">
               <label>Invert</label>
+              <help-text>Invert the result of pattern matching.</help-text>
+              <default>false</default>
+            </input>
+          </items>
+        </item-set>
+        <item-set name="headers">
+          <label>Headers - what not to cache</label>
+          <occurrences minimum="0" maximum="0"/>
+          <help-text>If a request contains a listed header with a matching value, it will not be cached.</help-text>
+          <items>
+            <input name="name" type="TextLine">
+              <label>Header</label>
+              <help-text>Header name. Case-insensitive.</help-text>
+            </input>
+            <input name="pattern" type="TextLine">
+              <label>Pattern</label>
+              <help-text>A regular expression that matches a header value, for example: "(?i).*\\bgooglebot\\b.*"</help-text>
+            </input>
+            <input name="invert" type="Checkbox">
+              <label>Invert</label>
+              <help-text>Invert the result of header value pattern matching.</help-text>
+              <default>false</default>
+            </input>
+          </items>
+        </item-set>
+        <item-set name="cookies">
+          <label>Cookies - what not to cache</label>
+          <occurrences minimum="0" maximum="0"/>
+          <help-text>If a request contains a listed cookie with a matching value, it will not be cached.</help-text>
+          <items>
+            <input name="name" type="TextLine">
+              <label>Cookie</label>
+              <help-text>Cookie name. Case-sensitive.</help-text>
+            </input>
+            <input name="pattern" type="TextLine">
+              <label>Pattern</label>
+              <help-text>A regular expression that matches a cookie value, for example: "(?i)nocache"</help-text>
+            </input>
+            <input name="invert" type="Checkbox">
+              <label>Invert</label>
+              <help-text>Invert the result of cookie value pattern matching.</help-text>
               <default>false</default>
             </input>
           </items>

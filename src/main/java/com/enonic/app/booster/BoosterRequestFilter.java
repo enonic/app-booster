@@ -3,11 +3,15 @@ package com.enonic.app.booster;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,6 +29,7 @@ import com.enonic.app.booster.servlet.RequestURL;
 import com.enonic.app.booster.servlet.RequestUtils;
 import com.enonic.app.booster.servlet.ResponseFreshness;
 import com.enonic.app.booster.storage.NodeCacheStore;
+import com.enonic.app.booster.utils.Matchers;
 import com.enonic.xp.annotation.Order;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.project.ProjectName;
@@ -137,9 +142,8 @@ public class BoosterRequestFilter
                                                                              config.cacheMimeTypes() )::check );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, storeConditions::check,
-                                                                                       res -> writeHeaders( res, stale
-                                                                                           ? BoosterCacheStatus.stale()
-                                                                                           : BoosterCacheStatus.miss() ) );
+                                                                                       res -> writeHeaders( res, mapStatus(
+                                                                                           cacheStatusCode ) ) );
             try (cachingResponse)
             {
                 chain.doFilter( request, cachingResponse );
@@ -162,8 +166,8 @@ public class BoosterRequestFilter
                     cacheHolder[0] =
                         new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
                                        freshness.time(), freshness.expiresTime( fallbackTTL ), freshness.age(), null,
-                                       cachingResponse.getSize(), cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
-                                       cachingResponse.getCachedBrBody().orElse( null ) );
+                                       cachingResponse.getSize(), cachingResponse.getEtag(), config.headers, config.cookies,
+                                       cachingResponse.getCachedGzipBody(), cachingResponse.getCachedBrBody().orElse( null ) );
                     cacheStore.put( cacheKey, cacheHolder[0], cacheMeta );
                 } );
             }
@@ -186,6 +190,17 @@ public class BoosterRequestFilter
         }
     }
 
+    private static BoosterCacheStatus mapStatus( final CacheStatusCode cacheStatusCode )
+    {
+        return switch ( cacheStatusCode )
+        {
+            case STALE -> BoosterCacheStatus.stale();
+            case MISS -> BoosterCacheStatus.miss();
+            case BYPASS -> BoosterCacheStatus.bypass( null );
+            case HIT -> BoosterCacheStatus.hit();
+        };
+    }
+
     private CacheStatusCode tryWriteFromCache( final HttpServletRequest request, final HttpServletResponse response, final String cacheKey )
         throws IOException
     {
@@ -195,13 +210,19 @@ public class BoosterRequestFilter
             LOG.debug( "No cached response found {}", cacheKey );
             return CacheStatusCode.MISS;
         }
-        final CacheItem valid = checkStale( inCache );
-        if ( valid != null )
+        if ( checkFresh( inCache ) )
         {
-            LOG.debug( "Writing directly from cache {}", cacheKey );
-
-            new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.hit() ) ).write( response, valid );
-            return CacheStatusCode.HIT;
+            if ( checkSelected( inCache, request ) )
+            {
+                LOG.debug( "Writing directly from cache {}", cacheKey );
+                new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.hit() ) ).write( response, inCache );
+                return CacheStatusCode.HIT;
+            }
+            else
+            {
+                LOG.debug( "Cached response is not selected {}", cacheKey );
+                return CacheStatusCode.BYPASS;
+            }
         }
         else
         {
@@ -241,23 +262,57 @@ public class BoosterRequestFilter
         config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
     }
 
-    private CacheItem checkStale( final CacheItem stored )
+    private boolean checkFresh( final CacheItem stored )
     {
         if ( stored.invalidatedTime() != null )
         {
-            return null;
+            return false;
         }
 
         final Instant expireTime =
             requireNonNullElseGet( stored.expireTime(), () -> stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ) );
-        if ( expireTime.isBefore( Instant.now() ) )
+        return !expireTime.isBefore( Instant.now() );
+    }
+
+    private boolean checkSelected( final CacheItem stored, final HttpServletRequest request )
+    {
+        return checkBypassHeaders( stored.bypassHeaders(), request ) && checkBypassCookies( stored.bypassCookies(), request );
+    }
+
+    private static boolean checkBypassHeaders( List<EntryPattern> headers, final HttpServletRequest request )
+    {
+        for ( var header : headers )
         {
-            return null;
+            List<String> values = Collections.list( request.getHeaders( header.name() ) );
+
+            if ( Matchers.matchesEntityPattern( header.pattern(), header.invert(), values ) )
+            {
+                LOG.debug( "Not cacheable because of bypass header pattern match {}", header );
+                return false;
+            }
         }
-        else
+        return true;
+    }
+
+    private static boolean checkBypassCookies( final List<EntryPattern> cookies, final HttpServletRequest request )
+    {
+        if ( request.getCookies() != null )
         {
-            return stored;
+            for ( var cookie : cookies )
+            {
+                List<String> values = Arrays.stream( request.getCookies() )
+                    .filter( c -> c.getName().equals( cookie.name() ) )
+                    .map( Cookie::getValue )
+                    .toList();
+
+                if ( Matchers.matchesEntityPattern( cookie.pattern(), cookie.invert(), values ) )
+                {
+                    LOG.debug( "Not cacheable because of bypass cookie pattern match {}", cookie );
+                    return false;
+                }
+            }
         }
+        return true;
     }
 
     private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestURL requestUrl )
@@ -301,6 +356,6 @@ public class BoosterRequestFilter
 
     enum CacheStatusCode
     {
-        MISS, HIT, STALE
+        MISS, HIT, STALE, BYPASS
     }
 }

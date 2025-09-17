@@ -169,7 +169,8 @@ class NodeCacheStoreTest
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         final CacheItem cacheItem =
             new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234, "1234567890",
-                           ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+                           List.of(), List.of(), ByteSupply.of( new ByteArrayOutputStream() ),
+                           ByteSupply.of( new ByteArrayOutputStream() ) );
 
         final CacheMeta cacheMeta =
             new CacheMeta( "https://example.com/", "example.com", "/", "project", "siteId", "contentId", "/contentpath" );
@@ -207,7 +208,8 @@ class NodeCacheStoreTest
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         final CacheItem cacheItem =
             new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234, "1234567890",
-                           ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+                           List.of(), List.of(), ByteSupply.of( new ByteArrayOutputStream() ),
+                           ByteSupply.of( new ByteArrayOutputStream() ) );
 
         final CacheMeta cacheMeta =
             new CacheMeta( "https://example.com/", "example.com", "/", "project", "siteId", "contentId", "/contentpath" );

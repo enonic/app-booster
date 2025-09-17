@@ -1,10 +1,8 @@
 package com.enonic.app.booster;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.RequestAttributes;
 import com.enonic.app.booster.servlet.RequestUtils;
+import com.enonic.app.booster.utils.Matchers;
 import com.enonic.app.booster.utils.MimeTypes;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.content.ContentPath;
@@ -158,32 +157,20 @@ public class StoreConditions
                 return false;
             }
 
-            final List<BoosterSiteConfig.PathPattern> patterns = config.patterns;
-            if (!patterns.isEmpty()) {
+            final List<InvertablePattern> patterns = config.patterns;
+            if ( !patterns.isEmpty() )
+            {
                 final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
                 for ( var pattern : patterns )
                 {
-
-                    if ( !matchesUrlPattern( pattern.pattern, pattern.invert, siteRelativePath, request.getParameterMap() ) )
+                    if ( !Matchers.matchesUrlPattern( pattern, siteRelativePath, excludeQueryParams, request.getParameterMap() ) )
                     {
-                        LOG.debug( "Not cacheable because of pattern {}, invert {}", pattern.pattern, pattern.invert );
+                        LOG.debug( "Not cacheable because of path pattern mismatch {}", pattern );
                         return false;
                     }
                 }
             }
             return true;
-        }
-
-        private boolean matchesUrlPattern( final Pattern pattern, boolean invert, final String relativePath,
-                                           final Map<String, String[]> params )
-        {
-            final boolean patternHasQueryParameters = pattern.pattern().contains( "\\?" );
-            final boolean patternMatches = pattern
-                .matcher( patternHasQueryParameters
-                              ? relativePath + "?" + RequestUtils.normalizedQueryParams( params, excludeQueryParams )
-                              : relativePath )
-                .matches();
-            return invert != patternMatches;
         }
 
         private static String siteRelativePath( final Site site, final ContentPath contentPath )
