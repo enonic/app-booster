@@ -20,18 +20,18 @@ public final class BoosterSiteConfig
 
     public List<InvertablePattern> patterns;
 
-    public List<EntryPattern> headers;
+    public List<EntryPattern> bypassHeaders;
 
-    public List<EntryPattern> cookies;
+    public List<EntryPattern> bypassCookies;
 
     public BoosterSiteConfig( final Integer defaultTTL, final Integer componentTTL, final List<InvertablePattern> patterns,
-                              final List<EntryPattern> headers, final List<EntryPattern> cookies )
+                              final List<EntryPattern> bypassHeaders, final List<EntryPattern> bypassCookies )
     {
         this.defaultTTL = defaultTTL;
         this.componentTTL = componentTTL;
         this.patterns = patterns;
-        this.cookies = cookies;
-        this.headers = headers;
+        this.bypassCookies = bypassCookies;
+        this.bypassHeaders = bypassHeaders;
     }
 
     private static final ApplicationKey APPLICATION_KEY = ApplicationKey.from( "com.enonic.app.booster" );

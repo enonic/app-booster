@@ -168,7 +168,7 @@ public class BoosterRequestFilter
                     cacheHolder[0] =
                         new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
                                        freshness.time(), freshness.expiresTime( fallbackTTL ), freshness.age(), null,
-                                       cachingResponse.getSize(), cachingResponse.getEtag(), config.headers, config.cookies,
+                                       cachingResponse.getSize(), cachingResponse.getEtag(), config.bypassHeaders, config.bypassCookies,
                                        cachingResponse.getCachedGzipBody(), cachingResponse.getCachedBrBody().orElse( null ) );
                     cacheStore.put( cacheKey, cacheHolder[0], cacheMeta );
                 } );

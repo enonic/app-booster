@@ -166,12 +166,12 @@ public class StoreConditions
                 return false;
             }
 
-            if ( !checkBypassHeaders( config.headers, request ) )
+            if ( !checkBypassHeaders( config.bypassHeaders, request ) )
             {
                 return false;
             }
 
-            if ( !checkBypassCookies( config.cookies, request ) )
+            if ( !checkBypassCookies( config.bypassCookies, request ) )
             {
                 return false;
             }
