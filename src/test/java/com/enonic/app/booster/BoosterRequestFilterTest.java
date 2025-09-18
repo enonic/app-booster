@@ -128,16 +128,11 @@ class BoosterRequestFilterTest
 
             when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn(
                 new BoosterSiteConfig( null, null, List.of(), List.of(), List.of() ) );
-            doAnswer( invocation -> {
-                HttpServletResponse response = invocation.getArgument( 1, HttpServletResponse.class );
-                response.getOutputStream(); // simulate call, otherwise response won't be cacheable
 
-                return null;
-            } ).when( filterChain ).doFilter( any(), any() );
             filter.doHandle( request, response, filterChain );
 
             verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
-            verify( response ).setHeader( "Cache-Status", "Booster; fwd=bypass" );
+            verify( response ).setHeader( "Cache-Status", "Booster; fwd=bypass; detail=HEADER" );
 
             verify( filterChain ).doFilter( same( request ), any() );
             verifyNoMoreInteractions( cacheStore );

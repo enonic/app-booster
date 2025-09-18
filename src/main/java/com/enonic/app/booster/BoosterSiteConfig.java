@@ -74,12 +74,12 @@ public final class BoosterSiteConfig
                 return new InvertablePattern( pattern, invert );
             } ).toList();
 
-        final List<EntryPattern> headers = EntryPatternMapper.mapEntryPatterns( boosterConfig.getSets( "bypassHeaders" ) );
+        final List<EntryPattern> bypassHeaders = EntryPatternMapper.mapEntryPatterns( boosterConfig.getSets( "bypassHeaders" ) );
 
-        final List<EntryPattern> cookies = EntryPatternMapper.mapEntryPatterns( boosterConfig.getSets( "bypassCookies" ) );
+        final List<EntryPattern> bypassCookies = EntryPatternMapper.mapEntryPatterns( boosterConfig.getSets( "bypassCookies" ) );
 
         final Integer defaultTTL = Numbers.safeParseInteger( boosterConfig.getString( "defaultTTL" ) );
         final Integer componentTTL = Numbers.safeParseInteger( boosterConfig.getString( "componentTTL" ) );
-        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns, headers, cookies );
+        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns, bypassHeaders, bypassCookies );
     }
 }

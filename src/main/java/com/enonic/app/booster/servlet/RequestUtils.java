@@ -3,12 +3,17 @@ package com.enonic.app.booster.servlet;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import static java.util.Objects.requireNonNullElseGet;
@@ -98,6 +103,20 @@ public final class RequestUtils
         final int indexOfUnderscore = requestURI.indexOf( "/_/" );
         return indexOfUnderscore != -1 &&
             requestURI.regionMatches( indexOfUnderscore + "/_/".length(), "component/", 0, "component/".length() );
+    }
+
+    public static List<String> listHeaders( final HttpServletRequest request, String name )
+    {
+        return Collections.list( Objects.requireNonNullElse( request.getHeaders( name ), Collections.emptyEnumeration() ) );
+    }
+
+    public static List<String> listCookies( final HttpServletRequest request, String name )
+    {
+        if ( request.getCookies() == null )
+        {
+            return Collections.emptyList();
+        }
+        return Arrays.stream( request.getCookies() ).filter( c -> c.getName().equals( name ) ).map( Cookie::getValue ).toList();
     }
 
     public enum AcceptEncoding

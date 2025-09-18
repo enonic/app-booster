@@ -106,6 +106,12 @@ public class BoosterRequestFilter
         {
             return;
         }
+        if ( cacheStatusCode == CacheStatusCode.BYPASS )
+        {
+            writeCacheStatusHeader( response, BoosterCacheStatus.bypass( "HEADER" ) );
+            chain.doFilter( request, response );
+            return;
+        }
 
         final boolean stale = cacheStatusCode == CacheStatusCode.STALE;
 
@@ -130,16 +136,16 @@ public class BoosterRequestFilter
 
             LOG.debug( "Processing request with cache key {}", cacheKey );
 
-            final StoreConditions storeConditions = new StoreConditions( ( req, res ) -> cacheStatusCode != CacheStatusCode.BYPASS,
-                                                                         new StoreConditions.PortalRequestConditions()::check,
+            final StoreConditions storeConditions = new StoreConditions( new StoreConditions.PortalRequestConditions()::check,
                                                                          new StoreConditions.SiteConfigConditions(
                                                                              config.excludeQueryParams() )::check,
                                                                          new StoreConditions.ContentTypeConditions(
                                                                              config.cacheMimeTypes() )::check );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, storeConditions::check,
-                                                                                       res -> writeHeaders( res, mapStatus(
-                                                                                           cacheStatusCode ) ) );
+                                                                                       res -> writeHeaders( res, stale
+                                                                                           ? BoosterCacheStatus.stale()
+                                                                                           : BoosterCacheStatus.miss() ) );
             try (cachingResponse)
             {
                 chain.doFilter( request, cachingResponse );
@@ -186,17 +192,6 @@ public class BoosterRequestFilter
         }
     }
 
-    private static BoosterCacheStatus mapStatus( final CacheStatusCode cacheStatusCode )
-    {
-        return switch ( cacheStatusCode )
-        {
-            case STALE -> BoosterCacheStatus.stale();
-            case MISS -> BoosterCacheStatus.miss();
-            case BYPASS -> BoosterCacheStatus.bypass( null );
-            case HIT -> BoosterCacheStatus.hit();
-        };
-    }
-
     private CacheStatusCode tryWriteFromCache( final HttpServletRequest request, final HttpServletResponse response, final String cacheKey )
         throws IOException
     {
@@ -206,9 +201,9 @@ public class BoosterRequestFilter
             LOG.debug( "No cached response found {}", cacheKey );
             return CacheStatusCode.MISS;
         }
-        if ( checkFresh( inCache ) )
+        if ( checkSelected( inCache, request ) )
         {
-            if ( checkSelected( inCache, request ) )
+            if ( checkFresh( inCache ) )
             {
                 LOG.debug( "Writing directly from cache {}", cacheKey );
                 new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.hit() ) ).write( response, inCache );
@@ -216,14 +211,14 @@ public class BoosterRequestFilter
             }
             else
             {
-                LOG.debug( "Cached response is not selected {}", cacheKey );
-                return CacheStatusCode.BYPASS;
+                LOG.debug( "Cached response is stale {}", cacheKey );
+                return CacheStatusCode.STALE;
             }
         }
         else
         {
-            LOG.debug( "Cached response is stale {}", cacheKey );
-            return CacheStatusCode.STALE;
+            LOG.debug( "Cached response is not selected {}", cacheKey );
+            return CacheStatusCode.BYPASS;
         }
     }
 
