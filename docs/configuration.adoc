@@ -87,7 +87,18 @@ When adding Booster to a site, it may be tuned specifically
 
 image::images/site-config.png[Adding Booster to your site, 739]
 
-=== Cache patterns
+=== Default TTL
+
+Default TTL setting allows to specify cache TTL for controller responses without max-age or s-max-age headers.
+By default, the value is not set and the cache TTL is determined by the `cacheTtl` configuration property.
+
+=== Advanced settings
+
+==== Component TTL
+
+Component TTL setting to specify cache TTL for _component_ controller responses without max-age or s-max-age headers. If not specified Default TTL is used.
+
+==== URL Patterns
 
 By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.
 
@@ -99,7 +110,11 @@ A pattern is a regular expression that is used to match the request path. A patt
 
 The syntax of the pattern is the same as https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings[XP Framework pattern mappings].
 
-=== Default TTL
+==== Bypass Headers and Cookies
 
-Default TTL setting allows to specify cache TTL for controller responses without max-age or s-max-age headers.
-By default, the value is not set and the cache TTL is determined by the `cacheTtl` configuration property.
+Bypass Headers and Cookies let you define rules that prevent requests from being served from cache, and also ensure that matching responses are not stored in cache.
+
+You can specify one or more header or cookie rules.
+Each rule consists a `name` and Java Regular Expression `pattern`. An `invert` attribute can be  used to indicate that the result of evaluating the regular expression should be negated.
+
+If any incoming request header or cookie matches a rule, the request will bypass the cache entirely.
