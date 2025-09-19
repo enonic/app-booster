@@ -1,9 +1,7 @@
 package com.enonic.app.booster;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Pattern;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
 
 import com.enonic.app.booster.utils.Numbers;
@@ -16,19 +14,24 @@ import com.enonic.xp.site.SiteConfigs;
 
 public final class BoosterSiteConfig
 {
-    private static final ConcurrentMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
-
     public Integer defaultTTL;
 
     public Integer componentTTL;
 
-    public List<PathPattern> patterns;
+    public List<InvertablePattern> patterns;
 
-    public BoosterSiteConfig( final Integer defaultTTL, final Integer componentTTL, final List<PathPattern> patterns )
+    public List<EntryPattern> bypassHeaders;
+
+    public List<EntryPattern> bypassCookies;
+
+    public BoosterSiteConfig( final Integer defaultTTL, final Integer componentTTL, final List<InvertablePattern> patterns,
+                              final List<EntryPattern> bypassHeaders, final List<EntryPattern> bypassCookies )
     {
         this.defaultTTL = defaultTTL;
         this.componentTTL = componentTTL;
         this.patterns = patterns;
+        this.bypassCookies = bypassCookies;
+        this.bypassHeaders = bypassHeaders;
     }
 
     private static final ApplicationKey APPLICATION_KEY = ApplicationKey.from( "com.enonic.app.booster" );
@@ -64,27 +67,19 @@ public final class BoosterSiteConfig
             return null;
         }
 
-        final List<PathPattern> patterns = StreamSupport.stream( boosterConfig.getSets( "patterns" ).spliterator(), false ).map( p -> {
-            String pattern = p.getString( "pattern" );
-            boolean invert = Boolean.TRUE.equals( p.getBoolean( "invert" ) );
-            return new PathPattern( PATTERN_CACHE.computeIfAbsent( pattern, Pattern::compile ), invert );
-        } ).toList();
+        final List<InvertablePattern> patterns =
+            StreamSupport.stream( boosterConfig.getSets( "patterns" ).spliterator(), false ).map( p -> {
+                String pattern = Objects.requireNonNullElse( p.getString( "pattern" ), "" );
+                boolean invert = Boolean.TRUE.equals( p.getBoolean( "invert" ) );
+                return new InvertablePattern( pattern, invert );
+            } ).toList();
+
+        final List<EntryPattern> bypassHeaders = EntryPatternMapper.mapEntryPatterns( boosterConfig.getSets( "bypassHeaders" ) );
+
+        final List<EntryPattern> bypassCookies = EntryPatternMapper.mapEntryPatterns( boosterConfig.getSets( "bypassCookies" ) );
 
         final Integer defaultTTL = Numbers.safeParseInteger( boosterConfig.getString( "defaultTTL" ) );
         final Integer componentTTL = Numbers.safeParseInteger( boosterConfig.getString( "componentTTL" ) );
-        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns  );
-    }
-
-    public static class PathPattern
-    {
-        public Pattern pattern;
-
-        public boolean invert;
-
-        public PathPattern( final Pattern pattern, final boolean invert )
-        {
-            this.pattern = pattern;
-            this.invert = invert;
-        }
+        return new BoosterSiteConfig( defaultTTL, componentTTL, patterns, bypassHeaders, bypassCookies );
     }
 }

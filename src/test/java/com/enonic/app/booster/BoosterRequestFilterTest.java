@@ -2,6 +2,7 @@ package com.enonic.app.booster;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.enonic.app.booster.concurrent.Collapser;
 import com.enonic.app.booster.io.ByteSupply;
-import com.enonic.app.booster.servlet.RequestAttributes;
 import com.enonic.app.booster.storage.NodeCacheStore;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.repository.RepositoryId;
@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -62,8 +63,9 @@ class BoosterRequestFilterTest
         final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.SILENT_BYPASS ) );
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.SILENT_BYPASS ) );
         try (preconditionsConstruction)
         {
             filter.doHandle( request, response, filterChain );
@@ -83,8 +85,9 @@ class BoosterRequestFilterTest
 
         final CacheItem cacheItem = freshCacheItem();
 
-        var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.PROCEED ) );
 
         var cachedResponseWriterConstruction = mockConstruction( CachedResponseWriter.class );
 
@@ -98,6 +101,41 @@ class BoosterRequestFilterTest
             verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
             verify( cachedResponseWriterConstruction.constructed().get( 0 ) ).write( same( response ), same( cacheItem ) );
             verifyNoInteractions( filterChain );
+        }
+    }
+
+    @Test
+    void hit_and_not_selected_header_bypass()
+        throws Exception
+    {
+        mockRequest();
+        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+
+        final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
+        filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
+
+        final CacheItem cacheItem = freshCacheItemWithBypassHeader();
+
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.PROCEED ) );
+
+        var siteConfigStatic = mockStatic( BoosterSiteConfig.class );
+        try (preconditionsConstruction; siteConfigStatic)
+        {
+            when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
+            when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( cacheItem );
+
+            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn(
+                new BoosterSiteConfig( null, null, List.of(), List.of(), List.of() ) );
+
+            filter.doHandle( request, response, filterChain );
+
+            verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
+            verify( response ).setHeader( "Cache-Status", "Booster; fwd=bypass; detail=HEADER" );
+
+            verify( filterChain ).doFilter( same( request ), any() );
+            verifyNoMoreInteractions( cacheStore );
         }
     }
 
@@ -134,8 +172,9 @@ class BoosterRequestFilterTest
 
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.PROCEED ) );
 
         var cachedResponseWriterConstruction = mockConstruction( CachedResponseWriter.class );
 
@@ -165,18 +204,18 @@ class BoosterRequestFilterTest
         final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
-
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.PROCEED ) );
         var storeConditionsConstruction =
             mockConstruction( StoreConditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( true ) );
-
-        var siteConfigStatic = mockStatic( BoosterSiteConfig.class);
+        var siteConfigStatic = mockStatic( BoosterSiteConfig.class );
         try (preconditionsConstruction; storeConditionsConstruction; siteConfigStatic)
         {
             when( cacheStore.generateCacheKey( "https://example.com/site/repo/branch/s" ) ).thenCallRealMethod();
             when( cacheStore.get( "1ddd92089d02d31e68f1c6db45db255c" ) ).thenReturn( null );
-            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn( new BoosterSiteConfig( null, null, List.of() ) );
+            when( BoosterSiteConfig.getSiteConfig( any() ) ).thenReturn(
+                new BoosterSiteConfig( null, null, List.of(), List.of(), List.of() ) );
             doAnswer( invocation -> {
                 HttpServletResponse response = invocation.getArgument( 1, HttpServletResponse.class );
                 response.getOutputStream(); // simulate call, otherwise response won't be cacheable
@@ -187,7 +226,7 @@ class BoosterRequestFilterTest
             filter.doHandle( request, response, filterChain );
 
             verify( cacheStore ).get( "1ddd92089d02d31e68f1c6db45db255c" );
-            verify( response ).setHeader( "Cache-Status","Booster; fwd=miss" );
+            verify( response ).setHeader( "Cache-Status", "Booster; fwd=miss" );
             verify( filterChain ).doFilter( same( request ), any() );
             final ArgumentCaptor<CacheItem> cacheCaptor = captor();
             final ArgumentCaptor<CacheMeta> metaCaptor = captor();
@@ -209,8 +248,9 @@ class BoosterRequestFilterTest
         final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        var preconditionsConstruction =
-            mockConstruction( Preconditions.class, ( mock, context ) -> when( mock.check( request ) ).thenReturn( Preconditions.Result.PROCEED ) );
+        var preconditionsConstruction = mockConstruction( Preconditions.class,
+                                                          ( mock, context ) -> when( mock.check( request ) ).thenReturn(
+                                                              Preconditions.Result.PROCEED ) );
 
         var storeConditionsConstruction =
             mockConstruction( StoreConditions.class, ( mock, context ) -> when( mock.check( eq( request ), any() ) ).thenReturn( false ) );
@@ -231,28 +271,37 @@ class BoosterRequestFilterTest
     static CacheItem invalidatedCacheItem()
     {
         return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, Instant.EPOCH, null, null, 1234,
-                              "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+                              "1234567890", List.of(), List.of(), ByteSupply.of( new ByteArrayOutputStream() ),
+                              ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
     static CacheItem expiredCacheITem()
     {
         return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.EPOCH, null, null, null, 1234,
-                              "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+                              "1234567890", List.of(), List.of(), ByteSupply.of( new ByteArrayOutputStream() ),
+                              ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
     static CacheItem freshCacheItem()
     {
         return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234,
-                              "1234567890", ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+                              "1234567890", List.of(), List.of(), ByteSupply.of( new ByteArrayOutputStream() ),
+                              ByteSupply.of( new ByteArrayOutputStream() ) );
     }
 
+    static CacheItem freshCacheItemWithBypassHeader()
+    {
+        return new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234,
+                              "1234567890", List.of( new EntryPattern( "Pragma", "no-cache", false ) ), List.of(),
+                              ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+    }
 
     void mockRequest()
     {
+        lenient().when( request.getMethod()  ).thenReturn( "GET" );
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getServerName() ).thenReturn( "example.com" );
         when( request.getServerPort() ).thenReturn( 443 );
         when( request.getAttribute( RequestDispatcher.FORWARD_REQUEST_URI ) ).thenReturn( "/site/repo/branch/s" );
     }
-
 }

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,7 +16,9 @@ import com.google.common.io.ByteSource;
 
 import com.enonic.app.booster.CacheItem;
 import com.enonic.app.booster.CacheMeta;
+import com.enonic.app.booster.EntryPattern;
 import com.enonic.app.booster.io.ByteSupply;
+import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.CreateNodeParams;
 import com.enonic.xp.node.DeleteNodeParams;
@@ -27,6 +30,7 @@ import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.util.BinaryReference;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -103,6 +107,18 @@ class NodeCacheStoreTest
         data.addInstant( "cachedTime", Instant.now() );
         data.addInstant( "invalidatedTime", Instant.now() );
 
+        final PropertySet bypassHeaders = data.newSet();
+        bypassHeaders.addString( "name", "Pragma" );
+        bypassHeaders.addString( "pattern", "no-cache" );
+        bypassHeaders.addBoolean( "invert", true );
+        data.addSet( "configBypassHeaders", bypassHeaders );
+
+        final PropertySet bypassCookies = data.newSet();
+        bypassCookies.addString( "name", "RememberMe" );
+        bypassCookies.addString( "pattern", ".*" );
+        bypassCookies.addBoolean( "invert", true );
+        data.addSet( "configBypassCookies", bypassCookies );
+
         nodeBuilder.data( data );
 
         Node node = nodeBuilder.build();
@@ -122,7 +138,8 @@ class NodeCacheStoreTest
         assertNotNull( result.gzipData() );
         assertNotNull( result.brotliData() );
         assertEquals( result.headers(), Map.of( "header1", List.of( "value1" ) ) );
-
+        assertEquals( result.configBypassHeaders(), List.of( new EntryPattern( "Pragma", "no-cache", true ) ) );
+        assertEquals( result.configBypassCookies(), List.of( new EntryPattern( "RememberMe", ".*", true ) ) );
     }
 
     @Test
@@ -169,6 +186,9 @@ class NodeCacheStoreTest
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         final CacheItem cacheItem =
             new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234, "1234567890",
+                           List.of( new EntryPattern( "Pragma", "no-cache", false ),
+                                    new EntryPattern( "User-Agent", "(?i).*googlebot.*", true ) ),
+                           List.of( new EntryPattern( "RememberMe", ".*", false ), new EntryPattern( "ForgetMe", "^$", true ) ),
                            ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
 
         final CacheMeta cacheMeta =
@@ -191,6 +211,13 @@ class NodeCacheStoreTest
         assertEquals( "project", createNodeParams.getData().getString( "project" ) );
         assertEquals( "siteId", createNodeParams.getData().getString( "siteId" ) );
         assertEquals( "contentId", createNodeParams.getData().getString( "contentId" ) );
+        assertThat( createNodeParams.getData().getSets( "configBypassCookies" ) ).map( p -> p.getString( "name" ), p -> p.getString( "pattern" ),
+                                                                                 p -> p.getBoolean( "invert" ) )
+            .containsExactly( Tuple.tuple( "RememberMe", ".*", false ), Tuple.tuple( "ForgetMe", "^$", true ) );
+        assertThat( createNodeParams.getData().getSets( "configBypassHeaders" ) ).map( p -> p.getString( "name" ), p -> p.getString( "pattern" ),
+                                                                                 p -> p.getBoolean( "invert" ) )
+            .containsExactly( Tuple.tuple( "Pragma", "no-cache", false ), Tuple.tuple( "User-Agent", "(?i).*googlebot.*", true ) );
+
         assertEquals( "/contentpath", createNodeParams.getData().getString( "contentPath" ) );
         assertNotNull( createNodeParams.getData().getInstant( "cachedTime" ) );
         assertNull( createNodeParams.getData().getInstant( "invalidatedTime" ) );
@@ -207,7 +234,8 @@ class NodeCacheStoreTest
         final NodeCacheStore nodeCacheStore = new NodeCacheStore( nodeService );
         final CacheItem cacheItem =
             new CacheItem( 200, "text/html", Map.of( "header1", List.of( "value1" ) ), Instant.now(), null, null, null, 1234, "1234567890",
-                           ByteSupply.of( new ByteArrayOutputStream() ), ByteSupply.of( new ByteArrayOutputStream() ) );
+                           List.of(), List.of(), ByteSupply.of( new ByteArrayOutputStream() ),
+                           ByteSupply.of( new ByteArrayOutputStream() ) );
 
         final CacheMeta cacheMeta =
             new CacheMeta( "https://example.com/", "example.com", "/", "project", "siteId", "contentId", "/contentpath" );

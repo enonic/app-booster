@@ -106,6 +106,12 @@ public class BoosterRequestFilter
         {
             return;
         }
+        if ( cacheStatusCode == CacheStatusCode.BYPASS )
+        {
+            writeCacheStatusHeader( response, BoosterCacheStatus.bypass( "HEADER" ) );
+            chain.doFilter( request, response );
+            return;
+        }
 
         final boolean stale = cacheStatusCode == CacheStatusCode.STALE;
 
@@ -133,7 +139,7 @@ public class BoosterRequestFilter
             final StoreConditions storeConditions = new StoreConditions( new StoreConditions.PortalRequestConditions()::check,
                                                                          new StoreConditions.SiteConfigConditions(
                                                                              config.excludeQueryParams() )::check,
-                                                                         new StoreConditions.ContentTypePreconditions(
+                                                                         new StoreConditions.ContentTypeConditions(
                                                                              config.cacheMimeTypes() )::check );
 
             final CachingResponseWrapper cachingResponse = new CachingResponseWrapper( request, response, storeConditions::check,
@@ -162,8 +168,8 @@ public class BoosterRequestFilter
                     cacheHolder[0] =
                         new CacheItem( cachingResponse.getStatus(), cachingResponse.getContentType(), cachingResponse.getCachedHeaders(),
                                        freshness.time(), freshness.expiresTime( fallbackTTL ), freshness.age(), null,
-                                       cachingResponse.getSize(), cachingResponse.getEtag(), cachingResponse.getCachedGzipBody(),
-                                       cachingResponse.getCachedBrBody().orElse( null ) );
+                                       cachingResponse.getSize(), cachingResponse.getEtag(), config.bypassHeaders, config.bypassCookies,
+                                       cachingResponse.getCachedGzipBody(), cachingResponse.getCachedBrBody().orElse( null ) );
                     cacheStore.put( cacheKey, cacheHolder[0], cacheMeta );
                 } );
             }
@@ -195,18 +201,24 @@ public class BoosterRequestFilter
             LOG.debug( "No cached response found {}", cacheKey );
             return CacheStatusCode.MISS;
         }
-        final CacheItem valid = checkStale( inCache );
-        if ( valid != null )
+        if ( checkSelected( inCache, request ) )
         {
-            LOG.debug( "Writing directly from cache {}", cacheKey );
-
-            new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.hit() ) ).write( response, valid );
-            return CacheStatusCode.HIT;
+            if ( checkFresh( inCache ) )
+            {
+                LOG.debug( "Writing directly from cache {}", cacheKey );
+                new CachedResponseWriter( request, res -> writeHeaders( res, BoosterCacheStatus.hit() ) ).write( response, inCache );
+                return CacheStatusCode.HIT;
+            }
+            else
+            {
+                LOG.debug( "Cached response is stale {}", cacheKey );
+                return CacheStatusCode.STALE;
+            }
         }
         else
         {
-            LOG.debug( "Cached response is stale {}", cacheKey );
-            return CacheStatusCode.STALE;
+            LOG.debug( "Cached response is not selected {}", cacheKey );
+            return CacheStatusCode.BYPASS;
         }
     }
 
@@ -241,23 +253,21 @@ public class BoosterRequestFilter
         config.overrideHeaders().forEach( ( name, value ) -> response.setHeader( name.toLowerCase( Locale.ROOT ), value ) );
     }
 
-    private CacheItem checkStale( final CacheItem stored )
+    private boolean checkFresh( final CacheItem stored )
     {
         if ( stored.invalidatedTime() != null )
         {
-            return null;
+            return false;
         }
 
         final Instant expireTime =
             requireNonNullElseGet( stored.expireTime(), () -> stored.cachedTime().plus( config.cacheTtlSeconds(), ChronoUnit.SECONDS ) );
-        if ( expireTime.isBefore( Instant.now() ) )
-        {
-            return null;
-        }
-        else
-        {
-            return stored;
-        }
+        return !expireTime.isBefore( Instant.now() );
+    }
+
+    private boolean checkSelected( final CacheItem stored, final HttpServletRequest request )
+    {
+        return StoreConditions.checkBypassHeaders( stored.configBypassHeaders(), request ) && StoreConditions.checkBypassCookies( stored.configBypassCookies(), request );
     }
 
     private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestURL requestUrl )
@@ -301,6 +311,6 @@ public class BoosterRequestFilter
 
     enum CacheStatusCode
     {
-        MISS, HIT, STALE
+        MISS, HIT, STALE, BYPASS
     }
 }

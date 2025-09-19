@@ -1,11 +1,13 @@
 package com.enonic.app.booster;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.regex.Pattern;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.RequestAttributes;
 import com.enonic.app.booster.servlet.RequestUtils;
+import com.enonic.app.booster.utils.Matchers;
 import com.enonic.app.booster.utils.MimeTypes;
 import com.enonic.xp.branch.Branch;
 import com.enonic.xp.content.ContentPath;
@@ -158,32 +161,44 @@ public class StoreConditions
                 return false;
             }
 
-            final List<BoosterSiteConfig.PathPattern> patterns = config.patterns;
-            if (!patterns.isEmpty()) {
-                final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
-                for ( var pattern : patterns )
-                {
-
-                    if ( !matchesUrlPattern( pattern.pattern, pattern.invert, siteRelativePath, request.getParameterMap() ) )
-                    {
-                        LOG.debug( "Not cacheable because of pattern {}, invert {}", pattern.pattern, pattern.invert );
-                        return false;
-                    }
-                }
+            if ( !checkPaths( request, config.patterns, portalRequest ) )
+            {
+                return false;
             }
+
+            if ( !checkBypassHeaders( config.bypassHeaders, request ) )
+            {
+                return false;
+            }
+
+            if ( !checkBypassCookies( config.bypassCookies, request ) )
+            {
+                return false;
+            }
+
             return true;
         }
 
-        private boolean matchesUrlPattern( final Pattern pattern, boolean invert, final String relativePath,
-                                           final Map<String, String[]> params )
+        public boolean checkPaths( final HttpServletRequest request, final List<InvertablePattern> patterns,
+                                   final PortalRequest portalRequest )
         {
-            final boolean patternHasQueryParameters = pattern.pattern().contains( "\\?" );
-            final boolean patternMatches = pattern
-                .matcher( patternHasQueryParameters
-                              ? relativePath + "?" + RequestUtils.normalizedQueryParams( params, excludeQueryParams )
-                              : relativePath )
-                .matches();
-            return invert != patternMatches;
+            if ( patterns.isEmpty() )
+            {
+                return true;
+            }
+            else
+            {
+                final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
+                for ( var pattern : patterns )
+                {
+                    if ( Matchers.matchesUrlPattern( pattern.pattern(), pattern.invert(), siteRelativePath, excludeQueryParams, request.getParameterMap() ) )
+                    {
+                        return true;
+                    }
+                }
+                LOG.debug( "Not cacheable because of path does not match any pattern" );
+                return false;
+            }
         }
 
         private static String siteRelativePath( final Site site, final ContentPath contentPath )
@@ -203,11 +218,11 @@ public class StoreConditions
         }
     }
 
-    public static class ContentTypePreconditions
+    public static class ContentTypeConditions
     {
         private final Set<String> mimeTypes;
 
-        public ContentTypePreconditions( final Set<String> mimeTypes )
+        public ContentTypeConditions( final Set<String> mimeTypes )
         {
             this.mimeTypes = mimeTypes;
         }
@@ -217,11 +232,48 @@ public class StoreConditions
             final String responseContentType = response.getContentType();
             if ( responseContentType == null || !MimeTypes.isContentTypeSupported( mimeTypes, responseContentType ) )
             {
+                LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
                 return false;
             }
-            LOG.debug( "Not cacheable because of incompatible content-type {}", responseContentType );
             return true;
         }
+    }
+
+    public static boolean checkBypassHeaders( final List<EntryPattern> headers, final HttpServletRequest request )
+    {
+        for ( var header : headers )
+        {
+            final List<String> values =
+                Collections.list( Objects.requireNonNullElse( request.getHeaders( header.name() ), Collections.emptyEnumeration() ) );
+
+            if ( Matchers.matchesPattern( header.pattern(), header.invert(), values ) )
+            {
+                LOG.debug( "Not cacheable because of bypass header pattern match {}", header );
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean checkBypassCookies( final List<EntryPattern> cookies, final HttpServletRequest request )
+    {
+        if ( request.getCookies() != null )
+        {
+            for ( var cookie : cookies )
+            {
+                final List<String> values = Arrays.stream( request.getCookies() )
+                    .filter( c -> c.getName().equals( cookie.name() ) )
+                    .map( Cookie::getValue )
+                    .toList();
+
+                if ( Matchers.matchesPattern( cookie.pattern(), cookie.invert(), values ) )
+                {
+                    LOG.debug( "Not cacheable because of bypass cookie pattern match {}", cookie );
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 

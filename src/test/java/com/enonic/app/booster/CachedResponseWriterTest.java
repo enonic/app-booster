@@ -12,7 +12,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -185,7 +184,7 @@ class CachedResponseWriterTest
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
         verify( response ).setHeader( "ETag", "\"etag-gzip\"" );
-                verify( response ).setHeader( "Content-Encoding", "gzip" );
+        verify( response ).setHeader( "Content-Encoding", "gzip" );
         verify( response ).addHeader( "vary", "Accept-Language" );
         verify( response ).addHeader( "cache-control", "max-age=60" );
         verify( response ).setIntHeader( eq( "Age" ), anyInt() );
@@ -216,7 +215,7 @@ class CachedResponseWriterTest
             Map.of( "x-booster-cache", List.of( "ignored" ), "vary", List.of( "Accept-Language" ), "cache-control",
                     List.of( "max-age=60" ) );
 
-        return new CacheItem( 200, "text/xhtml", headers, Instant.EPOCH, null, null, null, data.length(), "etag", ByteSupply.of( baosGzip ),
-                              ByteSupply.of( baosBrotli ) );
+        return new CacheItem( 200, "text/xhtml", headers, Instant.EPOCH, null, null, null, data.length(), "etag", List.of(), List.of(),
+                              ByteSupply.of( baosGzip ), ByteSupply.of( baosBrotli ) );
     }
 }
