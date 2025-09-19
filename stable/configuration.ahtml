@@ -450,8 +450,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </li>
 <li><a href="#site_configuration">Site configuration</a>
 <ul class="sectlevel2">
-<li><a href="#cache_patterns">Cache patterns</a></li>
 <li><a href="#default_ttl">Default TTL</a></li>
+<li><a href="#advanced_settings">Advanced settings</a></li>
 </ul>
 </li>
 </ul>
@@ -620,7 +620,22 @@ Booster does not cache responses with <code>Vary</code> header, including but no
 </div>
 </div>
 <div class="sect2">
-<h3 id="cache_patterns"><a class="link" href="#cache_patterns">Cache patterns</a></h3>
+<h3 id="default_ttl"><a class="link" href="#default_ttl">Default TTL</a></h3>
+<div class="paragraph">
+<p>Default TTL setting allows to specify cache TTL for controller responses without max-age or s-max-age headers.
+By default, the value is not set and the cache TTL is determined by the <code>cacheTtl</code> configuration property.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="advanced_settings"><a class="link" href="#advanced_settings">Advanced settings</a></h3>
+<div class="sect3">
+<h4 id="component_ttl"><a class="link" href="#component_ttl">Component TTL</a></h4>
+<div class="paragraph">
+<p>Component TTL setting to specify cache TTL for <em>component</em> controller responses without max-age or s-max-age headers. If not specified Default TTL is used.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="url_patterns"><a class="link" href="#url_patterns">URL Patterns</a></h4>
 <div class="paragraph">
 <p>By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.</p>
 </div>
@@ -637,11 +652,18 @@ Booster does not cache responses with <code>Vary</code> header, including but no
 <p>The syntax of the pattern is the same as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="default_ttl"><a class="link" href="#default_ttl">Default TTL</a></h3>
+<div class="sect3">
+<h4 id="bypass_headers_and_cookies"><a class="link" href="#bypass_headers_and_cookies">Bypass Headers and Cookies</a></h4>
 <div class="paragraph">
-<p>Default TTL setting allows to specify cache TTL for controller responses without max-age or s-max-age headers.
-By default, the value is not set and the cache TTL is determined by the <code>cacheTtl</code> configuration property.</p>
+<p>Bypass Headers and Cookies let you define rules that prevent requests from being served from cache, and also ensure that matching responses are not stored in cache.</p>
+</div>
+<div class="paragraph">
+<p>You can specify one or more header or cookie rules.
+Each rule consists a <code>name</code> and Java Regular Expression <code>pattern</code>. An <code>invert</code> attribute can be  used to indicate that the result of evaluating the regular expression should be negated.</p>
+</div>
+<div class="paragraph">
+<p>If any incoming request header or cookie matches a rule, the request will bypass the cache entirely.</p>
+</div>
 </div>
 </div>
 </div>
@@ -649,7 +671,7 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-01-20 11:44:41 UTC
+Last updated 2025-09-19 07:15:33 UTC
 </div>
 </div>
 </body>
