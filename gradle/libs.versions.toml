@@ -3,7 +3,7 @@ brotli4jVersion = "1.20.0"
 
 [libraries]
 
-equalsverifier = { module = "nl.jqno.equalsverifier:equalsverifier", version = "4.3" }
+equalsverifier = { module = "nl.jqno.equalsverifier:equalsverifier", version = "4.3.1" }
 
 assertj-core = { module = "org.assertj:assertj-core", version = "3.27.7" }
 
