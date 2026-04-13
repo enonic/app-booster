@@ -201,7 +201,7 @@ class NodeCacheStoreTest
 
         final CreateNodeParams createNodeParams = captor.getValue();
         assertEquals( NodeId.from( "0f115db062b7c0dd030b16878c99dea5" ), createNodeParams.getNodeId() );
-        assertEquals( "0f115db062b7c0dd030b16878c99dea5", createNodeParams.getName() );
+        assertEquals( "0f115db062b7c0dd030b16878c99dea5", createNodeParams.getName().toString() );
         assertEquals( new NodePath( "/cache" ), createNodeParams.getParent() );
         assertEquals( "https://example.com/", createNodeParams.getData().getString( "url" ) );
         assertEquals( "text/html", createNodeParams.getData().getString( "contentType" ) );
@@ -211,11 +211,13 @@ class NodeCacheStoreTest
         assertEquals( "project", createNodeParams.getData().getString( "project" ) );
         assertEquals( "siteId", createNodeParams.getData().getString( "siteId" ) );
         assertEquals( "contentId", createNodeParams.getData().getString( "contentId" ) );
-        assertThat( createNodeParams.getData().getSets( "configBypassCookies" ) ).map( p -> p.getString( "name" ), p -> p.getString( "pattern" ),
-                                                                                 p -> p.getBoolean( "invert" ) )
+        assertThat( createNodeParams.getData().getSets( "configBypassCookies" ) ).map( p -> p.getString( "name" ),
+                                                                                       p -> p.getString( "pattern" ),
+                                                                                       p -> p.getBoolean( "invert" ) )
             .containsExactly( Tuple.tuple( "RememberMe", ".*", false ), Tuple.tuple( "ForgetMe", "^$", true ) );
-        assertThat( createNodeParams.getData().getSets( "configBypassHeaders" ) ).map( p -> p.getString( "name" ), p -> p.getString( "pattern" ),
-                                                                                 p -> p.getBoolean( "invert" ) )
+        assertThat( createNodeParams.getData().getSets( "configBypassHeaders" ) ).map( p -> p.getString( "name" ),
+                                                                                       p -> p.getString( "pattern" ),
+                                                                                       p -> p.getBoolean( "invert" ) )
             .containsExactly( Tuple.tuple( "Pragma", "no-cache", false ), Tuple.tuple( "User-Agent", "(?i).*googlebot.*", true ) );
 
         assertEquals( "/contentpath", createNodeParams.getData().getString( "contentPath" ) );

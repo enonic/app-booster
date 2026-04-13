@@ -4,9 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
-import com.enonic.app.booster.StoreConditions;
 import com.enonic.app.booster.io.ByteSupply;
 
 public interface CachingResponse

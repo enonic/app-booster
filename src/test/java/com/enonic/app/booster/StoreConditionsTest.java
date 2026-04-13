@@ -7,14 +7,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.ResponseFreshness;
@@ -28,6 +28,7 @@ import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.site.SiteConfig;
 import com.enonic.xp.site.SiteConfigs;
+import com.enonic.xp.site.SiteConfigsDataSerializer;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -203,7 +204,7 @@ class StoreConditionsTest
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
         portalRequest.setContentPath( ContentPath.from( "/site" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
@@ -221,7 +222,7 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "master" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
@@ -239,7 +240,7 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "master" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
@@ -257,7 +258,7 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "master" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
         when( request.getRequestURI() ).thenReturn( "/site/_/component/main/0" );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
@@ -279,8 +280,8 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
-        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "b" ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
+        portalRequest.setContentPath( ContentPath.from( "/site/b" ) );
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
@@ -301,8 +302,8 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
-        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
+        portalRequest.setContentPath( ContentPath.from( "/site/a" ) );
 
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
 
@@ -326,11 +327,11 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
-        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
+        portalRequest.setContentPath( ContentPath.from( "/site/a" ) );
 
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
-        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+        when( request.getHeaders( "Pragma" ) ).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
         assertFalse( siteConfigConditions.check( request, response ) );
@@ -352,11 +353,11 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
-        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
+        portalRequest.setContentPath( ContentPath.from( "/site/a" ) );
 
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
-        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+        when( request.getHeaders( "Pragma" ) ).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
 
         final StoreConditions.SiteConfigConditions siteConfigConditions = new StoreConditions.SiteConfigConditions( Set.of() );
         assertTrue( siteConfigConditions.check( request, response ) );
@@ -378,8 +379,8 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
-        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
+        portalRequest.setContentPath( ContentPath.from( "/site/a" ) );
 
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
         when( request.getCookies() ).thenReturn( new Cookie[]{new Cookie( "RememberMe", "1" )} );
@@ -404,8 +405,8 @@ class StoreConditionsTest
         final PortalRequest portalRequest = new PortalRequest();
         portalRequest.setMode( RenderMode.LIVE );
         portalRequest.setBranch( Branch.from( "draft" ) );
-        portalRequest.setSite( Site.create().path( "/site" ).siteConfigs( SiteConfigs.from( siteConfig ) ).build() );
-        portalRequest.setContentPath( ContentPath.create().addElement( "site" ).addElement( "a" ).build() );
+        portalRequest.setSite( createSiteWithConfigs( "/site", siteConfig ) );
+        portalRequest.setContentPath( ContentPath.from( "/site/a" ) );
 
         when( request.getAttribute( PortalRequest.class.getName() ) ).thenReturn( portalRequest );
         when( request.getCookies() ).thenReturn( new Cookie[]{new Cookie( "RememberMe", "1" )} );
@@ -445,6 +446,13 @@ class StoreConditionsTest
         final var storeConditions = new StoreConditions.ContentTypeConditions( Set.of( "text/html" ) );
 
         assertTrue( storeConditions.check( request, response ) );
+    }
+
+    private static Site createSiteWithConfigs( final String path, final SiteConfig siteConfig )
+    {
+        final PropertyTree data = new PropertyTree();
+        SiteConfigsDataSerializer.toData( SiteConfigs.from( siteConfig ), data.getRoot() );
+        return Site.create().path( path ).data( data ).build();
     }
 
     private static ResponseFreshness freshFreshness()

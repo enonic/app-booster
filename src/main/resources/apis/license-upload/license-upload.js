@@ -2,7 +2,7 @@ const portalLib = require("/lib/xp/portal");
 const ioLib = require("/lib/xp/io");
 const helper = require("/lib/helper");
 
-exports.post = function (req) {
+exports.POST = function (req) {
     const licenseStream = portalLib.getMultipartStream("license");
     const license = ioLib.readText(licenseStream);
     const licenseInstalled = helper.installLicense(license);

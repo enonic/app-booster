@@ -5,18 +5,18 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.enonic.app.booster.concurrent.Collapser;
 import com.enonic.app.booster.servlet.CachingResponseWrapper;
@@ -267,7 +267,8 @@ public class BoosterRequestFilter
 
     private boolean checkSelected( final CacheItem stored, final HttpServletRequest request )
     {
-        return StoreConditions.checkBypassHeaders( stored.configBypassHeaders(), request ) && StoreConditions.checkBypassCookies( stored.configBypassCookies(), request );
+        return StoreConditions.checkBypassHeaders( stored.configBypassHeaders(), request ) &&
+            StoreConditions.checkBypassCookies( stored.configBypassCookies(), request );
     }
 
     private static CacheMeta createCacheMeta( final HttpServletRequest request, RequestURL requestUrl )

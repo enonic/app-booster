@@ -6,10 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -17,6 +13,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.enonic.app.booster.BoosterConfig;
 import com.enonic.app.booster.BoosterConfigParsed;
@@ -48,7 +48,8 @@ class CachingResponseWrapperTest
 
         when( response.getOutputStream() ).thenReturn( servletOutputStream );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {
+        } );
         try (wrapper)
         {
             wrapper.getOutputStream().write( "Hello, World".getBytes( StandardCharsets.UTF_8 ) );
@@ -73,7 +74,8 @@ class CachingResponseWrapperTest
     {
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {
+        } );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
@@ -91,7 +93,8 @@ class CachingResponseWrapperTest
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {
+        } );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );
@@ -110,7 +113,8 @@ class CachingResponseWrapperTest
         final BoosterConfigParsed config =
             BoosterConfigParsed.parse( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
 
-        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {} );
+        final CachingResponseWrapper wrapper = new CachingResponseWrapper( request, response, ( req, res ) -> true, res -> {
+        } );
         try (wrapper)
         {
             wrapper.addHeader( "a", "1" );

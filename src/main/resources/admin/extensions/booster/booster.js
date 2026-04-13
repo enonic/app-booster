@@ -1,32 +1,38 @@
 const portal = require('/lib/xp/portal');
 const contentLib = require('/lib/xp/content');
+const contextLib = require('/lib/xp/context');
 const mustache = require('/lib/mustache');
 const helper = require("/lib/helper");
 const nodeLib = require('/lib/xp/node');
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
 
-const isAppEnabledOnSite = (contentId) => {
+const isAppEnabledOnSite = (contentId, repository) => {
     if (!contentId) {
         return true;
     }
-    const site = contentLib.getSite({ key: contentId });
-    if (!site) {
-        return true;
-    }
-
-    if (!site.data || !site.data.siteConfig) {
-        return false;
-    }
-
-    let siteConfig;
-    forceArray(site.data.siteConfig).forEach(config => {
-        if (config.applicationKey === app.name) {
-            siteConfig = config
+    return contextLib.run({
+        repository: repository,
+        branch: 'draft'
+    }, () => {
+        const site = contentLib.getSite({key: contentId});
+        if (!site) {
+            return true;
         }
-    });
 
-    return !!siteConfig;
+        if (!site.data || !site.data.siteConfig) {
+            return false;
+        }
+
+        let siteConfig;
+        forceArray(site.data.siteConfig).forEach(config => {
+            if (config.applicationKey === app.name) {
+                siteConfig = config
+            }
+        });
+
+        return !!siteConfig;
+    });
 }
 
 const getCommonlyCachedPaths = (project, numResults) => {
@@ -75,7 +81,7 @@ const renderWidgetView = (req) => {
         const nodeCleanerBean = __.newBean('com.enonic.app.booster.script.NodeCleanerBean');
         size = nodeCleanerBean.getProjectCacheSize(project);
 
-        if (contentId && !isAppEnabledOnSite(contentId)) {
+        if (contentId && !isAppEnabledOnSite(contentId, req.params.repository)) {
             hint = 'Booster app is not added to this site';
         }
     }
@@ -86,12 +92,12 @@ const renderWidgetView = (req) => {
         size,
         isButtonDisabled: size === 0,
         isEnabled: !error,
-        assetsUri: portal.assetUrl({ path: ''}),
-        serviceUrl: portal.serviceUrl({ service: 'booster' }),
+        assetsUri: portal.assetUrl({path: ''}),
+        serviceUrl: portal.apiUrl({api: 'booster'}),
         isLicenseValid: helper.isLicenseValid(),
-        licenseUploadUrl: portal.serviceUrl({ service: 'license-upload' }),
+        licenseUploadUrl: portal.apiUrl({api: 'license-upload'}),
         commonlyCachedPaths: getCommonlyCachedPaths(project, 20),
-        pathStatsServiceUrl: portal.serviceUrl({ service: 'pathstats' }),
+        pathStatsServiceUrl: portal.apiUrl({api: 'pathstats'}),
         error,
         hint
     };
@@ -102,4 +108,4 @@ const renderWidgetView = (req) => {
     };
 }
 
-exports.get = (req) => renderWidgetView(req);
+exports.GET = (req) => renderWidgetView(req);

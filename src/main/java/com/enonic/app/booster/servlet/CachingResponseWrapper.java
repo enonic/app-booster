@@ -21,19 +21,19 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import com.aayushatharva.brotli4j.encoder.Encoder;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.utils.MessageDigests;
@@ -141,7 +141,7 @@ public final class CachingResponseWrapper
     @Override
     public ResponseFreshness getFreshness()
     {
-        if (freshness == null)
+        if ( freshness == null )
         {
             freshness = ResponseFreshness.build( response );
         }

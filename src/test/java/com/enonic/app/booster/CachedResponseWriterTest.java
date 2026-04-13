@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,6 +16,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.enonic.app.booster.io.ByteSupply;
 import com.enonic.app.booster.servlet.RequestUtils;
@@ -56,7 +56,8 @@ class CachedResponseWriterTest
             when( request.getMethod() ).thenReturn( "GET" );
             when( request.getHeader( "If-None-Match" ) ).thenReturn( "\"etag\"" );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
-            writer = new CachedResponseWriter( request, r -> {} );
+            writer = new CachedResponseWriter( request, r -> {
+            } );
         }
 
         writer.write( response, newCacheItem() );
@@ -78,7 +79,8 @@ class CachedResponseWriterTest
         {
             when( request.getMethod() ).thenReturn( "HEAD" );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
-            writer = new CachedResponseWriter( request, r -> {} );
+            writer = new CachedResponseWriter( request, r -> {
+            } );
         }
         writer.write( response, newCacheItem() );
         verify( response ).setContentType( "text/xhtml" );
@@ -128,7 +130,8 @@ class CachedResponseWriterTest
         {
             when( request.getMethod() ).thenReturn( "GET" );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.UNSPECIFIED );
-            writer = new CachedResponseWriter( request, r -> {});
+            writer = new CachedResponseWriter( request, r -> {
+            } );
         }
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );
@@ -153,7 +156,8 @@ class CachedResponseWriterTest
             when( request.getMethod() ).thenReturn( "GET" );
 
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.BROTLI );
-            writer = new CachedResponseWriter( request, r -> {} );
+            writer = new CachedResponseWriter( request, r -> {
+            } );
         }
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );
@@ -178,7 +182,8 @@ class CachedResponseWriterTest
         {
             when( request.getMethod() ).thenReturn( "GET" );
             requestUtils.when( () -> RequestUtils.acceptEncoding( request ) ).thenReturn( RequestUtils.AcceptEncoding.GZIP );
-            writer = new CachedResponseWriter( request, r -> {} );
+            writer = new CachedResponseWriter( request, r -> {
+            } );
         }
         when( response.getOutputStream() ).thenReturn( mock( ServletOutputStream.class ) );
         writer.write( response, newCacheItem() );

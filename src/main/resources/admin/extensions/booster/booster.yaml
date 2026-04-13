@@ -1,0 +1,5 @@
+kind: "AdminExtension"
+title: "Booster"
+description: "Manage Booster cache"
+interfaces:
+  - "contentstudio.contextpanel"

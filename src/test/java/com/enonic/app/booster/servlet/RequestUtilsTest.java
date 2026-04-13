@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.jupiter.api.Test;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -114,7 +114,7 @@ class RequestUtilsTest
     void acceptEncoding_br_preferred()
     {
         HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of("gzip", "br") ) );
+        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "gzip", "br" ) ) );
         final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
 
         assertEquals( RequestUtils.AcceptEncoding.BROTLI, acceptEncoding );
@@ -124,7 +124,7 @@ class RequestUtilsTest
     void acceptEncoding_gzip()
     {
         HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of("br;q=0, gzip") ) );
+        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0, gzip" ) ) );
         final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
 
         assertEquals( RequestUtils.AcceptEncoding.GZIP, acceptEncoding );
@@ -134,7 +134,7 @@ class RequestUtilsTest
     void acceptEncoding_prefer_none_unspecified()
     {
         HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of("br;q=0, gzip;q=0") ) );
+        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0, gzip;q=0" ) ) );
         final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
 
         assertEquals( RequestUtils.AcceptEncoding.UNSPECIFIED, acceptEncoding );

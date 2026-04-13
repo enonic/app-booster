@@ -1,0 +1,5 @@
+kind: Application
+title: "Booster"
+description: "Cache Site Engine responses to improve performance"
+vendorName: "Enonic AS"
+vendorUrl: "https://enonic.com"

@@ -24,7 +24,7 @@ const getTaskStatus = function (taskId) {
     };
 }
 
-exports.post = function (req) {
+exports.POST = function (req) {
     const supportedActions = ['invalidate', 'purge-all', 'enforce-all', 'status'];
     const params = JSON.parse(req.body);
 
@@ -51,7 +51,7 @@ exports.post = function (req) {
 
     const contentId = params.data.contentId;
     const project = params.data.project;
-    const config = { project };
+    const config = {project};
 
     if (!helper.hasAllowedRole(project)) {
         return {

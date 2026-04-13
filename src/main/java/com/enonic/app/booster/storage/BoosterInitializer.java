@@ -30,7 +30,7 @@ public class BoosterInitializer
     @Override
     protected boolean isInitialized()
     {
-        return BoosterContext.callInContext( () -> repositoryService.isInitialized( BoosterContext.REPOSITORY_ID ) &&
+        return BoosterContext.callInContext( () -> repositoryService.get( BoosterContext.REPOSITORY_ID ) != null &&
             nodeService.nodeExists( BoosterContext.CACHE_PARENT_NODE ) && nodeService.nodeExists( BoosterContext.SCHEDULED_PARENT_NODE ) );
     }
 

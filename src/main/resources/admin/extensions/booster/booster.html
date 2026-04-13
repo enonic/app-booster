@@ -6,7 +6,8 @@
     <script src="{{assetsUri}}/js/license.js" data-service-url="{{licenseUploadUrl}}"></script>
     {{/isLicenseValid}}
     {{/isEnabled}}
-    <div id="widget-booster-container" class="widget-booster-container{{#isEnabled}}{{^isLicenseValid}} license-invalid{{/isLicenseValid}}{{/isEnabled}}">
+    <div id="widget-booster-container"
+         class="widget-booster-container{{#isEnabled}}{{^isLicenseValid}} license-invalid{{/isLicenseValid}}{{/isEnabled}}">
         {{#isEnabled}}
         {{^isLicenseValid}}
         <div id="widget-booster-license-invalid">
@@ -14,8 +15,10 @@
                 <h6>Booster requires a valid Enonic license. Please contact your administrator</h6>
                 <form id="licenseForm" method="POST" action="" enctype="multipart/form-data">
                     <div>
-                        <input id="booster-license-upload" autocomplete="off" name="licenseFile" type="file" style="display:none" accept=".lic"/>
-                        <label id="booster-license-upload-button" class="widget-booster-button" for="booster-license-upload">Upload license</label>
+                        <input id="booster-license-upload" autocomplete="off" name="licenseFile" type="file" style="display:none"
+                               accept=".lic"/>
+                        <label id="booster-license-upload-button" class="widget-booster-button" for="booster-license-upload">Upload
+                            license</label>
                     </div>
                 </form>
             </div>
@@ -56,8 +59,12 @@
                         <div class="modal-dialog-footer">
                             <div class="dialog-buttons">
                                 <div class="button-container">
-                                    <button id="widget-booster-confirmation-button-yes" class="xp-admin-common-button action-button dialog-button yes-button"><span><u>Y</u>es</span></button>
-                                    <button id="widget-booster-confirmation-button-no" class="xp-admin-common-button action-button dialog-button no-button"><span><u>N</u>o</span></button>
+                                    <button id="widget-booster-confirmation-button-yes"
+                                            class="xp-admin-common-button action-button dialog-button yes-button"><span><u>Y</u>es</span>
+                                    </button>
+                                    <button id="widget-booster-confirmation-button-no"
+                                            class="xp-admin-common-button action-button dialog-button no-button"><span><u>N</u>o</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -68,24 +75,24 @@
             <table id="widget-booster-commonlycachedpaths">
                 <caption>Commonly Cached Paths</caption>
                 <thead>
-                    <tr>
-                        <!-- We put count before path so that when path is too long for the widget width, we still see both columns -->
-                        <th>Count</th>
-                        <th>Path</th>
-                    </tr>
+                <tr>
+                    <!-- We put count before path so that when path is too long for the widget width, we still see both columns -->
+                    <th>Count</th>
+                    <th>Path</th>
+                </tr>
                 </thead>
                 <tbody>
-                    {{#commonlyCachedPaths}}
-                    <tr>
-                        <td>{{docCount}}</td>
-                        <td>
-                            <details data-detailurl="{{pathStatsServiceUrl}}?path={{key}}">
-                                <summary>{{key}}</summary>
-                                <div class="detail-target"></div>
-                            </details>
-                        </td>
-                    </tr>
-                    {{/commonlyCachedPaths}}
+                {{#commonlyCachedPaths}}
+                <tr>
+                    <td>{{docCount}}</td>
+                    <td>
+                        <details data-detailurl="{{pathStatsServiceUrl}}?path={{key}}">
+                            <summary>{{key}}</summary>
+                            <div class="detail-target"></div>
+                        </details>
+                    </td>
+                </tr>
+                {{/commonlyCachedPaths}}
                 </tbody>
             </table>
 

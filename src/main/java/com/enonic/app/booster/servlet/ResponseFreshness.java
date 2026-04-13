@@ -6,7 +6,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.Optional;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.enonic.app.booster.utils.Numbers;
 

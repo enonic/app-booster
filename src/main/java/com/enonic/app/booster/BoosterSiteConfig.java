@@ -11,6 +11,7 @@ import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.site.SiteConfig;
 import com.enonic.xp.site.SiteConfigs;
+import com.enonic.xp.site.SiteConfigsDataSerializer;
 
 public final class BoosterSiteConfig
 {
@@ -46,7 +47,7 @@ public final class BoosterSiteConfig
         final SiteConfigs siteConfigs;
         if ( site != null )
         {
-            siteConfigs = site.getSiteConfigs();
+            siteConfigs = SiteConfigsDataSerializer.fromData( site.getData().getRoot() );
         }
         else
         {

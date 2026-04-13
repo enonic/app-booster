@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.enonic.app.booster.utils.MessageDigests;
 import com.enonic.xp.data.PropertyTree;
-import com.enonic.xp.page.DescriptorKey;
+import com.enonic.xp.descriptor.DescriptorKey;
 import com.enonic.xp.project.ProjectName;
 import com.enonic.xp.task.SubmitTaskParams;
 import com.enonic.xp.task.TaskId;

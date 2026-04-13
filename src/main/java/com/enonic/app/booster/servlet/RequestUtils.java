@@ -3,7 +3,6 @@ package com.enonic.app.booster.servlet;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -12,9 +11,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -30,9 +29,8 @@ public final class RequestUtils
         final String scheme = request.getScheme();
         final String serverName = request.getServerName().toLowerCase( Locale.ROOT );
         final int serverPort = request.getServerPort();
-        final String path =
-            requireNonNullElseGet( (String) request.getAttribute( RequestDispatcher.FORWARD_REQUEST_URI ), request::getRequestURI )
-                .toLowerCase( Locale.ROOT );
+        final String path = requireNonNullElseGet( (String) request.getAttribute( RequestDispatcher.FORWARD_REQUEST_URI ),
+                                                   request::getRequestURI ).toLowerCase( Locale.ROOT );
 
         final var params = request.getParameterMap();// we only support GET requests, no POST data can sneak in.
 

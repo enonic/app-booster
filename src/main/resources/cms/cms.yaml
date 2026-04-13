@@ -1,0 +1,117 @@
+kind: "CMS"
+form:
+  - type: "CheckBox"
+    name: "disable"
+    label: "Disable Booster"
+    occurrences:
+      min: 0
+      max: 1
+    default: "false"
+  - type: "TextLine"
+    name: "defaultTTL"
+    label: "Default TTL (seconds)"
+    helpText: "Default TTL when max-age is not specified."
+    occurrences:
+      min: 0
+      max: 1
+    regexp: "\\b\\d{1,8}\\b"
+  - type: "FieldSet"
+    label: "Advanced"
+    items:
+      - type: "TextLine"
+        name: "componentTTL"
+        label: "Component TTL (seconds)"
+        helpText: "Default Component TTL when max-age is not specified."
+        occurrences:
+          min: 0
+          max: 1
+        regexp: "\\b\\d{1,8}\\b"
+      - type: "ItemSet"
+        name: "patterns"
+        label: "Cache Patterns"
+        helpText: "If no patterns are provided, all paths are cached. Otherwise, at\
+          \ least one pattern should match the request path for\n            the request\
+          \ to be cached."
+        occurrences:
+          min: 0
+          max: 0
+        items:
+          - type: "TextLine"
+            name: "pattern"
+            label: "Pattern"
+            helpText: "For example, \"/section/.*\" or \"/api/.*\\.json\""
+            occurrences:
+              min: 0
+              max: 1
+          - type: "CheckBox"
+            name: "invert"
+            label: "Invert"
+            helpText: "Invert the result of pattern matching."
+            occurrences:
+              min: 0
+              max: 1
+            default: "false"
+      - type: "ItemSet"
+        name: "bypassHeaders"
+        label: "Bypass Headers"
+        helpText: "If a request contains a listed header with a matching value, it\
+          \ will not be cached."
+        occurrences:
+          min: 0
+          max: 0
+        items:
+          - type: "TextLine"
+            name: "name"
+            label: "Header"
+            helpText: "Header name. Case-insensitive."
+            occurrences:
+              min: 0
+              max: 1
+          - type: "TextLine"
+            name: "pattern"
+            label: "Pattern"
+            helpText: "A regular expression that matches a header value, for example:\
+              \ \"(?i).*\\\\bgooglebot\\\\b.*\""
+            occurrences:
+              min: 0
+              max: 1
+          - type: "CheckBox"
+            name: "invert"
+            label: "Invert"
+            helpText: "Invert the result of header value pattern matching."
+            occurrences:
+              min: 0
+              max: 1
+            default: "false"
+      - type: "ItemSet"
+        name: "bypassCookies"
+        label: "Bypass Cookies"
+        helpText: "If a request contains a listed cookie with a matching value, it\
+          \ will not be cached."
+        occurrences:
+          min: 0
+          max: 0
+        items:
+          - type: "TextLine"
+            name: "name"
+            label: "Cookie"
+            helpText: "Cookie name. Case-sensitive."
+            occurrences:
+              min: 0
+              max: 1
+          - type: "TextLine"
+            name: "pattern"
+            label: "Pattern"
+            helpText: "A regular expression that matches a cookie value, for example:\
+              \ \"(?i)nocache\""
+            occurrences:
+              min: 0
+              max: 1
+          - type: "CheckBox"
+            name: "invert"
+            label: "Invert"
+            helpText: "Invert the result of cookie value pattern matching."
+            occurrences:
+              min: 0
+              max: 1
+            default: "false"

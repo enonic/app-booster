@@ -9,10 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.enonic.app.booster.BoosterConfig;
-import com.enonic.app.booster.BoosterConfigParsed;
-import com.enonic.app.booster.BoosterConfigService;
-import com.enonic.app.booster.storage.BoosterProjectMatchers;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.data.Value;
 import com.enonic.xp.node.DeleteNodeParams;
@@ -23,7 +19,6 @@ import com.enonic.xp.node.NodeHit;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeService;
-import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.LogicalExpr;
@@ -39,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -156,14 +150,9 @@ class NodeCleanerBeanTest
     @Test
     void purgeAll()
     {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .addNodeHit( NodeHit.create()
-                                                                                                   .nodeId( NodeId.from( "node1" ) )
-                                                                                                   .build() )
-                                                                                  .hits( 1 )
-                                                                                  .totalHits( 1 )
-                                                                                  .build() )
-            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
+                FindNodesByQueryResult.create().addNodeHit( NodeHit.create().nodeId( NodeId.from( "node1" ) ).build() ).totalHits( 1 ).build() )
+            .thenReturn( FindNodesByQueryResult.create().totalHits( 0 ).build() );
 
         nodeCleanerBean.purgeAll();
 
@@ -178,8 +167,7 @@ class NodeCleanerBeanTest
     @Test
     void getProjectCacheSize()
     {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
-            FindNodesByQueryResult.create().hits( 2 ).totalHits( 2 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create().totalHits( 2 ).build() );
         final int projectCacheSize = nodeCleanerBean.getProjectCacheSize( "project1" );
         verify( nodeService ).findByQuery( any( NodeQuery.class ) );
 
@@ -201,8 +189,7 @@ class NodeCleanerBeanTest
     @Test
     void getContentCacheSize()
     {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
-            FindNodesByQueryResult.create().hits( 2 ).totalHits( 2 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create().totalHits( 2 ).build() );
         final int contentCacheSize = nodeCleanerBean.getContentCacheSize( "project1", "content1" );
         verify( nodeService ).findByQuery( any( NodeQuery.class ) );
 
@@ -228,8 +215,7 @@ class NodeCleanerBeanTest
     @Test
     void getSiteCacheSize()
     {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
-            FindNodesByQueryResult.create().hits( 2 ).totalHits( 2 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create().totalHits( 2 ).build() );
         final int siteCacheSize = nodeCleanerBean.getSiteCacheSize( "project1", "site1" );
         verify( nodeService ).findByQuery( any( NodeQuery.class ) );
 
@@ -254,14 +240,9 @@ class NodeCleanerBeanTest
 
     private NodeQuery verifyBasicInvalidate( Runnable runnable )
     {
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
-                                                                                  .addNodeHit( NodeHit.create()
-                                                                                                   .nodeId( NodeId.from( "node1" ) )
-                                                                                                   .build() )
-                                                                                  .hits( 1 )
-                                                                                  .totalHits( 1 )
-                                                                                  .build() )
-            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
+                FindNodesByQueryResult.create().addNodeHit( NodeHit.create().nodeId( NodeId.from( "node1" ) ).build() ).totalHits( 1 ).build() )
+            .thenReturn( FindNodesByQueryResult.create().totalHits( 0 ).build() );
 
         runnable.run();
 

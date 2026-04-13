@@ -1,7 +1,7 @@
-var taskLib = require('/lib/xp/task');
+const taskLib = require('/lib/xp/task');
 const projectLib = require('/lib/xp/project');
 
-exports.get = function (req) {
+exports.GET = function (req) {
 
     return {
         body: drawForm(),
@@ -9,10 +9,10 @@ exports.get = function (req) {
     }
 }
 
-exports.post = function (req) {
+exports.POST = function (req) {
     let taskId;
     if (req.params) {
-        taskId  = taskLib.submitTask({
+        taskId = taskLib.submitTask({
             descriptor: 'invalidate',
             config: {
                 project: req.params.projects,
@@ -22,7 +22,7 @@ exports.post = function (req) {
         });
     }
     return {
-        body : (taskId ? `<p>Task submitted ${taskId}</p>` : '<p>No task submitted</p>') + drawForm(),
+        body: (taskId ? `<p>Task submitted ${taskId}</p>` : '<p>No task submitted</p>') + drawForm(),
         contentType: 'text/html;charset=utf-8'
     }
 }

@@ -1,0 +1,33 @@
+kind: "Task"
+description: "Invalidate Booster Cache"
+form:
+  - type: "TextLine"
+    name: "project"
+    label: "Projects to clean"
+    occurrences:
+      min: 0
+      max: 1
+  - type: "TextLine"
+    name: "site"
+    label: "Site to clean"
+    occurrences:
+      min: 0
+      max: 1
+  - type: "TextLine"
+    name: "content"
+    label: "Content to clean"
+    occurrences:
+      min: 0
+      max: 1
+  - type: "TextLine"
+    name: "domain"
+    label: "Domain to clean"
+    occurrences:
+      min: 0
+      max: 1
+  - type: "TextLine"
+    name: "path"
+    label: "Path (prefix) to clean"
+    occurrences:
+      min: 0
+      max: 1

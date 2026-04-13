@@ -54,12 +54,12 @@ class BoosterProjectMatchersTest
 
         final PropertyTree data = new PropertyTree();
         data.setInstant( "lastChecked", Instant.now().minus( 1, ChronoUnit.DAYS ) );
+        final NodeId nodeId = NodeId.from( "some-id" );
         when( nodeService.getByPath( any() ) ).thenReturn(
-            Node.create().id( NodeId.from( "someId" ) ).parentPath( BoosterContext.SCHEDULED_PARENT_NODE ).data( data ).build() );
+            Node.create().id( nodeId ).parentPath( BoosterContext.SCHEDULED_PARENT_NODE ).data( data ).build() );
 
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
-                FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() )
-            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 2 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create().totalHits( 0 ).build() )
+            .thenReturn( FindNodesByQueryResult.create().totalHits( 2 ).build() );
 
         final List<ProjectName> scheduled = boosterProjectMatchers.findScheduledForInvalidation();
 
@@ -71,7 +71,7 @@ class BoosterProjectMatchersTest
 
         final ArgumentCaptor<UpdateNodeParams> captor = captor();
         verify( nodeService ).update( captor.capture() );
-        assertEquals( "someId", captor.getValue().getId().toString() );
+        assertEquals( "some-id", captor.getValue().getId().toString() );
     }
 
     @Test
@@ -82,9 +82,8 @@ class BoosterProjectMatchersTest
                                                                               .name( ProjectName.from( "project2" ) )
                                                                               .build() ) ) );
 
-        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn(
-                FindNodesByQueryResult.create().hits( 0 ).totalHits( 0 ).build() )
-            .thenReturn( FindNodesByQueryResult.create().hits( 0 ).totalHits( 2 ).build() );
+        when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create().totalHits( 0 ).build() )
+            .thenReturn( FindNodesByQueryResult.create().totalHits( 2 ).build() );
 
         final List<ProjectName> scheduled = boosterProjectMatchers.findByAppForInvalidation( List.of( ApplicationKey.from( "someApp" ) ) );
 

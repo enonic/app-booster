@@ -6,16 +6,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.FilterChain;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.enonic.app.booster.concurrent.Collapser;
 import com.enonic.app.booster.io.ByteSupply;
@@ -109,7 +109,7 @@ class BoosterRequestFilterTest
         throws Exception
     {
         mockRequest();
-        when( request.getHeaders( "Pragma" )).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
+        when( request.getHeaders( "Pragma" ) ).thenReturn( Collections.enumeration( List.of( "no-cache" ) ) );
 
         final BoosterRequestFilter filter = new BoosterRequestFilter( cacheStore, licenseService );
         filter.activate( mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() ) );
@@ -298,7 +298,7 @@ class BoosterRequestFilterTest
 
     void mockRequest()
     {
-        lenient().when( request.getMethod()  ).thenReturn( "GET" );
+        lenient().when( request.getMethod() ).thenReturn( "GET" );
         when( request.getScheme() ).thenReturn( "https" );
         when( request.getServerName() ).thenReturn( "example.com" );
         when( request.getServerPort() ).thenReturn( 443 );

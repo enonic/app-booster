@@ -7,11 +7,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.enonic.app.booster.servlet.CachingResponse;
 import com.enonic.app.booster.servlet.RequestAttributes;
@@ -191,7 +191,8 @@ public class StoreConditions
                 final String siteRelativePath = siteRelativePath( portalRequest.getSite(), portalRequest.getContentPath() );
                 for ( var pattern : patterns )
                 {
-                    if ( Matchers.matchesUrlPattern( pattern.pattern(), pattern.invert(), siteRelativePath, excludeQueryParams, request.getParameterMap() ) )
+                    if ( Matchers.matchesUrlPattern( pattern.pattern(), pattern.invert(), siteRelativePath, excludeQueryParams,
+                                                     request.getParameterMap() ) )
                     {
                         return true;
                     }

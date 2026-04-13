@@ -120,7 +120,7 @@ public class NodeCleanerBean
     {
         FindNodesByQueryResult nodesToInvalidate = nodeService.findByQuery( query );
 
-        long hits = nodesToInvalidate.getHits();
+        int hits = nodesToInvalidate.getNodeHits().getSize();
         LOG.debug( "Found {} nodes total to be processed", nodesToInvalidate.getTotalHits() );
 
         while ( hits > 0 )
@@ -135,7 +135,7 @@ public class NodeCleanerBean
             nodeService.refresh( RefreshMode.SEARCH );
             nodesToInvalidate = nodeService.findByQuery( query );
 
-            hits = nodesToInvalidate.getHits();
+            hits = nodesToInvalidate.getNodeHits().getSize();
         }
     }
 

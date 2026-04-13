@@ -44,7 +44,6 @@ class BoosterScavengerTest
         final BoosterScavenger boosterScavenger = new BoosterScavenger( nodeService, schedulerService );
         boosterScavenger.activate( configMock );
 
-
         when( nodeService.findByQuery( any( NodeQuery.class ) ) ).thenReturn( FindNodesByQueryResult.create()
                                                                                   .addNodeHit( NodeHit.create()
                                                                                                    .nodeId( NodeId.from( "node1" ) )
@@ -52,12 +51,10 @@ class BoosterScavengerTest
                                                                                   .addNodeHit( NodeHit.create()
                                                                                                    .nodeId( NodeId.from( "node2" ) )
                                                                                                    .build() )
-                                                                                  .hits( 2 )
                                                                                   .totalHits( 2 )
                                                                                   .build() )
             .thenReturn( FindNodesByQueryResult.create()
                              .addNodeHit( NodeHit.create().nodeId( NodeId.from( "node1" ) ).build() )
-                             .hits( 1 )
                              .totalHits( 1 )
                              .build() );
 

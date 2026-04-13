@@ -3,9 +3,9 @@ package com.enonic.app.booster.servlet;
 import java.time.Instant;
 import java.util.List;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.junit.jupiter.api.Test;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,7 +46,7 @@ class ResponseFreshnessTest
     {
         final HttpServletResponse response = mock( HttpServletResponse.class );
         when( response.getHeader( "Date" ) ).thenReturn( "Thu, 01 Jan 1970 00:00:01 GMT" );
-        when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of(  ) );
+        when( response.getHeaders( "Cache-Control" ) ).thenReturn( List.of() );
         final ResponseFreshness freshness = ResponseFreshness.build( response );
         final Instant expiresTime = freshness.expiresTime( 10 );
         assertNotNull( expiresTime );
