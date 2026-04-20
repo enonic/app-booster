@@ -1,11 +1,11 @@
 package com.enonic.app.booster;
 
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.enonic.app.booster.utils.SimpleCsvParser;
 
@@ -18,11 +18,28 @@ public record BoosterConfigParsed(long cacheTtlSeconds, Set<String> excludeQuery
         var cacheSize = config.cacheSize();
         var disableCacheStatusHeader = config.disableCacheStatusHeader();
 
-        var excludeQueryParams = Stream.concat( SimpleCsvParser.parseLine( config.excludeQueryParamsPreset() ).stream(),
-                                                SimpleCsvParser.parseLine( config.excludeQueryParams() ).stream() )
-            .map( String::trim )
-            .filter( Predicate.not( String::isEmpty ) )
-            .collect( Collectors.toUnmodifiableSet() );
+        var effectiveExcludeQueryParams = new HashSet<String>( SimpleCsvParser.parseLine( config.excludeQueryParamsPreset() )
+                                                                   .stream()
+                                                                   .map( String::trim )
+                                                                   .filter( Predicate.not( String::isEmpty ) )
+                                                                   .collect( Collectors.toSet() ) );
+        for ( String token : SimpleCsvParser.parseLine( config.excludeQueryParams() ) )
+        {
+            final String trimmed = token.trim();
+            if ( trimmed.isEmpty() )
+            {
+                continue;
+            }
+            if ( trimmed.startsWith( "-" ) )
+            {
+                effectiveExcludeQueryParams.remove( trimmed.substring( 1 ) );
+            }
+            else
+            {
+                effectiveExcludeQueryParams.add( trimmed );
+            }
+        }
+        var excludeQueryParams = Set.copyOf( effectiveExcludeQueryParams );
 
         var appsForceInvalidateOnInstall = SimpleCsvParser.parseLine( config.appsForceInvalidateOnInstall() )
             .stream()
