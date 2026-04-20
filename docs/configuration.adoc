@@ -32,7 +32,7 @@ overrideHeaders:: Comma-separated list of instructions that override headers. By
 
 Booster considers query parameters when generating the cache key. However, some query parameters are not relevant, and should be excluded for a better performing cache. Examples of such are marketing and ads related parameters, where the rendered result will look the same regardlessly.
 
-`excludeQueryParamsPreset` contains a list query parameters that should be excluded from the cache key. The default preset is sourced from https://github.com/mpchadwick/tracking-query-params-registry[mpchadwick/tracking-query-params-registry] plus 5 HubSpot parameters (`_hsenc`, `__hssc`, `__hstc`, `__hsfp`, `hsCtaTracking`) that are not part of that registry. Refer to the upstream registry for the full, up-to-date list of tracking parameters.
+`excludeQueryParamsPreset` contains a list query parameters that should be excluded from the cache key. The default preset is sourced from https://github.com/mpchadwick/tracking-query-params-registry[mpchadwick/tracking-query-params-registry] plus 5 HubSpot parameters (`_hsenc`, `__hssc`, `__hstc`, `__hsfp`, `hsCtaTracking`) that are not part of that registry. The registry is not included as a dependency, but the preset is maintained by Enonic team and updated periodically.
 
 If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the `excludeQueryParams` configuration property. Prefixing a parameter with `-` in `excludeQueryParams` removes it from the preset — for example, if your site uses `?cid=` legitimately:
 
