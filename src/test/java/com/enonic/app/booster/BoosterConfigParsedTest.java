@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,10 +22,9 @@ class BoosterConfigParsedTest
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
         assertEquals( 3600, parse.cacheTtlSeconds() );
-        assertEquals(
-            Set.of( "fbclid", "twclid", "dclid", "gclid", "gclsrc", "wbraid", "gbraid", "msclkid", "yclid", "_ga", "_gl", "utm_source",
-                    "utm_medium", "utm_campaign", "utm_term", "utm_source_platform", "utm_creative_format", "utm_marketing_tactic",
-                    "_hsenc", "__hssc", "__hstc", "__hsfp", "hsCtaTracking" ), parse.excludeQueryParams() );
+        assertEquals( 164, parse.excludeQueryParams().size() );
+        assertTrue( parse.excludeQueryParams().containsAll(
+            Set.of( "fbclid", "srsltid", "hsCtaTracking", "_hsenc", "__hssc", "__hstc", "__hsfp", "utm_source", "ttclid", "ScCid" ) ) );
         assertEquals( Set.of(), parse.appsForceInvalidateOnInstall() );
         assertEquals( 10000, parse.cacheSize() );
         assertFalse( parse.disableCacheStatusHeader() );
@@ -55,10 +55,50 @@ class BoosterConfigParsedTest
         BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
         when( config.excludeQueryParams() ).thenReturn( "c, d" );
         final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
-        assertEquals(
-            Set.of( "c", "d", "fbclid", "twclid", "dclid", "gclid", "gclsrc", "wbraid", "gbraid", "msclkid", "yclid", "_ga", "_gl",
-                    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_source_platform", "utm_creative_format",
-                    "utm_marketing_tactic", "_hsenc", "__hssc", "__hstc", "__hsfp", "hsCtaTracking" ), parse.excludeQueryParams() );
+        assertEquals( 166, parse.excludeQueryParams().size() );
+        assertTrue( parse.excludeQueryParams().containsAll( Set.of( "c", "d", "fbclid", "srsltid", "hsCtaTracking" ) ) );
+    }
+
+    @Test
+    void excludeQueryParamsSubtractFromPreset()
+    {
+        BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( config.excludeQueryParams() ).thenReturn( "-fbclid, my_custom" );
+        final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
+        assertFalse( parse.excludeQueryParams().contains( "fbclid" ) );
+        assertTrue( parse.excludeQueryParams().contains( "my_custom" ) );
+        assertTrue( parse.excludeQueryParams().contains( "srsltid" ) );
+    }
+
+    @Test
+    void excludeQueryParamsSubtractUnknownIsNoOp()
+    {
+        BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( config.excludeQueryParams() ).thenReturn( "-nonexistent" );
+        final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
+        assertEquals( 164, parse.excludeQueryParams().size() );
+        assertTrue( parse.excludeQueryParams().contains( "fbclid" ) );
+    }
+
+    @Test
+    void excludeQueryParamsMixedAdditionsAndRemovals()
+    {
+        BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( config.excludeQueryParams() ).thenReturn( "custom, -fbclid, -_ga, other" );
+        final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
+        assertTrue( parse.excludeQueryParams().contains( "custom" ) );
+        assertTrue( parse.excludeQueryParams().contains( "other" ) );
+        assertFalse( parse.excludeQueryParams().contains( "fbclid" ) );
+        assertFalse( parse.excludeQueryParams().contains( "_ga" ) );
+    }
+
+    @Test
+    void excludeQueryParamsSubtractOnlyInExcludeNotPreset()
+    {
+        BoosterConfig config = mock( BoosterConfig.class, invocation -> invocation.getMethod().getDefaultValue() );
+        when( config.excludeQueryParamsPreset() ).thenReturn( "a, -b, c" );
+        final BoosterConfigParsed parse = BoosterConfigParsed.parse( config );
+        assertEquals( Set.of( "a", "-b", "c" ), parse.excludeQueryParams() );
     }
 
 }
