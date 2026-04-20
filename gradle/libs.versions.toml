@@ -5,7 +5,7 @@ mockitoVersion = "5.23.0"
 
 [libraries]
 
-equalsverifier = { module = "nl.jqno.equalsverifier:equalsverifier", version = "4.4.2" }
+equalsverifier = { module = "nl.jqno.equalsverifier:equalsverifier", version = "4.5" }
 
 assertj-core = { module = "org.assertj:assertj-core", version = "3.27.7" }
 
