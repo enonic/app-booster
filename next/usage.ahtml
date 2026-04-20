@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>How It Works</title>
+<title>Usage</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,19 +437,20 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-right">
 <div id="header">
-<h1>How It Works</h1>
+<h1>Usage</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#request_conditions">Request conditions</a></li>
-<li><a href="#response_conditions">Response Conditions</a></li>
-<li><a href="#caching">Caching</a></li>
-<li><a href="#invalidation">Invalidation</a></li>
-<li><a href="#compressed_content">Compressed Content</a></li>
-<li><a href="#request_collapsing">Request Collapsing</a></li>
-<li><a href="#304_not_modified">304 Not Modified</a></li>
-<li><a href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></li>
-<li><a href="#cache_status_header">Cache-Status header</a></li>
+<li><a href="#1_install">1. Install</a></li>
+<li><a href="#2_add_to_site">2. Add to site</a></li>
+<li><a href="#3_add_license">3. Add License</a></li>
+<li><a href="#4_verify">4. Verify</a></li>
+<li><a href="#5_cache_invalidation">5. Cache Invalidation</a>
+<ul class="sectlevel2">
+<li><a href="#manually">Manually</a></li>
+<li><a href="#programmatically">Programmatically</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -457,167 +458,34 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Dive deeper to understand how Booster works</p>
+<p>How to install and enable Booster on your site</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="request_conditions"><a class="link" href="#request_conditions">Request conditions</a></h2>
+<h2 id="1_install"><a class="link" href="#1_install">1. Install</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A request is considered cacheable if the request:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Is an HTTP or HTTPS request.</p>
-</li>
-<li>
-<p>Is a <code>GET</code> request. (Note, that <code>HEAD</code> requests can return cached response headers.)</p>
-</li>
-<li>
-<p>Does not contain an <code>Authorization</code> header.</p>
-</li>
-<li>
-<p>Does not correspond to a valid session.</p>
-</li>
-<li>
-<p>Is a Site&#8217;s Portal request. (VHost target starts with or equal to <code>/site</code>)</p>
-</li>
-<li>
-<p>Is a request to the master branch (draft items are never cached)</p>
-</li>
-<li>
-<p>It&#8217;s URI does not contain <code>/_/</code> (This is a convention for service requests.), except for <code>/_/component/</code> requests.</p>
-</li>
-</ul>
+<p>Booster is available on <a href="https://market.enonic.com/vendors/enonic/booster">Enonic Market</a>.</p>
 </div>
 <div class="paragraph">
-<p>If the request is not cacheable, Booster will forward the request.</p>
-</div>
-<div class="paragraph">
-<p>If the request is cacheable, Booster will check if a cached response is available, not stale and return it. Otherwise it will render, cache and return a new response.</p>
+<p>Install via <code>XP menu</code> &#8594; <code>Applications</code> &#8594; <code>Install</code> button, or via the Cloud Console.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="response_conditions"><a class="link" href="#response_conditions">Response Conditions</a></h2>
+<h2 id="2_add_to_site"><a class="link" href="#2_add_to_site">2. Add to site</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A response is considered cacheable if the response:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Returns 200 OK status.</p>
-</li>
-<li>
-<p>Does not contain a <code>Cache-Control</code> header with <code>private</code>, <code>no-cache</code> or <code>no-store</code> directive(s).</p>
-</li>
-<li>
-<p>Does not contain an <code>Expires</code> header. (Note: Any value of <code>Expires</code> header)</p>
-</li>
-<li>
-<p>Does not contain a <code>Set-Cookie</code> header.</p>
-</li>
-<li>
-<p>Does not contain a <code>Content-Encoding</code> header.</p>
-</li>
-<li>
-<p>Does not contain a <code>Vary</code> header.</p>
-</li>
-<li>
-<p>The <code>Content-Type</code> contains a supported value (default is <code>text/html</code> and <code>text/xhtml</code>)</p>
-</li>
-<li>
-<p>Originates from the site engine (Internal XP path start with <code>/site</code>)</p>
-</li>
-<li>
-<p>Booster is installed and enabled on the requested site</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Application configuration allows request to be cached (<code>Disabled</code> is unchecked and request path matches configured cacheable <code>Patterns</code>)</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
+<p>Next, edit the site where you wish to activate Booster, and add Booster to the list of site applications.</p>
 </div>
 <div class="paragraph">
-<p>If the response is cacheable, Booster stores the response in the cache.</p>
+<p>Optionally configure the application by setting Time To Live and exclude patterns</p>
 </div>
+<div class="imageblock">
+<div class="content">
+<img src="images/site-config.png" alt="Adding Booster to your site" width="739">
 </div>
-</div>
-<div class="sect1">
-<h2 id="caching"><a class="link" href="#caching">Caching</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The request URL is used as the cache key. To ensure optimal re-use of cached items, Booster will perform URL normalization by:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Sorting of query parameters</p>
-</li>
-<li>
-<p>Lowercasing host and path</p>
-</li>
-<li>
-<p>Removing excluded query parameters (based on config)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Booster then uses the underlying Node API to persist the cached items. As such, cached items will be available across all nodes in an XP cluster, optimizing performance and scalability even further.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="invalidation"><a class="link" href="#invalidation">Invalidation</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Booster will automatically invalidate cache when one of the following events occur:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Cache for the entire content project is automatically cleared when:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Content gets published/unpublished or expires</p>
-</li>
-<li>
-<p>Project is deleted</p>
-</li>
-<li>
-<p>Applications used by a site is installed</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Cache for a single item is automatically cleared when</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Cache item reaches Time to live (TTL)</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>All cache gets deleted when:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Applications listed in the configuration <code>appsForceInvalidateOnInstall</code> installed</p>
-</li>
-</ul>
-</div>
-</li>
-</ol>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -626,24 +494,18 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-When an item is invalidated, it is simply marked as invalid.
+Remember to publish the site after adding Booster for changes to take effect.
 </td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>Cache can also be invalidated manually via the Content Studio Booster widget, or via the Booster API.</p>
-</div>
-<div class="paragraph">
-<p>Invalid items are periodically removed from the cache by a background task. This task also enforces the <code>cacheSize</code> configuration setting.</p>
-</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="compressed_content"><a class="link" href="#compressed_content">Compressed Content</a></h2>
+<h2 id="3_add_license"><a class="link" href="#3_add_license">3. Add License</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>If the client supports Brotli or Gzip compression (determined from request <code>Accept-Encoding</code> header), Booster will serve a compressed version of the content.</p>
+<p>Unlike most Enonic apps, Booster requires a valid Enonic subscription to work. In Content Studio, open the <code>Booster</code> context panel and upload your license file - if it was not already installed.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -652,30 +514,40 @@ When an item is invalidated, it is simply marked as invalid.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Compression happens only once, occurs during cache creation
+<a href="https://www.enonic.com/company/contact-us">Contact us</a> for a trial license, or for activating a subscription.
 </td>
 </tr>
 </table>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="4_verify"><a class="link" href="#4_verify">4. Verify</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Brotli compression is preferred over Gzip. Gzip is preferred over uncompressed content.</p>
+<p>With a licensed version of Booster deployed to your site, it is time to verify that it is working properly.</p>
+</div>
+<div class="paragraph">
+<p>Beyond experiencing much faster pages, the best way of validating that Booster is working proerly is by looking at the HTTP response headers (using your browser&#8217;s dev tools, or by using cURL commandline utility)</p>
+</div>
+<div class="paragraph">
+<p>You should see the <code>Cache-Status</code> header, and it should contain <code>Booster;</code> as one of its values.</p>
+</div>
+<div class="paragraph">
+<p>For more details, visit the <a href="how-it-works.ahtml">How it works chapter</a></p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="request_collapsing"><a class="link" href="#request_collapsing">Request Collapsing</a></h2>
+<h2 id="5_cache_invalidation"><a class="link" href="#5_cache_invalidation">5. Cache Invalidation</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>"Thundering herd" is a scenario when multiple requests are made for a single resource at the same time. If the item is not cached, the traffic may potentially bring down your server.</p>
+<p>Booster will automatically invalidate cache for common scenarios like publishing and changes to applications, there are however two other ways you may clear the cache:</p>
 </div>
+<div class="sect2">
+<h3 id="manually"><a class="link" href="#manually">Manually</a></h3>
 <div class="paragraph">
-<p>To mitigate this situation, Booster implements a technique called request collapsing. This ensures only one of the requests are forwarded to the site engine for rendering.</p>
-</div>
-<div class="paragraph">
-<p>Remaining requests are queued up for the response from the first request. Once the rendering is completed, the response is then sent to all the waiting requests.</p>
-</div>
-<div class="paragraph">
-<p>Request collapsing only happens if the request is cacheable and a stale or invalidated cache item already exists.</p>
+<p>Clear cache for an entire content project by using the <code>Booster</code> context panel, available in Content Studio.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -684,75 +556,36 @@ Compression happens only once, occurs during cache creation
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-For an XP cluster, request collapsing is performed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
+One of the roles <code>CMS Admin</code>, <code>Project Owner</code> or <code>System Admin</code> is required to access to this widget.
+</td>
+</tr>
+</table>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/widget.png" alt="Purge cache via widget" width="467px">
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You may verify that the cache was cleared by checking the <code>Cache-Status</code> header.
 </td>
 </tr>
 </table>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="304_not_modified"><a class="link" href="#304_not_modified">304 Not Modified</a></h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="programmatically"><a class="link" href="#programmatically">Programmatically</a></h3>
 <div class="paragraph">
-<p>Cached responses always contains an <code>ETag</code> header. If a request contains the <code>If-None-Match</code> header, Booster will try to match this with the stored <code>ETag</code> value.</p>
+<p>Sometimes you may wish to clear the Booster cache based on other changes. This can be done by invoking the Booster API tasks <code>invalidate</code> or <code>purge-all</code>.</p>
 </div>
 <div class="paragraph">
-<p>If the values match, Booster will return a 304 <code>Not Modified</code> response and no data. This lets the browser use it&#8217;s local cache - saving network bandwidth and reducing latency.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="age_max_age_and_s_maxage"><a class="link" href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Booster supports <code>max-age</code> and <code>s-maxage</code> cache directives from the upstream response <code>Cahe-Control</code> headers.</p>
-</div>
-<div class="paragraph">
-<p>The <code>max-age</code> and <code>s-maxage</code> directives are used to specify the maximum amount of time a response can be cached. The <code>s-maxage</code> directive is preferred over the <code>max-age</code> directive, when both are present in <code>Cahe-Control</code>.</p>
-</div>
-<div class="paragraph">
-<p>Booster also adds an <code>Age</code> header to the response. The <code>Age</code> header is the time in seconds since the response was cached plus the value of the <code>Age</code> header in the response from the upstream (if it exists).</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="cache_status_header"><a class="link" href="#cache_status_header">Cache-Status header</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Booster adds a <code>Cache-Status</code> header to the response. The header follows the RFC-7234 specification.</p>
-</div>
-<div class="paragraph">
-<p>Some examples of header values:</p>
-</div>
-<div class="listingblock">
-<div class="title">Response served from cache</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster, hit</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">License is not configured for the app</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster; fwd=bypass; detail=LICENSE</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Session found for request</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster; fwd=bypass; detail=SESSION</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Response found in cache, but was stale</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster, fwd=stale</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Response not found in cache</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster, fwd=miss</code></pre>
+<p>Visit the <a href="api.ahtml">API chapter</a> for more details.</p>
 </div>
 </div>
 </div>
@@ -760,7 +593,7 @@ For an XP cluster, request collapsing is performed on a per-node-basis, meaning 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-20 11:41:12 UTC
+Last updated 2026-04-20 11:41:37 UTC
 </div>
 </div>
 </body>

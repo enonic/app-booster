@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>How It Works</title>
+<title>Configuration</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,187 +437,102 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-right">
 <div id="header">
-<h1>How It Works</h1>
+<h1>Configuration</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#request_conditions">Request conditions</a></li>
-<li><a href="#response_conditions">Response Conditions</a></li>
-<li><a href="#caching">Caching</a></li>
-<li><a href="#invalidation">Invalidation</a></li>
-<li><a href="#compressed_content">Compressed Content</a></li>
-<li><a href="#request_collapsing">Request Collapsing</a></li>
-<li><a href="#304_not_modified">304 Not Modified</a></li>
-<li><a href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></li>
-<li><a href="#cache_status_header">Cache-Status header</a></li>
+<li><a href="#global_configuration">Global configuration</a>
+<ul class="sectlevel2">
+<li><a href="#query_parameters">Query Parameters</a></li>
+<li><a href="#mime_types">MIME Types</a></li>
+<li><a href="#control_downstream_cache">Control downstream cache</a></li>
+</ul>
+</li>
+<li><a href="#site_configuration">Site configuration</a>
+<ul class="sectlevel2">
+<li><a href="#default_ttl">Default TTL</a></li>
+<li><a href="#advanced_settings">Advanced settings</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div id="preamble">
-<div class="sectionbody">
-<div class="paragraph">
-<p>Dive deeper to understand how Booster works</p>
-</div>
-</div>
-</div>
 <div class="sect1">
-<h2 id="request_conditions"><a class="link" href="#request_conditions">Request conditions</a></h2>
+<h2 id="global_configuration"><a class="link" href="#global_configuration">Global configuration</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A request is considered cacheable if the request:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Is an HTTP or HTTPS request.</p>
-</li>
-<li>
-<p>Is a <code>GET</code> request. (Note, that <code>HEAD</code> requests can return cached response headers.)</p>
-</li>
-<li>
-<p>Does not contain an <code>Authorization</code> header.</p>
-</li>
-<li>
-<p>Does not correspond to a valid session.</p>
-</li>
-<li>
-<p>Is a Site&#8217;s Portal request. (VHost target starts with or equal to <code>/site</code>)</p>
-</li>
-<li>
-<p>Is a request to the master branch (draft items are never cached)</p>
-</li>
-<li>
-<p>It&#8217;s URI does not contain <code>/_/</code> (This is a convention for service requests.), except for <code>/_/component/</code> requests.</p>
-</li>
-</ul>
+<p>Configure Booster by adding a configuration file to your XP instance.</p>
 </div>
 <div class="paragraph">
-<p>If the request is not cacheable, Booster will forward the request.</p>
+<p><code>XP_HOME/config/com.enonic.app.booster.cfg</code></p>
+</div>
+<div class="listingblock">
+<div class="title">Example configuration with default values</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">cacheTtl = 3600
+cacheSize = 10000
+appsForceInvalidateOnInstall =
+excludeQueryParams =
+disableCacheStatusHeader = false
+cacheMimeTypes = text/html, text/xhtml
+overrideHeaders =</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">cacheTtl</dt>
+<dd>
+<p>Default time-to-live (TTL) for the cache is seconds. The default value is 3600 seconds (1 hour).</p>
+</dd>
+<dt class="hdlist1">cacheSize</dt>
+<dd>
+<p>Total number of items in the cache. The default value is 10000.</p>
+</dd>
+<dt class="hdlist1">appsForceInvalidateOnInstall</dt>
+<dd>
+<p>Comma-separated list of applications that should invalidate the cache on their installation. By default, no applications are listed.</p>
+</dd>
+<dt class="hdlist1">excludeQueryParams</dt>
+<dd>
+<p>Comma-separated list of query parameters that should be excluded from the cache key. Allows to add extra query parameters to exclude from the cache key without need to change default. A token prefixed with <code>-</code> removes the given parameter from the preset (e.g. <code>-cid</code> drops <code>cid</code> from the effective list). By default, no extra query parameters are listed.</p>
+</dd>
+<dt class="hdlist1">excludeQueryParamsPreset</dt>
+<dd>
+<p>This comma-separated list contains "preset" of query parameters that will not be affected by changing <code>excludeQueryParams</code>. More details about this below:</p>
+</dd>
+<dt class="hdlist1">disableCacheStatusHeader</dt>
+<dd>
+<p>If set to <code>true</code> <code>Cache-Status</code> header is not sent in the response. The default value is <code>false</code>.</p>
+</dd>
+<dt class="hdlist1">cacheMimeTypes</dt>
+<dd>
+<p>Comma-separated list of MIME types that should be cached. The default value is <code>text/html, text/xhtml</code>.</p>
+</dd>
+<dt class="hdlist1">overrideHeaders</dt>
+<dd>
+<p>Comma-separated list of instructions that override headers. By default, no instructions are listed. Use with causion.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="query_parameters"><a class="link" href="#query_parameters">Query Parameters</a></h3>
+<div class="paragraph">
+<p>Booster considers query parameters when generating the cache key. However, some query parameters are not relevant, and should be excluded for a better performing cache. Examples of such are marketing and ads related parameters, where the rendered result will look the same regardlessly.</p>
 </div>
 <div class="paragraph">
-<p>If the request is cacheable, Booster will check if a cached response is available, not stale and return it. Otherwise it will render, cache and return a new response.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="response_conditions"><a class="link" href="#response_conditions">Response Conditions</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A response is considered cacheable if the response:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Returns 200 OK status.</p>
-</li>
-<li>
-<p>Does not contain a <code>Cache-Control</code> header with <code>private</code>, <code>no-cache</code> or <code>no-store</code> directive(s).</p>
-</li>
-<li>
-<p>Does not contain an <code>Expires</code> header. (Note: Any value of <code>Expires</code> header)</p>
-</li>
-<li>
-<p>Does not contain a <code>Set-Cookie</code> header.</p>
-</li>
-<li>
-<p>Does not contain a <code>Content-Encoding</code> header.</p>
-</li>
-<li>
-<p>Does not contain a <code>Vary</code> header.</p>
-</li>
-<li>
-<p>The <code>Content-Type</code> contains a supported value (default is <code>text/html</code> and <code>text/xhtml</code>)</p>
-</li>
-<li>
-<p>Originates from the site engine (Internal XP path start with <code>/site</code>)</p>
-</li>
-<li>
-<p>Booster is installed and enabled on the requested site</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Application configuration allows request to be cached (<code>Disabled</code> is unchecked and request path matches configured cacheable <code>Patterns</code>)</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
+<p><code>excludeQueryParamsPreset</code> contains a list query parameters that should be excluded from the cache key. The default preset is sourced from <a href="https://github.com/mpchadwick/tracking-query-params-registry">mpchadwick/tracking-query-params-registry</a> plus 5 HubSpot parameters (<code>_hsenc</code>, <code><em>hssc</code>, <code></em>hstc</code>, <code>__hsfp</code>, <code>hsCtaTracking</code>) that are not part of that registry. The registry is not included as a dependency, but the preset is maintained by Enonic team and updated periodically.</p>
 </div>
 <div class="paragraph">
-<p>If the response is cacheable, Booster stores the response in the cache.</p>
+<p>If you want to keep the default list and add extra query parameters to exclude from the cache key, you can use the <code>excludeQueryParams</code> configuration property. Prefixing a parameter with <code>-</code> in <code>excludeQueryParams</code> removes it from the preset — for example, if your site uses <code>?cid=</code> legitimately:</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">excludeQueryParams = -cid, my_custom_param</code></pre>
 </div>
-</div>
-<div class="sect1">
-<h2 id="caching"><a class="link" href="#caching">Caching</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The request URL is used as the cache key. To ensure optimal re-use of cached items, Booster will perform URL normalization by:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Sorting of query parameters</p>
-</li>
-<li>
-<p>Lowercasing host and path</p>
-</li>
-<li>
-<p>Removing excluded query parameters (based on config)</p>
-</li>
-</ul>
 </div>
 <div class="paragraph">
-<p>Booster then uses the underlying Node API to persist the cached items. As such, cached items will be available across all nodes in an XP cluster, optimizing performance and scalability even further.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="invalidation"><a class="link" href="#invalidation">Invalidation</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Booster will automatically invalidate cache when one of the following events occur:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Cache for the entire content project is automatically cleared when:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Content gets published/unpublished or expires</p>
-</li>
-<li>
-<p>Project is deleted</p>
-</li>
-<li>
-<p>Applications used by a site is installed</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Cache for a single item is automatically cleared when</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Cache item reaches Time to live (TTL)</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>All cache gets deleted when:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Applications listed in the configuration <code>appsForceInvalidateOnInstall</code> installed</p>
-</li>
-</ul>
-</div>
-</li>
-</ol>
+<p>To override the presets entirely, simply add your own version of <code>excludeQueryParamsPreset</code> in the configuration file. The <code>-</code> prefix is only honored in <code>excludeQueryParams</code>, not in <code>excludeQueryParamsPreset</code>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -626,24 +541,24 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-When an item is invalidated, it is simply marked as invalid.
+If page rendering varies on any of the excluded parameters, make sure that Booster application does not cache the response, for instance by having <code>Cache-Control: private</code> header in the controller&#8217;s response.
 </td>
 </tr>
 </table>
 </div>
+</div>
+<div class="sect2">
+<h3 id="mime_types"><a class="link" href="#mime_types">MIME Types</a></h3>
 <div class="paragraph">
-<p>Cache can also be invalidated manually via the Content Studio Booster widget, or via the Booster API.</p>
+<p>Booster caches <code>text/html</code> and <code>text/xhtml</code> MIME types by default. The <code>cacheMimeTypes</code> configuration property is a comma-separated list of MIME types that should be cached.</p>
 </div>
 <div class="paragraph">
-<p>Invalid items are periodically removed from the cache by a background task. This task also enforces the <code>cacheSize</code> configuration setting.</p>
+<p>Allow caching of <code>text/plain</code> (such as robots.txt), <code>text/xml</code> (such as sitemap.xml) and application/manifest+json (manifest.json) MIME types:</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">cacheMimeTypes=text/html, text/xhtml, text/plain, text/xml, application/manifest+json</code></pre>
 </div>
-</div>
-<div class="sect1">
-<h2 id="compressed_content"><a class="link" href="#compressed_content">Compressed Content</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>If the client supports Brotli or Gzip compression (determined from request <code>Accept-Encoding</code> header), Booster will serve a compressed version of the content.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -652,107 +567,108 @@ When an item is invalidated, it is simply marked as invalid.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Compression happens only once, occurs during cache creation
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Brotli compression is preferred over Gzip. Gzip is preferred over uncompressed content.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="request_collapsing"><a class="link" href="#request_collapsing">Request Collapsing</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>"Thundering herd" is a scenario when multiple requests are made for a single resource at the same time. If the item is not cached, the traffic may potentially bring down your server.</p>
-</div>
-<div class="paragraph">
-<p>To mitigate this situation, Booster implements a technique called request collapsing. This ensures only one of the requests are forwarded to the site engine for rendering.</p>
-</div>
-<div class="paragraph">
-<p>Remaining requests are queued up for the response from the first request. Once the rendering is completed, the response is then sent to all the waiting requests.</p>
-</div>
-<div class="paragraph">
-<p>Request collapsing only happens if the request is cacheable and a stale or invalidated cache item already exists.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-For an XP cluster, request collapsing is performed on a per-node-basis, meaning the rendering process may occur once per node - until it is successfully cached.
+Booster does not cache responses with <code>Vary</code> header, including but not limited to <code>Vary: Accept</code>.
 </td>
 </tr>
 </table>
 </div>
 </div>
+<div class="sect2">
+<h3 id="control_downstream_cache"><a class="link" href="#control_downstream_cache">Control downstream cache</a></h3>
+<div class="paragraph">
+<p>Different CDN and proxy servers can cache the response. Booster can help to control the downstream cache by using <code>overrideHeaders</code> configuration property allows to override response headers. The property is a comma-separated list of instructions that override headers. Each instruction is a key-value pair separated by a colon. The key is the header name and the value is the header value. The header value can contain placeholders that are replaced with the actual value from the original response.</p>
+</div>
+<div class="paragraph">
+<p>Disable caching in the downstream cache (CDN and browser):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Cache-Control: private, no-store"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disable cache in Fastly CDN but leave browser caching instruction as is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Surrogate-Control: private"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disable cache in Cloudflare CDN but leave browser caching instruction as is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Cloudflare-CDN-Cache-Control: private"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Allow Fastly CDN to cache the response for 24 hours, but browser should cache the response for 1 minute:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">overrideHeaders="Surrogate-Control: max-age=86400","Cache-Control: max-age=60"</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div class="sect1">
-<h2 id="304_not_modified"><a class="link" href="#304_not_modified">304 Not Modified</a></h2>
+<h2 id="site_configuration"><a class="link" href="#site_configuration">Site configuration</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Cached responses always contains an <code>ETag</code> header. If a request contains the <code>If-None-Match</code> header, Booster will try to match this with the stored <code>ETag</code> value.</p>
+<p>When adding Booster to a site, it may be tuned specifically</p>
 </div>
-<div class="paragraph">
-<p>If the values match, Booster will return a 304 <code>Not Modified</code> response and no data. This lets the browser use it&#8217;s local cache - saving network bandwidth and reducing latency.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="age_max_age_and_s_maxage"><a class="link" href="#age_max_age_and_s_maxage">Age, max-age and s-maxage</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Booster supports <code>max-age</code> and <code>s-maxage</code> cache directives from the upstream response <code>Cahe-Control</code> headers.</p>
-</div>
-<div class="paragraph">
-<p>The <code>max-age</code> and <code>s-maxage</code> directives are used to specify the maximum amount of time a response can be cached. The <code>s-maxage</code> directive is preferred over the <code>max-age</code> directive, when both are present in <code>Cahe-Control</code>.</p>
-</div>
-<div class="paragraph">
-<p>Booster also adds an <code>Age</code> header to the response. The <code>Age</code> header is the time in seconds since the response was cached plus the value of the <code>Age</code> header in the response from the upstream (if it exists).</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="cache_status_header"><a class="link" href="#cache_status_header">Cache-Status header</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Booster adds a <code>Cache-Status</code> header to the response. The header follows the RFC-7234 specification.</p>
-</div>
-<div class="paragraph">
-<p>Some examples of header values:</p>
-</div>
-<div class="listingblock">
-<div class="title">Response served from cache</div>
+<div class="imageblock">
 <div class="content">
-<pre class="highlight"><code>Cache-Status: Booster, hit</code></pre>
+<img src="images/site-config.png" alt="Adding Booster to your site" width="739">
 </div>
 </div>
-<div class="listingblock">
-<div class="title">License is not configured for the app</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster; fwd=bypass; detail=LICENSE</code></pre>
+<div class="sect2">
+<h3 id="default_ttl"><a class="link" href="#default_ttl">Default TTL</a></h3>
+<div class="paragraph">
+<p>Default TTL setting allows to specify cache TTL for controller responses without max-age or s-max-age headers.
+By default, the value is not set and the cache TTL is determined by the <code>cacheTtl</code> configuration property.</p>
 </div>
 </div>
-<div class="listingblock">
-<div class="title">Session found for request</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster; fwd=bypass; detail=SESSION</code></pre>
+<div class="sect2">
+<h3 id="advanced_settings"><a class="link" href="#advanced_settings">Advanced settings</a></h3>
+<div class="sect3">
+<h4 id="component_ttl"><a class="link" href="#component_ttl">Component TTL</a></h4>
+<div class="paragraph">
+<p>Component TTL setting to specify cache TTL for <em>component</em> controller responses without max-age or s-max-age headers. If not specified Default TTL is used.</p>
 </div>
 </div>
-<div class="listingblock">
-<div class="title">Response found in cache, but was stale</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster, fwd=stale</code></pre>
+<div class="sect3">
+<h4 id="url_patterns"><a class="link" href="#url_patterns">URL Patterns</a></h4>
+<div class="paragraph">
+<p>By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.</p>
+</div>
+<div class="paragraph">
+<p><code>Patterns</code> lets you tune caching only for specific paths.</p>
+</div>
+<div class="paragraph">
+<p>If no patterns are provided, all paths are cached. By adding a pattern, no path are cached by default, and you must ensure at least one pattern matches requests to be cached.</p>
+</div>
+<div class="paragraph">
+<p>A pattern is a regular expression that is used to match the request path. A pattern element may also contain an <code>invert</code> attribute to indicate that the result of evaluating the regular expression should be negated.</p>
+</div>
+<div class="paragraph">
+<p>The syntax of the pattern is the same as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>.</p>
 </div>
 </div>
-<div class="listingblock">
-<div class="title">Response not found in cache</div>
-<div class="content">
-<pre class="highlight"><code>Cache-Status: Booster, fwd=miss</code></pre>
+<div class="sect3">
+<h4 id="bypass_headers_and_cookies"><a class="link" href="#bypass_headers_and_cookies">Bypass Headers and Cookies</a></h4>
+<div class="paragraph">
+<p>Bypass Headers and Cookies let you define rules that prevent requests from being served from cache, and also ensure that matching responses are not stored in cache.</p>
+</div>
+<div class="paragraph">
+<p>You can specify one or more header or cookie rules.
+Each rule consists a <code>name</code> and Java Regular Expression <code>pattern</code>. An <code>invert</code> attribute can be  used to indicate that the result of evaluating the regular expression should be negated.</p>
+</div>
+<div class="paragraph">
+<p>If any incoming request header or cookie matches a rule, the request will bypass the cache entirely.</p>
+</div>
 </div>
 </div>
 </div>
@@ -760,7 +676,7 @@ For an XP cluster, request collapsing is performed on a per-node-basis, meaning 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-20 11:41:12 UTC
+Last updated 2026-04-20 11:41:37 UTC
 </div>
 </div>
 </body>

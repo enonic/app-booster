@@ -1,0 +1,20 @@
+{
+  "menuItems": [
+    {
+      "title": "Usage",
+      "document": "usage"
+    },
+    {
+      "title": "How It Works",
+      "document": "how-it-works"
+    },
+    {
+      "title": "Configuration",
+      "document": "configuration"
+    },
+    {
+      "title": "API",
+      "document": "api"
+    }
+  ]
+}
