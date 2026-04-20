@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.enonic.app.booster.storage.BoosterContext;
 import com.enonic.xp.data.ValueFactory;
+import com.enonic.xp.index.IndexPath;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.query.expr.CompareExpr;
 import com.enonic.xp.query.expr.FieldExpr;
@@ -62,14 +63,14 @@ public class BoosterQueryBuilder
         }
         else
         {
-            builder.addOrderBy( FieldOrderExpr.create( "invalidatedTime", OrderExpr.Direction.ASC ) );
+            builder.addOrderBy( FieldOrderExpr.create( IndexPath.from( "invalidatedTime" ), OrderExpr.Direction.ASC ) );
         }
 
         if ( cutOffTime != null )
         {
             builder.addQueryFilter( RangeFilter.create().fieldName( "cachedTime" ).lt( ValueFactory.newDateTime( cutOffTime ) ).build() );
         }
-        builder.addOrderBy( FieldOrderExpr.create( "cachedTime", OrderExpr.Direction.ASC ) ).size( size );
+        builder.addOrderBy( FieldOrderExpr.create( IndexPath.from( "cachedTime" ), OrderExpr.Direction.ASC ) ).size( size );
 
         return builder.build();
     }
