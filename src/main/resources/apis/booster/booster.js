@@ -1,5 +1,6 @@
 const contentLib = require('/lib/xp/content');
 const taskLib = require('/lib/xp/task');
+const authLib = require('/lib/xp/auth');
 const helper = require("/lib/helper");
 
 const submitTask = function (descriptor, config) {
@@ -22,6 +23,21 @@ const getTaskStatus = function (taskId) {
         body: taskDetails,
         status: 200
     };
+}
+
+const logManualCachePurge = function (config) {
+    const user = authLib.getUser();
+    const actor = user && user.key ? user.key : 'user:anonymous';
+    const auditDetails = {
+        actor,
+        project: config.project || null,
+        content: config.content || null,
+        site: config.site || null,
+        domain: config.domain || null,
+        path: config.path || null
+    };
+
+    log.info('Manual cache purge requested: ' + JSON.stringify(auditDetails));
 }
 
 exports.POST = function (req) {
@@ -72,6 +88,7 @@ exports.POST = function (req) {
     }
 
     if (action === 'invalidate') {
+        logManualCachePurge(config);
         taskId = submitTask(action, config);
     }
 
