@@ -27,7 +27,7 @@ const getTaskStatus = function (taskId) {
 
 const logManualCachePurge = function (config) {
     const user = authLib.getUser();
-    const actor = user && user.key ? user.key : 'user:anonymous';
+    const actor = user && user.key ? user.key : 'user:system:anonymous';
     const auditDetails = {
         actor,
         project: config.project || null,
