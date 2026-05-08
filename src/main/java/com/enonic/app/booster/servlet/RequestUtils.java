@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.RequestDispatcher;
@@ -19,6 +20,13 @@ import static java.util.Objects.requireNonNullElseGet;
 
 public final class RequestUtils
 {
+    // Matches encoding token with q=0 (prohibited), but NOT q=0.x where x > 0 (e.g. q=0.1 is acceptable)
+    private static final Pattern BROTLI_QUALITY_ZERO =
+        Pattern.compile( "\\bbr\\s*;\\s*q\\s*=\\s*0(\\.0*)?\\s*(?:,|$)" );
+
+    private static final Pattern GZIP_QUALITY_ZERO =
+        Pattern.compile( "\\bgzip\\s*;\\s*q\\s*=\\s*0(\\.0*)?\\s*(?:,|$)" );
+
     private RequestUtils()
     {
     }
@@ -81,12 +89,13 @@ public final class RequestUtils
             // We want to prefer brotli over gzip, regardless of client preference
             while ( acceptEncodingHeaders.hasMoreElements() )
             {
-                String acceptEncoding = acceptEncodingHeaders.nextElement();
-                if ( acceptEncoding.contains( "br" ) && !acceptEncoding.contains( "br;q=0" ) )
+                // Accept-Encoding is case-insensitive per RFC 9110
+                String acceptEncoding = acceptEncodingHeaders.nextElement().toLowerCase( Locale.ROOT );
+                if ( acceptEncoding.contains( "br" ) && !BROTLI_QUALITY_ZERO.matcher( acceptEncoding ).find() )
                 {
                     return AcceptEncoding.BROTLI;
                 }
-                else if ( acceptEncoding.contains( "gzip" ) && !acceptEncoding.contains( "gzip;q=0" ) )
+                else if ( acceptEncoding.contains( "gzip" ) && !GZIP_QUALITY_ZERO.matcher( acceptEncoding ).find() )
                 {
                     acceptGzip = true;
                 }
