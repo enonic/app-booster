@@ -96,12 +96,14 @@ public final class RequestUtils
         // MIMEParse expects type/subtype format; prefix encoding tokens with a synthetic type
         final String mimeHeader = toMimeTypeHeader( combinedHeader );
 
-        // We prefer brotli over gzip regardless of client preference
-        if ( MIMEParse.quality( "encoding/br", mimeHeader ) > 0 )
+        // bestMatch selects the highest-quality encoding the client accepts; brotli is listed last
+        // so it wins as a tiebreaker when the client assigns equal quality to both
+        final String best = MIMEParse.bestMatch( List.of( "encoding/gzip", "encoding/br" ), mimeHeader );
+        if ( "encoding/br".equals( best ) )
         {
             return AcceptEncoding.BROTLI;
         }
-        if ( MIMEParse.quality( "encoding/gzip", mimeHeader ) > 0 )
+        if ( "encoding/gzip".equals( best ) )
         {
             return AcceptEncoding.GZIP;
         }
