@@ -9,24 +9,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.commonjava.mimeparse.MIMEParse;
+
 import static java.util.Objects.requireNonNullElseGet;
 
 public final class RequestUtils
 {
-    // Matches encoding token with q=0 (prohibited), but NOT q=0.x where x > 0 (e.g. q=0.1 is acceptable)
-    private static final Pattern BROTLI_QUALITY_ZERO =
-        Pattern.compile( "\\bbr\\s*;\\s*q\\s*=\\s*0(\\.0*)?\\s*(?:,|$)" );
-
-    private static final Pattern GZIP_QUALITY_ZERO =
-        Pattern.compile( "\\bgzip\\s*;\\s*q\\s*=\\s*0(\\.0*)?\\s*(?:,|$)" );
-
     private RequestUtils()
     {
     }
@@ -83,25 +77,49 @@ public final class RequestUtils
         // According to spec, if no header is present, it is equivalent to accepting all encodings
         // But we will follow the most common behavior - no header means no support
 
-        boolean acceptGzip = false;
-        if ( acceptEncodingHeaders != null )
+        if ( acceptEncodingHeaders == null )
         {
-            // We want to prefer brotli over gzip, regardless of client preference
-            while ( acceptEncodingHeaders.hasMoreElements() )
-            {
-                // Accept-Encoding is case-insensitive per RFC 9110
-                String acceptEncoding = acceptEncodingHeaders.nextElement().toLowerCase( Locale.ROOT );
-                if ( acceptEncoding.contains( "br" ) && !BROTLI_QUALITY_ZERO.matcher( acceptEncoding ).find() )
-                {
-                    return AcceptEncoding.BROTLI;
-                }
-                else if ( acceptEncoding.contains( "gzip" ) && !GZIP_QUALITY_ZERO.matcher( acceptEncoding ).find() )
-                {
-                    acceptGzip = true;
-                }
-            }
+            return AcceptEncoding.UNSPECIFIED;
         }
-        return acceptGzip ? AcceptEncoding.GZIP : AcceptEncoding.UNSPECIFIED;
+
+        // Accept-Encoding is case-insensitive per RFC 9110; combine all header values
+        final String combinedHeader = Collections.list( acceptEncodingHeaders )
+            .stream()
+            .collect( Collectors.joining( ", " ) )
+            .toLowerCase( Locale.ROOT );
+
+        if ( combinedHeader.isBlank() )
+        {
+            return AcceptEncoding.UNSPECIFIED;
+        }
+
+        // MIMEParse expects type/subtype format; prefix encoding tokens with a synthetic type
+        final String mimeHeader = toMimeTypeHeader( combinedHeader );
+
+        // We prefer brotli over gzip regardless of client preference
+        if ( MIMEParse.quality( "encoding/br", mimeHeader ) > 0 )
+        {
+            return AcceptEncoding.BROTLI;
+        }
+        if ( MIMEParse.quality( "encoding/gzip", mimeHeader ) > 0 )
+        {
+            return AcceptEncoding.GZIP;
+        }
+        return AcceptEncoding.UNSPECIFIED;
+    }
+
+    private static String toMimeTypeHeader( final String encodingHeader )
+    {
+        return Arrays.stream( encodingHeader.split( "," ) )
+            .map( String::trim )
+            .filter( token -> !token.isEmpty() )
+            .map( token -> {
+                int semi = token.indexOf( ';' );
+                String name = semi >= 0 ? token.substring( 0, semi ).trim() : token;
+                String params = semi >= 0 ? token.substring( semi ) : "";
+                return "encoding/" + name + params;
+            } )
+            .collect( Collectors.joining( ", " ) );
     }
 
     public static boolean isComponentRequest( final HttpServletRequest request )
