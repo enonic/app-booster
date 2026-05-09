@@ -1,6 +1,6 @@
 const contentLib = require('/lib/xp/content');
 const taskLib = require('/lib/xp/task');
-const authLib = require('/lib/xp/auth');
+const auditLogLib = require('/lib/xp/auditlog');
 const helper = require("/lib/helper");
 
 const submitTask = function (descriptor, config) {
@@ -26,18 +26,17 @@ const getTaskStatus = function (taskId) {
 }
 
 const logManualCachePurge = function (config) {
-    const user = authLib.getUser();
-    const actor = user && user.key ? user.key : 'user:system:anonymous';
-    const auditDetails = {
-        actor,
-        project: config.project || null,
-        content: config.content || null,
-        site: config.site || null,
-        domain: config.domain || null,
-        path: config.path || null
-    };
-
-    log.info('Manual cache purge requested: ' + JSON.stringify(auditDetails));
+    auditLogLib.log({
+        type: 'booster.manualCachePurge',
+        message: 'Manual cache purge requested',
+        data: {
+            project: config.project || null,
+            content: config.content || null,
+            site: config.site || null,
+            domain: config.domain || null,
+            path: config.path || null
+        }
+    });
 }
 
 exports.POST = function (req) {
