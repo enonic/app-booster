@@ -15,7 +15,6 @@ dependencies {
     implementation(xplibs.api.core)
     implementation(xplibs.api.portal)
 
-    include(libs.mimeparse)
     include(libs.brotli4j.brotli4j)
     include(libs.brotli4j.native.windows.amd64)
     include(libs.brotli4j.native.linux.amd64)

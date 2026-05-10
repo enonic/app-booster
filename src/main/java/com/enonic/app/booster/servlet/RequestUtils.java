@@ -15,8 +15,6 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.commonjava.mimeparse.MIMEParse;
-
 import static java.util.Objects.requireNonNullElseGet;
 
 public final class RequestUtils
@@ -73,55 +71,65 @@ public final class RequestUtils
 
     public static AcceptEncoding acceptEncoding( final HttpServletRequest request )
     {
-        final var acceptEncodingHeaders = request.getHeaders( "Accept-Encoding" );
+        final var headers = request.getHeaders( "Accept-Encoding" );
         // According to spec, if no header is present, it is equivalent to accepting all encodings
         // But we will follow the most common behavior - no header means no support
-
-        if ( acceptEncodingHeaders == null )
+        if ( headers == null )
         {
             return AcceptEncoding.UNSPECIFIED;
         }
 
-        // Accept-Encoding is case-insensitive per RFC 9110; combine all header values
-        final String combinedHeader = Collections.list( acceptEncodingHeaders )
-            .stream()
-            .collect( Collectors.joining( ", " ) )
-            .toLowerCase( Locale.ROOT );
-
-        if ( combinedHeader.isBlank() )
+        // Prefer brotli over gzip regardless of client quality, unless explicitly rejected (q=0)
+        boolean acceptBrotli = false;
+        boolean acceptGzip = false;
+        while ( headers.hasMoreElements() )
         {
-            return AcceptEncoding.UNSPECIFIED;
+            for ( final String entry : headers.nextElement().toLowerCase( Locale.ROOT ).split( "," ) )
+            {
+                final String[] parts = entry.trim().split( "\\s*;\\s*" );
+                final boolean isBrotli = "br".equals( parts[0] );
+                if ( !isBrotli && !"gzip".equals( parts[0] ) )
+                {
+                    continue;
+                }
+
+                float q = 1;
+                for ( int i = 1; i < parts.length; i++ )
+                {
+                    if ( parts[i].startsWith( "q=" ) )
+                    {
+                        try
+                        {
+                            q = Float.parseFloat( parts[i].substring( 2 ) );
+                        }
+                        catch ( NumberFormatException e )
+                        {
+                            q = 0;
+                        }
+                        break;
+                    }
+                }
+                if ( !( q > 0 ) )
+                {
+                    continue;
+                }
+
+                if ( isBrotli )
+                {
+                    acceptBrotli = true;
+                }
+                else
+                {
+                    acceptGzip = true;
+                }
+            }
         }
 
-        // MIMEParse expects type/subtype format; prefix encoding tokens with a synthetic type
-        final String mimeHeader = toMimeTypeHeader( combinedHeader );
-
-        // bestMatch selects the highest-quality encoding the client accepts; brotli is listed last
-        // so it wins as a tiebreaker when the client assigns equal quality to both
-        final String best = MIMEParse.bestMatch( List.of( "encoding/gzip", "encoding/br" ), mimeHeader );
-        if ( "encoding/br".equals( best ) )
+        if ( acceptBrotli )
         {
             return AcceptEncoding.BROTLI;
         }
-        if ( "encoding/gzip".equals( best ) )
-        {
-            return AcceptEncoding.GZIP;
-        }
-        return AcceptEncoding.UNSPECIFIED;
-    }
-
-    private static String toMimeTypeHeader( final String encodingHeader )
-    {
-        return Arrays.stream( encodingHeader.split( "," ) )
-            .map( String::trim )
-            .filter( token -> !token.isEmpty() )
-            .map( token -> {
-                int semi = token.indexOf( ';' );
-                String name = semi >= 0 ? token.substring( 0, semi ).trim() : token;
-                String params = semi >= 0 ? token.substring( semi ) : "";
-                return "encoding/" + name + params;
-            } )
-            .collect( Collectors.joining( ", " ) );
+        return acceptGzip ? AcceptEncoding.GZIP : AcceptEncoding.UNSPECIFIED;
     }
 
     public static boolean isComponentRequest( final HttpServletRequest request )
