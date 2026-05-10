@@ -91,103 +91,23 @@ class RequestUtilsTest
     }
 
     @Test
-    void acceptEncoding_empty_is_unspecified()
+    void acceptEncoding_delegates_to_parser()
     {
+        // Smoke test for the RequestUtils → AcceptEncodingParser plumbing.
+        // Detailed parsing cases live in AcceptEncodingParserTest.
         HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of() ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
+        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "gzip", "br" ) ) );
 
-        assertEquals( RequestUtils.AcceptEncoding.UNSPECIFIED, acceptEncoding );
+        assertEquals( RequestUtils.AcceptEncoding.BROTLI, RequestUtils.acceptEncoding( request ) );
     }
 
     @Test
-    void acceptEncoding_null_is_unspecified()
+    void acceptEncoding_null_header_is_unspecified()
     {
         HttpServletRequest request = mock( HttpServletRequest.class );
         when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( null );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
 
-        assertEquals( RequestUtils.AcceptEncoding.UNSPECIFIED, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_br_preferred()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "gzip", "br" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.BROTLI, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_gzip()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0, gzip" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.GZIP, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_prefer_none_unspecified()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0, gzip;q=0" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.UNSPECIFIED, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_br_with_low_quality_is_brotli()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0.1" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.BROTLI, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_gzip_with_low_quality_is_gzip()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0, gzip;q=0.1" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.GZIP, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_case_insensitive_br()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "BR" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.BROTLI, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_case_insensitive_gzip()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "GZIP" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.GZIP, acceptEncoding );
-    }
-
-    @Test
-    void acceptEncoding_br_quality_zero_decimal_zeros_is_not_brotli()
-    {
-        HttpServletRequest request = mock( HttpServletRequest.class );
-        when( request.getHeaders( "Accept-Encoding" ) ).thenReturn( Collections.enumeration( List.of( "br;q=0.0, gzip" ) ) );
-        final RequestUtils.AcceptEncoding acceptEncoding = RequestUtils.acceptEncoding( request );
-
-        assertEquals( RequestUtils.AcceptEncoding.GZIP, acceptEncoding );
+        assertEquals( RequestUtils.AcceptEncoding.UNSPECIFIED, RequestUtils.acceptEncoding( request ) );
     }
 
     @Test
