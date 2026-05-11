@@ -12,8 +12,15 @@
     };
 
     const taskStates = {
+        WAITING: 'WAITING',
+        RUNNING: 'RUNNING',
         FINISHED: 'FINISHED',
         FAILED: 'FAILED'
+    };
+
+    const taskStatusPolling = {
+        interval: 1000,
+        timeout: 300000
     };
 
     const sendRequest = (url, action, data, responseCallback) => {
@@ -38,13 +45,19 @@
         return !(!statusOk || !request.response);
     }
 
-    const isTaskCompleted = (request) => {
+    const getTaskState = (request) => {
         if (!isSuccessfulRequest(request)) {
-            return false;
+            return null;
         }
         const response = request.response && JSON.parse(request.response);
-        return !!taskStates[response.state];
+        return response && response.state;
     };
+
+    const isTaskCompleted = (taskState) => !!taskStates[taskState] && ![taskStates.WAITING, taskStates.RUNNING].includes(taskState);
+
+    const isTaskPending = (taskState) => [taskStates.WAITING, taskStates.RUNNING].includes(taskState);
+
+    const isTaskCompletionTimeoutError = (error) => error && error.message === 'Task completion timeout';
 
     const showNotification = (message) => {
         responseContainer.classList.remove('success', 'failure');
@@ -63,22 +76,36 @@
     }
 
     const waitForTaskCompletion = async (taskId) => {
-        const timeout = 10000;
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
-            const pollId = setInterval(() => {
-                if (Date.now() - startTime > timeout) {
-                    clearInterval(pollId);
+            const poll = () => {
+                if (Date.now() - startTime > taskStatusPolling.timeout) {
                     reject(new Error('Task completion timeout'));
+                    return;
                 }
+
                 sendRequest(serviceUrl, actions.STATUS, {taskId}, (req) => {
-                    if (isTaskCompleted(req)) {
-                        clearInterval(pollId);
-                        const response = req.response && JSON.parse(req.response);
-                        resolve(response.state);
+                    if (!isSuccessfulRequest(req)) {
+                        reject(new Error('Task status request failed'));
+                        return;
                     }
+
+                    const taskState = getTaskState(req);
+                    if (isTaskCompleted(taskState)) {
+                        resolve(taskState);
+                        return;
+                    }
+
+                    if (!isTaskPending(taskState)) {
+                        reject(new Error('Unexpected task state'));
+                        return;
+                    }
+
+                    setTimeout(poll, taskStatusPolling.interval);
                 });
-            }, 1000);
+            };
+
+            poll();
         });
     }
 
@@ -95,7 +122,11 @@
                     showFailureNotification('Failed to purge cache');
                 }
             } catch (e) {
-                showFailureNotification('Failed to fetch task status');
+                if (isTaskCompletionTimeoutError(e)) {
+                    showNotification('Cache purge is still running. The widget will refresh shortly.');
+                } else {
+                    showFailureNotification('Failed to fetch task status');
+                }
             }
 
         } else {
