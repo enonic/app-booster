@@ -1,5 +1,6 @@
 const contentLib = require('/lib/xp/content');
 const taskLib = require('/lib/xp/task');
+const auditLogLib = require('/lib/xp/auditlog');
 const helper = require("/lib/helper");
 
 const submitTask = function (descriptor, config) {
@@ -22,6 +23,20 @@ const getTaskStatus = function (taskId) {
         body: taskDetails,
         status: 200
     };
+}
+
+const logManualCachePurge = function (config) {
+    auditLogLib.log({
+        type: 'booster.manualCachePurge',
+        message: 'Manual cache purge requested',
+        data: {
+            project: config.project || null,
+            content: config.content || null,
+            site: config.site || null,
+            domain: config.domain || null,
+            path: config.path || null
+        }
+    });
 }
 
 exports.POST = function (req) {
@@ -72,6 +87,7 @@ exports.POST = function (req) {
     }
 
     if (action === 'invalidate') {
+        logManualCachePurge(config);
         taskId = submitTask(action, config);
     }
 
