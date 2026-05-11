@@ -71,28 +71,7 @@ public final class RequestUtils
 
     public static AcceptEncoding acceptEncoding( final HttpServletRequest request )
     {
-        final var acceptEncodingHeaders = request.getHeaders( "Accept-Encoding" );
-        // According to spec, if no header is present, it is equivalent to accepting all encodings
-        // But we will follow the most common behavior - no header means no support
-
-        boolean acceptGzip = false;
-        if ( acceptEncodingHeaders != null )
-        {
-            // We want to prefer brotli over gzip, regardless of client preference
-            while ( acceptEncodingHeaders.hasMoreElements() )
-            {
-                String acceptEncoding = acceptEncodingHeaders.nextElement();
-                if ( acceptEncoding.contains( "br" ) && !acceptEncoding.contains( "br;q=0" ) )
-                {
-                    return AcceptEncoding.BROTLI;
-                }
-                else if ( acceptEncoding.contains( "gzip" ) && !acceptEncoding.contains( "gzip;q=0" ) )
-                {
-                    acceptGzip = true;
-                }
-            }
-        }
-        return acceptGzip ? AcceptEncoding.GZIP : AcceptEncoding.UNSPECIFIED;
+        return AcceptEncodingParser.parse( request.getHeaders( "Accept-Encoding" ) );
     }
 
     public static boolean isComponentRequest( final HttpServletRequest request )
