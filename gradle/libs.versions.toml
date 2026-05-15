@@ -17,7 +17,7 @@ mockito-bom = { module = "org.mockito:mockito-bom", version.ref = "mockitoVersio
 mockito-core = { module = "org.mockito:mockito-core" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter" }
 
-lib-mustache = { module = "com.enonic.lib:lib-mustache", version = "2.1.1" }
+lib-mustache = { module = "com.enonic.lib:lib-mustache", version = "3.0.0-SNAPSHOT" }
 lib-license = { module = "com.enonic.lib:lib-license", version = "4.0.0-SNAPSHOT" }
 
 brotli4j-brotli4j = { module = "com.aayushatharva.brotli4j:brotli4j", version.ref = "brotli4jVersion" }
