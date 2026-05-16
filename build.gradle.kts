@@ -32,6 +32,7 @@ dependencies {
     include(xplibs.task)
     include(libs.lib.mustache)
     include(libs.lib.license)
+    include(libs.lib.static)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(platform(libs.mockito.bom))
