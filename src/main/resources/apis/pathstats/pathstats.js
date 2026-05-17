@@ -1,5 +1,4 @@
 const mustache = require('/lib/mustache');
-const portal = require('/lib/xp/portal');
 const nodeLib = require('/lib/xp/node');
 
 function parseQueryString(queryString) {
@@ -100,7 +99,6 @@ const renderPathStats = (req) => {
         return {
             contentType: 'text/html',
             body: mustache.render(view, {
-                assetsUri: portal.assetUrl({path: ''}),
                 path,
                 uniqueParams
             })

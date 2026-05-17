@@ -4,6 +4,10 @@ const contextLib = require('/lib/xp/context');
 const mustache = require('/lib/mustache');
 const helper = require("/lib/helper");
 const nodeLib = require('/lib/xp/node');
+const staticLib = require('/lib/enonic/static');
+const Router = require('/lib/router');
+
+const STATIC_BASE = '/_static';
 
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
 
@@ -92,7 +96,7 @@ const renderWidgetView = (req) => {
         size,
         isButtonDisabled: size === 0,
         isEnabled: !error,
-        assetsUri: portal.assetUrl({path: ''}),
+        assetsUri: req.contextPath + STATIC_BASE,
         serviceUrl: portal.apiUrl({api: 'booster'}),
         isLicenseValid: helper.isLicenseValid(),
         licenseUploadUrl: portal.apiUrl({api: 'license-upload'}),
@@ -108,4 +112,14 @@ const renderWidgetView = (req) => {
     };
 }
 
-exports.GET = (req) => renderWidgetView(req);
+const router = Router();
+
+router.get(STATIC_BASE + '/{path:.*}', (req) => staticLib.requestHandler(req, {
+    index: false,
+    root: '/assets',
+    relativePath: (r) => r.pathParams.path
+}));
+
+router.get('{path:.*}', renderWidgetView);
+
+exports.GET = (req) => router.dispatch(req);
