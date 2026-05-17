@@ -5,6 +5,7 @@ const mustache = require('/lib/mustache');
 const helper = require("/lib/helper");
 const nodeLib = require('/lib/xp/node');
 const staticLib = require('/lib/enonic/static');
+const Router = require('/lib/router');
 
 const STATIC_BASE = '/_static';
 
@@ -111,17 +112,14 @@ const renderWidgetView = (req) => {
     };
 }
 
-const serveStatic = (req) => staticLib.requestHandler(req, {
+const router = Router();
+
+router.get(STATIC_BASE + '/{path:.*}', (req) => staticLib.requestHandler(req, {
     index: false,
     root: '/assets',
-    relativePath: staticLib.mappedRelativePath(STATIC_BASE)
-});
+    relativePath: (r) => r.pathParams.path
+}));
 
-exports.GET = (req) => {
-    const rawPath = req.rawPath || '';
-    const contextPath = req.contextPath || '';
-    if (rawPath.indexOf(contextPath + STATIC_BASE + '/') === 0) {
-        return serveStatic(req);
-    }
-    return renderWidgetView(req);
-};
+router.get('{path:.*}', renderWidgetView);
+
+exports.GET = (req) => router.dispatch(req);
