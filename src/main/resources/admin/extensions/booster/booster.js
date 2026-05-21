@@ -18,6 +18,21 @@ const STATE_PATH = '/state';
 
 const SUPPORTED_ACTIONS = ['invalidate', 'purge-all', 'enforce-all', 'status'];
 
+const runningTasks = {};
+
+const getRunningTaskId = (project) => {
+    const taskId = runningTasks[project];
+    if (!taskId) {
+        return undefined;
+    }
+    const task = taskLib.get(taskId);
+    if (!task || task.state === 'FINISHED' || task.state === 'FAILED') {
+        delete runningTasks[project];
+        return undefined;
+    }
+    return taskId;
+}
+
 const forceArray = (data) => (Array.isArray(data) ? data : new Array(data));
 
 const isAppEnabledOnSite = (contentId, repository) => {
@@ -122,8 +137,9 @@ const computeProjectState = (contentId, repository) => {
     const hint = (contentId && !isAppEnabledOnSite(contentId, repository))
         ? 'Booster app is not added to this site'
         : undefined;
+    const runningTaskId = getRunningTaskId(project);
 
-    return {project, size, commonlyCachedPaths, hint};
+    return {project, size, commonlyCachedPaths, hint, runningTaskId};
 }
 
 const renderWidgetView = (req) => {
@@ -144,7 +160,8 @@ const renderWidgetView = (req) => {
         refreshUrl: req.contextPath + STATE_PATH + stateQuery,
         commonlyCachedPaths: projectState.commonlyCachedPaths || [],
         error: projectState.error,
-        hint: projectState.hint
+        hint: projectState.hint,
+        runningTaskId: projectState.runningTaskId
     };
 
     const view = resolve('booster.html');
@@ -197,6 +214,7 @@ const handlePurge = (req) => {
     if (action === 'invalidate') {
         logManualCachePurge(config);
         taskId = taskLib.submitTask({descriptor: action, config});
+        runningTasks[project] = taskId;
     }
 
     return {
@@ -335,7 +353,8 @@ router.get(STATE_PATH, (req) => {
         body: {
             size: projectState.size,
             commonlyCachedPaths: projectState.commonlyCachedPaths,
-            hint: projectState.hint
+            hint: projectState.hint,
+            runningTaskId: projectState.runningTaskId
         }
     };
 });

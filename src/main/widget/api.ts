@@ -19,6 +19,7 @@ export type RefreshState = {
     size: number;
     commonlyCachedPaths: {key: string; docCount: number}[];
     hint?: string;
+    runningTaskId?: string;
 };
 
 const postJson = async <T>(url: string, body: object): Promise<T> => {
@@ -41,20 +42,22 @@ export const startPurge = (serviceUrl: string, project: string): Promise<PurgeRe
 export const fetchTaskStatus = (serviceUrl: string, taskId: string): Promise<StatusResponse> =>
     postJson<StatusResponse>(serviceUrl, {action: 'status', data: {taskId}});
 
-export const waitForTaskCompletion = async (
+export const pollTaskToCompletion = async (
     serviceUrl: string,
     taskId: string,
-    timeoutMs = 10_000,
+    intervalMs = 1500,
+    signal?: AbortSignal,
 ): Promise<TaskState> => {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
+    while (true) {
+        if (signal?.aborted) {
+            throw new Error('aborted');
+        }
         const res = await fetchTaskStatus(serviceUrl, taskId);
         if (res.state === TASK_STATE_FINISHED || res.state === TASK_STATE_FAILED) {
             return res.state;
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
-    throw new Error('Task completion timeout');
 };
 
 export const uploadLicense = async (

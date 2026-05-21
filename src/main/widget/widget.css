@@ -26,17 +26,23 @@
     text-align: center;
 }
 
-.widget-booster-action-response {
-    margin: 0;
-    font-size: 14px;
+.widget-booster-purge-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.widget-booster-action-response--success {
-    color: green;
+.widget-booster-result-icon {
+    width: 18px;
+    height: 18px;
 }
 
-.widget-booster-action-response--failure {
-    color: red;
+.widget-booster-result-icon--success {
+    color: #2e7d32;
+}
+
+.widget-booster-result-icon--failure {
+    color: #c62828;
 }
 
 .widget-booster-license-invalid {
@@ -54,28 +60,21 @@
     margin: 8px 0 0;
 }
 
-.widget-booster-commonly-cached-paths {
-    border-collapse: collapse;
-    text-align: left;
-    min-width: 100%;
-    margin: 0 auto;
-}
-
-.widget-booster-commonly-cached-paths caption {
-    font-weight: bold;
+.widget-booster-paths-tree {
     text-align: left;
 }
 
-.widget-booster-commonly-cached-paths th,
-.widget-booster-commonly-cached-paths td {
-    border: 1px solid lightgray;
-    padding: 4px 7px;
+.widget-booster-paths-tree [data-component="TreeList.Row"] {
+    gap: 4px;
 }
 
-.widget-booster-commonly-cached-paths details summary {
-    cursor: pointer;
+.widget-booster-path-count {
+    min-width: 2.5em;
+    text-align: right;
+    opacity: 0.6;
+    margin-right: 8px;
 }
 
-.widget-booster-commonly-cached-paths .no-q-params {
-    opacity: 0.4;
+.widget-booster-path-key {
+    overflow-wrap: anywhere;
 }
