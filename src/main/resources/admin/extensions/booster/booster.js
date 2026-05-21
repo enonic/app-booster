@@ -70,7 +70,8 @@ const getCommonlyCachedPaths = (project, numResults) => {
 
 const renderWidgetView = (req) => {
     let error, hint;
-    let size;
+    let size = 0;
+    let commonlyCachedPaths = [];
 
     const contentId = req.params.contentId || '';
     const project = req.params.repository.replace('com.enonic.cms.', '') || '';
@@ -84,26 +85,30 @@ const renderWidgetView = (req) => {
     if (!error) {
         const nodeCleanerBean = __.newBean('com.enonic.app.booster.script.NodeCleanerBean');
         size = nodeCleanerBean.getProjectCacheSize(project);
+        commonlyCachedPaths = getCommonlyCachedPaths(project, 20);
 
         if (contentId && !isAppEnabledOnSite(contentId, req.params.repository)) {
             hint = 'Booster app is not added to this site';
         }
     }
 
-    const view = resolve('booster.html');
-    const params = {
+    const state = {
         project,
         size,
-        isButtonDisabled: size === 0,
         isEnabled: !error,
-        assetsUri: req.contextPath + STATIC_BASE,
-        serviceUrl: portal.apiUrl({api: 'booster'}),
         isLicenseValid: helper.isLicenseValid(),
+        serviceUrl: portal.apiUrl({api: 'booster'}),
         licenseUploadUrl: portal.apiUrl({api: 'license-upload'}),
-        commonlyCachedPaths: getCommonlyCachedPaths(project, 20),
-        pathStatsServiceUrl: portal.apiUrl({api: 'pathstats'}),
+        pathStatsUrl: portal.apiUrl({api: 'pathstats'}),
+        commonlyCachedPaths,
         error,
         hint
+    };
+
+    const view = resolve('booster.html');
+    const params = {
+        assetsUri: req.contextPath + STATIC_BASE,
+        state: JSON.stringify(state).replace(/</g, '\\u003c')
     };
 
     return {

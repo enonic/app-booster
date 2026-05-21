@@ -1,0 +1,74 @@
+.widget-booster-content {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.widget-booster-content > * + * {
+    margin-top: 12px;
+}
+
+.widget-booster-hint {
+    font-style: italic;
+    color: #777;
+    margin: 0;
+}
+
+.widget-booster-error {
+    color: #b00;
+    padding: 12px;
+    text-align: center;
+}
+
+.widget-booster-action-response {
+    margin: 0;
+    font-size: 14px;
+}
+
+.widget-booster-action-response--success {
+    color: green;
+}
+
+.widget-booster-action-response--failure {
+    color: red;
+}
+
+.widget-booster-license-invalid {
+    text-align: center;
+    padding: 16px 8px;
+}
+
+.widget-booster-license-invalid h6 {
+    margin: 0 0 12px;
+}
+
+.widget-booster-license-error {
+    color: red;
+    font-size: 13px;
+    margin: 8px 0 0;
+}
+
+.widget-booster-commonly-cached-paths {
+    border-collapse: collapse;
+    text-align: left;
+    min-width: 100%;
+    margin: 0 auto;
+}
+
+.widget-booster-commonly-cached-paths caption {
+    font-weight: bold;
+    text-align: left;
+}
+
+.widget-booster-commonly-cached-paths th,
+.widget-booster-commonly-cached-paths td {
+    border: 1px solid lightgray;
+    padding: 4px 7px;
+}
+
+.widget-booster-commonly-cached-paths details summary {
+    cursor: pointer;
+}
+
+.widget-booster-commonly-cached-paths .no-q-params {
+    opacity: 0.4;
+}
