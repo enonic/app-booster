@@ -4,6 +4,7 @@ plugins {
     `maven-publish`
     id("com.enonic.defaults") version "2.1.6"
     id("com.enonic.xp.app")
+    id("com.github.node-gradle.node") version "7.1.0"
 }
 
 repositories {
@@ -30,6 +31,7 @@ dependencies {
     include(xplibs.project)
     include(xplibs.portal)
     include(xplibs.task)
+    include(xplibs.auditlog)
     include(libs.lib.mustache)
     include(libs.lib.license)
     include(libs.lib.static)
@@ -58,4 +60,28 @@ tasks.jacocoTestReport {
 
 tasks.check {
     dependsOn(tasks.jacocoTestReport)
+}
+
+node {
+    download = true
+    version = "20.18.0"
+}
+
+val widgetBuild = tasks.register<com.github.gradle.node.npm.task.NpmTask>("widgetBuild") {
+    description = "Builds the React widget bundle via tsup."
+    group = "build"
+    dependsOn(tasks.named("npmInstall"))
+    args = listOf("run", "build")
+    inputs.dir("src/main/widget")
+    inputs.files("package.json", "package-lock.json", "tsconfig.json", "tsup.config.ts")
+    outputs.dir(layout.buildDirectory.dir("widget"))
+    environment.set(mapOf("NODE_ENV" to "production"))
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir(widgetBuild)
+        }
+    }
 }
