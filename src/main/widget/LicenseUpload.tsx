@@ -6,9 +6,10 @@ const ERROR_VISIBLE_MS = 5000;
 
 export type LicenseUploadProps = {
     licenseUploadUrl: string;
+    onSuccess: () => void;
 };
 
-export const LicenseUpload = ({licenseUploadUrl}: LicenseUploadProps) => {
+export const LicenseUpload = ({licenseUploadUrl, onSuccess}: LicenseUploadProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showError, setShowError] = useState(false);
 
@@ -24,7 +25,7 @@ export const LicenseUpload = ({licenseUploadUrl}: LicenseUploadProps) => {
         try {
             const data = await uploadLicense(licenseUploadUrl, file);
             if (data.licenseValid) {
-                window.dispatchEvent(new CustomEvent('ReloadActiveWidgetEvent'));
+                onSuccess();
             } else {
                 setShowError(true);
                 setTimeout(() => setShowError(false), ERROR_VISIBLE_MS);

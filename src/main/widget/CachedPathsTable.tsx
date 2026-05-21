@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {fetchPathDetails} from './api';
+import {fetchPathDetails, type PathStatsParam} from './api';
 
 export type CachedPath = {
     key: string;
@@ -41,18 +41,26 @@ type PathRowProps = {
     pathStatsUrl: string;
 };
 
+type DetailsState =
+    | {status: 'idle'}
+    | {status: 'loading'}
+    | {status: 'loaded'; params: PathStatsParam[]}
+    | {status: 'error'};
+
 const PathRow = ({path, pathStatsUrl}: PathRowProps) => {
-    const [detailsHtml, setDetailsHtml] = useState<string | null>(null);
+    const [details, setDetails] = useState<DetailsState>({status: 'idle'});
 
     const loadDetailsOnce = async () => {
-        if (detailsHtml !== null) {
+        if (details.status !== 'idle') {
             return;
         }
+        setDetails({status: 'loading'});
         try {
-            const html = await fetchPathDetails(pathStatsUrl, path.key);
-            setDetailsHtml(html);
+            const params = await fetchPathDetails(pathStatsUrl, path.key);
+            setDetails({status: 'loaded', params});
         } catch (e) {
             console.error('Error fetching details:', e);
+            setDetails({status: 'error'});
         }
     };
 
@@ -62,13 +70,7 @@ const PathRow = ({path, pathStatsUrl}: PathRowProps) => {
             <td>
                 <details onToggle={loadDetailsOnce}>
                     <summary>{path.key}</summary>
-                    {detailsHtml !== null && (
-                        <div
-                            className="widget-booster-detail-target"
-                            // eslint-disable-next-line react/no-danger
-                            dangerouslySetInnerHTML={{__html: detailsHtml}}
-                        />
-                    )}
+                    <PathDetails details={details} />
                 </details>
             </td>
         </tr>
@@ -76,3 +78,34 @@ const PathRow = ({path, pathStatsUrl}: PathRowProps) => {
 };
 
 PathRow.displayName = 'PathRow';
+
+const PathDetails = ({details}: {details: DetailsState}) => {
+    if (details.status === 'idle' || details.status === 'loading') {
+        return null;
+    }
+    if (details.status === 'error') {
+        return <p className="no-q-params">(failed to load details)</p>;
+    }
+    if (details.params.length === 0) {
+        return <p className="no-q-params">(no querystring params in cache)</p>;
+    }
+    return (
+        <table>
+            <caption>Cached querystring params</caption>
+            <thead>
+                <tr>
+                    <th>Param</th>
+                    <th>Unique value count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {details.params.map(p => (
+                    <tr key={p.paramName}>
+                        <td>{p.paramName}</td>
+                        <td>{p.uniqueValuesCount}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+};

@@ -7,6 +7,13 @@
     margin-top: 12px;
 }
 
+.widget-booster-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .widget-booster-hint {
     font-style: italic;
     color: #777;

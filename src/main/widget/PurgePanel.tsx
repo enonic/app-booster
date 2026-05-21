@@ -1,4 +1,5 @@
-import {Button, Dialog} from '@enonic/ui';
+import {Button, Dialog, IconButton} from '@enonic/ui';
+import {Loader2, RefreshCw} from 'lucide-react';
 import {useState} from 'react';
 import {
     TASK_STATE_FAILED,
@@ -7,11 +8,7 @@ import {
     waitForTaskCompletion,
 } from './api';
 
-const RELOAD_DELAY_MS = 3000;
-
-const reloadWidget = () => {
-    window.dispatchEvent(new CustomEvent('ReloadActiveWidgetEvent'));
-};
+const NOTIFICATION_DISMISS_MS = 3000;
 
 type NotificationKind = 'pending' | 'success' | 'failure';
 
@@ -24,14 +21,30 @@ export type PurgePanelProps = {
     project: string;
     size: number;
     serviceUrl: string;
+    onPurgeSuccess: () => void;
+    onRefresh: () => Promise<void>;
 };
 
-export const PurgePanel = ({project, size, serviceUrl}: PurgePanelProps) => {
+export const PurgePanel = ({project, size, serviceUrl, onPurgeSuccess, onRefresh}: PurgePanelProps) => {
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [notification, setNotification] = useState<Notification | null>(null);
 
     const disabled = size === 0;
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await onRefresh();
+        } catch (e) {
+            const reason = e instanceof Error ? e.message : 'Unknown error';
+            setNotification({kind: 'failure', message: `Failed to refresh: ${reason}`});
+            setTimeout(() => setNotification(null), NOTIFICATION_DISMISS_MS);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const confirmPurge = async () => {
         setOpen(false);
@@ -46,6 +59,7 @@ export const PurgePanel = ({project, size, serviceUrl}: PurgePanelProps) => {
             const state = await waitForTaskCompletion(serviceUrl, taskId);
             if (state === TASK_STATE_FINISHED) {
                 setNotification({kind: 'success', message: 'Cache successfully purged'});
+                onPurgeSuccess();
             } else if (state === TASK_STATE_FAILED) {
                 setNotification({kind: 'failure', message: 'Failed to purge cache'});
             }
@@ -56,19 +70,30 @@ export const PurgePanel = ({project, size, serviceUrl}: PurgePanelProps) => {
             setTimeout(() => {
                 setBusy(false);
                 setNotification(null);
-                reloadWidget();
-            }, RELOAD_DELAY_MS);
+            }, NOTIFICATION_DISMISS_MS);
         }
     };
 
     return (
         <>
-            <Button
-                variant="filled"
-                disabled={disabled || busy}
-                onClick={() => setOpen(true)}
-                label={disabled ? 'No cache to purge' : `Purge cache (${size})`}
-            />
+            <div className="widget-booster-actions">
+                <Button
+                    variant="filled"
+                    disabled={disabled || busy}
+                    onClick={() => setOpen(true)}
+                    startIcon={busy ? Loader2 : undefined}
+                    startIconClassName={busy ? 'animate-spin' : undefined}
+                    label={disabled ? 'No cache to purge' : `Purge cache (${size})`}
+                />
+                <IconButton
+                    icon={RefreshCw}
+                    variant="text"
+                    disabled={busy || refreshing}
+                    onClick={handleRefresh}
+                    aria-label="Refresh"
+                    title="Refresh"
+                />
+            </div>
             {notification && (
                 <p
                     className={`widget-booster-action-response widget-booster-action-response--${notification.kind}`}

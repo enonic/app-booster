@@ -15,6 +15,12 @@ type LicenseResponse = {
     licenseValid: boolean;
 };
 
+export type RefreshState = {
+    size: number;
+    commonlyCachedPaths: {key: string; docCount: number}[];
+    hint?: string;
+};
+
 const postJson = async <T>(url: string, body: object): Promise<T> => {
     const res = await fetch(url, {
         method: 'POST',
@@ -64,8 +70,25 @@ export const uploadLicense = async (
     return res.json() as Promise<LicenseResponse>;
 };
 
-export const fetchPathDetails = async (pathStatsUrl: string, path: string): Promise<string> => {
+export type PathStatsParam = {
+    paramName: string;
+    uniqueValuesCount: number;
+};
+
+export const fetchPathDetails = async (pathStatsUrl: string, path: string): Promise<PathStatsParam[]> => {
     const url = `${pathStatsUrl}?path=${encodeURIComponent(path)}`;
     const res = await fetch(url);
-    return res.text();
+    if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+    }
+    const body = await res.json() as {uniqueParams: PathStatsParam[]};
+    return body.uniqueParams;
+};
+
+export const fetchRefreshState = async (refreshUrl: string): Promise<RefreshState> => {
+    const res = await fetch(refreshUrl);
+    if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+    }
+    return res.json() as Promise<RefreshState>;
 };

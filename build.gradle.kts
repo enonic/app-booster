@@ -31,6 +31,7 @@ dependencies {
     include(xplibs.project)
     include(xplibs.portal)
     include(xplibs.task)
+    include(xplibs.auditlog)
     include(libs.lib.mustache)
     include(libs.lib.license)
     include(libs.lib.static)
