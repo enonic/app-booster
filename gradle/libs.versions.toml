@@ -1,6 +1,6 @@
 [versions]
 brotli4jVersion = "1.23.0"
-junitVersion = "6.0.3"
+junitVersion = "6.1.0"
 mockitoVersion = "5.23.0"
 
 [libraries]
