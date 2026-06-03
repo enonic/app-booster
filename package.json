@@ -12,7 +12,7 @@
         "@enonic/ui": "~1.0.0-rc.1",
         "@radix-ui/react-slot": "^1.2.0",
         "focus-trap-react": "^11.0.0",
-        "lucide-react": "^1.16.0",
+        "lucide-react": "^1.17.0",
         "preact": "^10.29.0"
     },
     "devDependencies": {
