@@ -18,7 +18,7 @@ mockito-core = { module = "org.mockito:mockito-core" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter" }
 
 lib-mustache = { module = "com.enonic.lib:lib-mustache", version = "3.0.0-B1" }
-lib-license = { module = "com.enonic.lib:lib-license", version = "4.0.0-SNAPSHOT" }
+lib-license = { module = "com.enonic.lib:lib-license", version = "4.0.0" }
 lib-static = { module = "com.enonic.lib:lib-static", version = "3.0.0-B4" }
 lib-router = { module = "com.enonic.lib:lib-router", version = "4.0.0-B1" }
 
