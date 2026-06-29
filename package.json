@@ -9,7 +9,7 @@
         "check": "tsc --noEmit"
     },
     "dependencies": {
-        "@enonic/ui": "~1.0.1",
+        "@enonic/ui": "~1.0.5",
         "@radix-ui/react-slot": "^1.2.5",
         "focus-trap-react": "^11.0.0",
         "lucide-react": "^1.22.0",
