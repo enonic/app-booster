@@ -461,6 +461,18 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="sect1">
 <h2 id="about"><a class="link" href="#about">About</a></h2>
 <div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Versions 2.x target XP 8+.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>Booster caches pages rendered with the Enonic framework/site engine. It is useful for sites that have a lot of traffic, or simply for getting faster pages.</p>
 </div>
@@ -556,7 +568,7 @@ Booster will not work without a valid Enonic license
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-20 11:41:12 UTC
+Last updated 2026-07-02 06:34:03 UTC
 </div>
 </div>
 </body>

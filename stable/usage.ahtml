@@ -557,6 +557,7 @@ Remember to publish the site after adding Booster for changes to take effect.
 </td>
 <td class="content">
 One of the roles <code>CMS Admin</code>, <code>Project Owner</code> or <code>System Admin</code> is required to access to this widget.
+NOTE: Manual cache purge requests are recorded in the audit log with purge scope details.
 </td>
 </tr>
 </table>
@@ -593,7 +594,7 @@ You may verify that the cache was cleared by checking the <code>Cache-Status</co
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-20 11:41:12 UTC
+Last updated 2026-07-02 06:34:03 UTC
 </div>
 </div>
 </body>
