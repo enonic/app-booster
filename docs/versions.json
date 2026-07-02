@@ -2,12 +2,12 @@
   "versions": [
     {
       "label": "stable",
-      "checkout": "1.x",
+      "checkout": "2.x",
       "latest": true
     },
     {
-      "label": "next",
-      "checkout": "master"
+      "label": "1.x",
+      "checkout": "1.x"
     }
   ]
 }
