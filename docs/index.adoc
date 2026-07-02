@@ -1,5 +1,7 @@
 = Booster - Smart cache for Enonic sites
 
+NOTE: Versions 1.x target XP 7+.
+
 Supercharge sites rendered with the Enonic framework
 
 == About
