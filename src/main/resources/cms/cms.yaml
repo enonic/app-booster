@@ -29,9 +29,10 @@ form:
       - type: "ItemSet"
         name: "patterns"
         label: "Cache Patterns"
-        helpText: "If no patterns are provided, all paths are cached. Otherwise, at\
-          \ least one pattern should match the request path for\n            the request\
-          \ to be cached."
+        helpText: "If the list is empty, all paths are cached. Otherwise, a path is\
+          \ cached only if at least one pattern accepts it. There is no separate exclude\
+          \ list: to exclude several paths, use one inverted pattern, for example\
+          \ \"/(api|search)(/.*)?\" with Invert checked."
         occurrences:
           min: 0
           max: 0
@@ -39,14 +40,17 @@ form:
           - type: "TextLine"
             name: "pattern"
             label: "Pattern"
-            helpText: "For example, \"/section/.*\" or \"/api/.*\\.json\""
+            helpText: "Regular expression that must match the whole path relative\
+              \ to the site. For example, \"/blog(/.*)?\" matches /blog and everything\
+              \ below it."
             occurrences:
               min: 0
               max: 1
           - type: "CheckBox"
             name: "invert"
             label: "Invert"
-            helpText: "Invert the result of pattern matching."
+            helpText: "Accept the paths that do NOT match the pattern. Use it to cache everything\
+              \ except the matching paths."
             occurrences:
               min: 0
               max: 1
