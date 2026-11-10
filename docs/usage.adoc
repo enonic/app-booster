@@ -13,7 +13,7 @@ Install via `XP menu` -> `Applications` -> `Install` button, or via the Cloud Co
 
 Next, edit the site where you wish to activate Booster, and add Booster to the list of site applications.
 
-Optionally configure the application by setting Time To Live and exclude patterns
+Optionally configure the application by setting Time To Live and <<configuration#url_patterns,cache patterns>>
 
 image::images/site-config.png[Adding Booster to your site, 739]
 
