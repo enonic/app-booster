@@ -105,15 +105,81 @@ Component TTL setting to specify cache TTL for _component_ controller responses 
 
 ==== URL Patterns
 
-By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.
+By default, Booster caches all regular paths within a site. `Cache Patterns` let you limit caching to some paths only, or exclude some paths from caching.
 
-`Patterns` lets you tune caching only for specific paths.
+The rules are:
 
-If no patterns are provided, all paths are cached. By adding a pattern, no path are cached by default, and you must ensure at least one pattern matches requests to be cached.
+* If the list is empty, all paths are cached.
+* If the list contains one or more patterns, a request is cached only when *at least one* pattern accepts its path. Paths that are not accepted by any pattern are not cached.
+* A pattern without `Invert` accepts the paths that match the regular expression.
+* A pattern with `Invert` accepts the paths that do *not* match the regular expression.
 
-A pattern is a regular expression that is used to match the request path. A pattern element may also contain an `invert` attribute to indicate that the result of evaluating the regular expression should be negated.
+In other words, the list is a single "cache this" list where the patterns are combined with OR. There is no separate exclude list: an exclusion is written as one inverted pattern, or as a part of the regular expression itself. See the <<url_patterns_examples,examples>> below.
 
-The syntax of the pattern is the same as https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings[XP Framework pattern mappings].
+A pattern is a Java regular expression with the same syntax as https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings[XP Framework pattern mappings]. Keep the following in mind when writing one:
+
+* The pattern is matched against the content path relative to the site, starting with `/`. For a site at `/mysite`, the content `/mysite/blog/my-post` is matched as `/blog/my-post`, and the site itself is matched as `/`. Virtual host mappings do not affect the path.
+* The pattern must match the *whole* path, not just a part of it. `/blog` matches only the `/blog` page itself. To match a page and everything below it, use `/blog(/.*)?`.
+* Matching is case-sensitive.
+* Query parameters are ignored, unless the pattern contains an escaped question mark (`\?`). In that case the pattern is matched against the path followed by `?` and the normalized query string (parameters sorted by name, excluded parameters removed), for example `/search?page=2&q=enonic`. The `?` is present even when the request has no query parameters.
+
+[#url_patterns_examples]
+===== Examples
+
+.Cache everything, except one section
+----
+Pattern: /api(/.*)?
+Invert:  checked
+----
+
+`/api` and everything below it is not cached. All other paths are cached.
+
+.Cache everything, except several sections
+----
+Pattern: /(api|search|account)(/.*)?
+Invert:  checked
+----
+
+List all exclusions in *one* inverted pattern, separated with `|`.
+
+WARNING: Do not add a separate inverted pattern for each exclusion. Since it is enough that one pattern accepts the path, two inverted patterns `/api(/.*)?` and `/search(/.*)?` cancel each other out: `/api` is accepted by the second pattern, `/search` is accepted by the first one, and as a result everything is cached.
+
+.Cache only selected sections
+----
+Pattern: /blog(/.*)?
+Invert:  unchecked
+
+Pattern: /docs(/.*)?
+Invert:  unchecked
+----
+
+Only `/blog`, `/docs` and everything below them is cached. Nothing else is cached, including the site front page.
+
+.Cache only the site front page
+----
+Pattern: /
+Invert:  unchecked
+----
+
+.Cache one section, except a part of it
+----
+Pattern: /blog(/(?!drafts(/|$)).*)?
+Invert:  unchecked
+----
+
+`/blog` and everything below it is cached, except `/blog/drafts` and everything below it. Nothing outside `/blog` is cached.
+
+WARNING: Do not combine a regular pattern with an inverted one for this purpose. The patterns `/blog(/.*)?` and inverted `/blog/drafts(/.*)?` together cache the whole site: the inverted pattern accepts every path outside `/blog/drafts`, and `/blog/drafts` itself is accepted by the first pattern. Put the exclusion inside the regular expression using a negative lookahead `(?!...)`, as shown above.
+
+.Cache everything, except requests with query parameters on one page
+----
+Pattern: /search\?.+
+Invert:  checked
+----
+
+`/search?q=enonic` is not cached. `/search` without query parameters and all other paths are cached.
+
+TIP: The patterns only decide if a response may be stored in the cache. All the other conditions described in <<how-it-works#,How it works>> still apply.
 
 ==== Bypass Headers and Cookies
 
