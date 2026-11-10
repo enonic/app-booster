@@ -642,19 +642,147 @@ By default, the value is not set and the cache TTL is determined by the <code>ca
 <div class="sect3">
 <h4 id="url_patterns"><a class="link" href="#url_patterns">URL Patterns</a></h4>
 <div class="paragraph">
-<p>By default, Booster caches all regular paths within a site. However, there are cases when some paths should not be cached, or only some paths should be cached.</p>
+<p>By default, Booster caches all regular paths within a site. <code>Cache Patterns</code> let you limit caching to some paths only, or exclude some paths from caching.</p>
 </div>
 <div class="paragraph">
-<p><code>Patterns</code> lets you tune caching only for specific paths.</p>
+<p>The rules are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If the list is empty, all paths are cached.</p>
+</li>
+<li>
+<p>If the list contains one or more patterns, a request is cached only when <strong>at least one</strong> pattern accepts its path. Paths that are not accepted by any pattern are not cached.</p>
+</li>
+<li>
+<p>A pattern without <code>Invert</code> accepts the paths that match the regular expression.</p>
+</li>
+<li>
+<p>A pattern with <code>Invert</code> accepts the paths that do <strong>not</strong> match the regular expression.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>If no patterns are provided, all paths are cached. By adding a pattern, no path are cached by default, and you must ensure at least one pattern matches requests to be cached.</p>
+<p>In other words, the list is a single "cache this" list where the patterns are combined with OR. There is no separate exclude list: an exclusion is written as one inverted pattern, or as a part of the regular expression itself. See the <a href="#url_patterns_examples">examples</a> below.</p>
 </div>
 <div class="paragraph">
-<p>A pattern is a regular expression that is used to match the request path. A pattern element may also contain an <code>invert</code> attribute to indicate that the result of evaluating the regular expression should be negated.</p>
+<p>A pattern is a Java regular expression with the same syntax as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>. Keep the following in mind when writing one:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The pattern is matched against the content path relative to the site, starting with <code>/</code>. For a site at <code>/mysite</code>, the content <code>/mysite/blog/my-post</code> is matched as <code>/blog/my-post</code>, and the site itself is matched as <code>/</code>. Virtual host mappings do not affect the path.</p>
+</li>
+<li>
+<p>The pattern must match the <strong>whole</strong> path, not just a part of it. <code>/blog</code> matches only the <code>/blog</code> page itself. To match a page and everything below it, use <code>/blog(/.*)?</code>.</p>
+</li>
+<li>
+<p>Matching is case-sensitive.</p>
+</li>
+<li>
+<p>Query parameters are ignored, unless the pattern contains an escaped question mark (<code>\?</code>). In that case the pattern is matched against the path followed by <code>?</code> and the normalized query string (parameters sorted by name, excluded parameters removed), for example <code>/search?page=2&amp;q=enonic</code>. The <code>?</code> is present even when the request has no query parameters.</p>
+</li>
+</ul>
+</div>
+<div class="sect4">
+<h5 id="url_patterns_examples"><a class="link" href="#url_patterns_examples">Examples</a></h5>
+<div class="listingblock">
+<div class="title">Cache everything, except one section</div>
+<div class="content">
+<pre>Pattern: /api(/.*)?
+Invert:  checked</pre>
+</div>
 </div>
 <div class="paragraph">
-<p>The syntax of the pattern is the same as <a href="https://developer.enonic.com/docs/xp/stable/framework/mappings#pattern_mappings">XP Framework pattern mappings</a>.</p>
+<p><code>/api</code> and everything below it is not cached. All other paths are cached.</p>
+</div>
+<div class="listingblock">
+<div class="title">Cache everything, except several sections</div>
+<div class="content">
+<pre>Pattern: /(api|search|account)(/.*)?
+Invert:  checked</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List all exclusions in <strong>one</strong> inverted pattern, separated with <code>|</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Do not add a separate inverted pattern for each exclusion. Since it is enough that one pattern accepts the path, two inverted patterns <code>/api(/.<strong>)?</code> and <code>/search(/.</strong>)?</code> cancel each other out: <code>/api</code> is accepted by the second pattern, <code>/search</code> is accepted by the first one, and as a result everything is cached.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Cache only selected sections</div>
+<div class="content">
+<pre>Pattern: /blog(/.*)?
+Invert:  unchecked
+
+Pattern: /docs(/.*)?
+Invert:  unchecked</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Only <code>/blog</code>, <code>/docs</code> and everything below them is cached. Nothing else is cached, including the site front page.</p>
+</div>
+<div class="listingblock">
+<div class="title">Cache only the site front page</div>
+<div class="content">
+<pre>Pattern: /
+Invert:  unchecked</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Cache one section, except a part of it</div>
+<div class="content">
+<pre>Pattern: /blog(/(?!drafts(/|$)).*)?
+Invert:  unchecked</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>/blog</code> and everything below it is cached, except <code>/blog/drafts</code> and everything below it. Nothing outside <code>/blog</code> is cached.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Do not combine a regular pattern with an inverted one for this purpose. The patterns <code>/blog(/.<strong>)?</code> and inverted <code>/blog/drafts(/.</strong>)?</code> together cache the whole site: the inverted pattern accepts every path outside <code>/blog/drafts</code>, and <code>/blog/drafts</code> itself is accepted by the first pattern. Put the exclusion inside the regular expression using a negative lookahead <code>(?!&#8230;&#8203;)</code>, as shown above.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Cache everything, except requests with query parameters on one page</div>
+<div class="content">
+<pre>Pattern: /search\?.+
+Invert:  checked</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>/search?q=enonic</code> is not cached. <code>/search</code> without query parameters and all other paths are cached.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The patterns only decide if a response may be stored in the cache. All the other conditions described in <a href="how-it-works.ahtml">How it works</a> still apply.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect3">
@@ -676,7 +804,7 @@ Each rule consists a <code>name</code> and Java Regular Expression <code>pattern
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-11-10 08:55:33 UTC
+Last updated 2026-11-10 09:00:38 UTC
 </div>
 </div>
 </body>
