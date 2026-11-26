@@ -64,7 +64,7 @@ tasks.check {
 
 node {
     download = true
-    version = "20.18.0"
+    version = "20.20.2"
 }
 
 val widgetBuild = tasks.register<com.github.gradle.node.npm.task.NpmTask>("widgetBuild") {
